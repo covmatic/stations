@@ -134,7 +134,8 @@ resuming.')
         pick_up(p300)
     for well in mm_strip:
         p300.transfer(vol_per_strip_well, mm_tube, well, new_tip='never')
-
+    p300.drop_tip()
+    
     # transfer mastermix to plate
     mm_vol = mm_dict['volume']
     pick_up(m20)
