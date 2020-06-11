@@ -36,8 +36,8 @@ def run(ctx: protocol_api.ProtocolContext):
         'mastermix strips')
     tempdeck.set_temperature(4)
     tube_block = ctx.load_labware(
-        'opentrons_24_aluminumblock_nest_1.5ml_snapcap', '5',
-        '2ml screw tube aluminum block for mastermix + controls')
+        'opentrons_24_aluminumblock_nest_1.5ml_screwcap', '5',
+        '1.5ml screw tube aluminum block for mastermix + controls')
 
     # pipette
     m20 = ctx.load_instrument('p20_multi_gen2', 'right', tip_racks=tips20)
