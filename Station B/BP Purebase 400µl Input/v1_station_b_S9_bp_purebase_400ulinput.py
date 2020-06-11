@@ -66,7 +66,7 @@ def run(ctx):
 
     magdeck = ctx.load_module('Magnetic Module Gen2', '4')
     magdeck.disengage()
-    magheight = 13.7
+    magheight = 6.8     # for GEN2 Magnetic module; was 13.7 for GEN1 module
     magplate = magdeck.load_labware('nest_96_wellplate_2ml_deep')
     # magplate = magdeck.load_labware('biorad_96_wellplate_200ul_pcr')
     tempdeck = ctx.load_module('Temperature Module Gen2', '1')
