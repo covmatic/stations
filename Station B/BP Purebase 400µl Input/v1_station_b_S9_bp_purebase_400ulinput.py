@@ -17,6 +17,8 @@ ELUTION_VOL = 40
 TIP_TRACK = False
 PARK = False
 
+SKIP_DELAY = False
+
 # Definitions for deck light flashing
 class CancellationToken:
     def __init__(self):
@@ -197,7 +199,8 @@ resuming.')
                 drop(m300)
 
         magdeck.engage(height=magheight)
-        ctx.delay(minutes=2, msg='Incubating on MagDeck for 2 minutes.')
+        if SKIP_DELAY == False:
+            ctx.delay(minutes=2, msg='Incubating on MagDeck for 2 minutes.')
 
         # remove initial supernatant
         remove_supernatant(vol+SAMPLE_VOL, park=park)
@@ -228,7 +231,8 @@ resuming.')
                 drop(m300)
 
         magdeck.engage(height=magheight)
-        ctx.delay(minutes=5, msg='Incubating on MagDeck for 5 minutes.')
+        if SKIP_DELAY == False:
+            ctx.delay(minutes=5, msg='Incubating on MagDeck for 5 minutes.')
 
         remove_supernatant(wash_vol, park=park)
 
@@ -249,10 +253,13 @@ resuming.')
             else:
                 drop(m300)
 
-        ctx.delay(minutes=2, msg='Incubating off magnet at room temperature \
+        if SKIP_DELAY == False:
+            ctx.delay(minutes=2, msg='Incubating off magnet at room temperature \
 for 2 minutes')
         magdeck.engage(height=magheight)
-        ctx.delay(minutes=2, msg='Incubating on magnet at room temperature \
+
+        if SKIP_DELAY == False:
+            ctx.delay(minutes=2, msg='Incubating on magnet at room temperature \
 for 2 minutes')
 
         for i, (m, e, spot) in enumerate(
@@ -274,7 +281,8 @@ for 2 minutes')
     wash(800, etoh, 4, park=PARK)
 
     magdeck.disengage()
-    ctx.delay(minutes=5, msg='Airdrying beads at room temperature for 5 \
+    if SKIP_DELAY == False:
+        ctx.delay(minutes=5, msg='Airdrying beads at room temperature for 5 \
 minutes.')
 
     elute(40, park=PARK)
