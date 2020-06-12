@@ -50,7 +50,7 @@ def run(ctx: protocol_api.ProtocolContext):
     sources = [
         well for rack in source_racks for well in rack.wells()][:NUM_SAMPLES]
     dests_single = dest_plate.wells()[:NUM_SAMPLES]
-    dests_multi = dest_plate.rows()[0][:math.ceil(NUM_SAMPLES)]
+    dests_multi = dest_plate.rows()[0][:math.ceil(NUM_SAMPLES/8)]
 
     tip_log = {'count': {}}
     folder_path = '/data/A'
