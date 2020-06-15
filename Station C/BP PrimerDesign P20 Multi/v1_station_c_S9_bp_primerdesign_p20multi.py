@@ -13,7 +13,7 @@ metadata = {
 
 NUM_SAMPLES = 8  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
 PREPARE_MASTERMIX = True
-TIP_TRACK = False
+TIP_TRACK = True
 
 
 def run(ctx: protocol_api.ProtocolContext):
@@ -36,7 +36,7 @@ def run(ctx: protocol_api.ProtocolContext):
         'mastermix strips')
     tempdeck.set_temperature(4)
     tube_block = ctx.load_labware(
-        'opentrons_24_aluminumblock_nest_1.5ml_snapcap', '5',
+        'eppendorf_24_aluminumblock_1500ul', '5',
         '2ml screw tube aluminum block for mastermix + controls')
 
     # pipette
@@ -134,7 +134,8 @@ resuming.')
         pick_up(p300)
     for well in mm_strip:
         p300.transfer(vol_per_strip_well, mm_tube, well, new_tip='never')
-
+        
+    p300.drop_tip()
     # transfer mastermix to plate
     mm_vol = mm_dict['volume']
     pick_up(m20)
