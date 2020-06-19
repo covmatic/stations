@@ -21,6 +21,11 @@ SKIP_DELAY = False
 
 BIND_MAX_TRANSFER_VOL = 180		# Maximum volume transferred of bind beads
 
+DEFAULT_ASPIRATION_RATE	= 150
+BIND_ASPIRATION_RATE = 50
+SUPERTANANT_REMOVAL_ASPIRATION_RATE = 25
+ELUTE_ASPIRATION_RATE = 50
+
 # Definitions for deck light flashing
 class CancellationToken:
     def __init__(self):
@@ -91,7 +96,7 @@ def run(ctx):
     magdeck.disengage()  # just in case
     tempdeck.set_temperature(4)
 
-    m300.flow_rate.aspirate = 50
+    m300.flow_rate.aspirate = BIND_ASPIRATION_RATE
     m300.flow_rate.dispense = 150
     m300.flow_rate.blow_out = 300
 
@@ -154,7 +159,7 @@ resuming.')
             drop_count = 0
 
     def remove_supernatant(vol, park=False):
-        m300.flow_rate.aspirate = 30
+        m300.flow_rate.aspirate = SUPERTANANT_REMOVAL_ASPIRATION_RATE
         num_trans = math.ceil(vol/200)
         vol_per_trans = vol/num_trans
         for i, (m, spot) in enumerate(zip(mag_samples_m, parking_spots)):
@@ -173,7 +178,7 @@ resuming.')
                 m300.blow_out(waste)
                 m300.air_gap(20)
             drop(m300)
-        m300.flow_rate.aspirate = 150
+        m300.flow_rate.aspirate = DEFAULT_ASPIRATION_RATE
 
     def bind(vol, park=True):
         # add bead binding buffer and mix samples
@@ -242,6 +247,7 @@ resuming.')
 
     def elute(vol, park=True):
         # resuspend beads in elution
+        m300.flow_rate.aspirate = ELUTE_ASPIRATION_RATE
         for i, (m, spot) in enumerate(zip(mag_samples_m, parking_spots)):
             pick_up(m300)
             side = 1 if i % 2 == 0 else -1
