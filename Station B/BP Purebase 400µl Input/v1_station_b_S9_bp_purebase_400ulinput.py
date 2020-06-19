@@ -265,8 +265,8 @@ resuming.')
                 drop(m300)
 
         if SKIP_DELAY == False:
-            ctx.delay(minutes=2, msg='Incubating off magnet at room temperature \
-for 2 minutes')
+            ctx.delay(minutes=5, msg='Incubating off magnet at room temperature \
+for 5 minutes')
         magdeck.engage(height=magheight)
 
         if SKIP_DELAY == False:
@@ -293,7 +293,7 @@ for 2 minutes')
 
     magdeck.disengage()
     if SKIP_DELAY == False:
-        ctx.delay(minutes=5, msg='Airdrying beads at room temperature for 5 \
+        ctx.delay(minutes=10, msg='Airdrying beads at room temperature for 10 \
 minutes.')
 
     elute(ELUTION_VOL, park=PARK)
