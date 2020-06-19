@@ -256,9 +256,9 @@ resuming.')
             pick_up(m300)
             side = 1 if i % 2 == 0 else -1
             loc = m.bottom(0.5).move(Point(x=side*2))
-            m300.aspirate(40, water)
+            m300.aspirate(vol, water)
             m300.move_to(m.center())
-            m300.dispense(40, loc)
+            m300.dispense(vol, loc)
             m300.mix(10, 30, loc)
             m300.blow_out(m.bottom(5))
             m300.touch_tip(v_offset=-5)
@@ -269,8 +269,8 @@ resuming.')
                 drop(m300)
 
         if SKIP_DELAY == False:
-            ctx.delay(minutes=2, msg='Incubating off magnet at room temperature \
-for 2 minutes')
+            ctx.delay(minutes=5, msg='Incubating off magnet at room temperature \
+for 5 minutes')
         magdeck.engage(height=magheight)
 
         if SKIP_DELAY == False:
@@ -297,7 +297,7 @@ for 2 minutes')
 
     magdeck.disengage()
     if SKIP_DELAY == False:
-        ctx.delay(minutes=5, msg='Airdrying beads at room temperature for 5 \
+        ctx.delay(minutes=10, msg='Airdrying beads at room temperature for 10 \
 minutes.')
 
     elute(ELUTION_VOL, park=PARK)
