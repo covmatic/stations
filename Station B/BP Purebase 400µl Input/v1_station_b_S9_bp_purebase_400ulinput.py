@@ -11,13 +11,15 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 94  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
+NUM_SAMPLES = 16  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
 STARTING_VOL = 420
 ELUTION_VOL = 40
 TIP_TRACK = False
 PARK = True
 
 SKIP_DELAY = False
+
+BIND_MAX_TRANSFER_VOL = 180		# Maximum volume transferred of bind beads
 
 # Definitions for deck light flashing
 class CancellationToken:
@@ -181,7 +183,7 @@ resuming.')
             for _ in range(8):
                 m300.aspirate(180, source.bottom(1))
                 m300.dispense(180, source.bottom(5))
-            num_trans = math.ceil(vol/210)
+            num_trans = math.ceil(vol/BIND_MAX_TRANSFER_VOL)
             vol_per_trans = vol/num_trans
             for t in range(num_trans):
                 if m300.current_volume > 0:
@@ -192,7 +194,7 @@ resuming.')
                     m300.air_gap(20)
             m300.mix(5, 200, well)
             m300.blow_out(well.top(-2))
-			m300.touch_tip(v_offset=-5)
+            m300.touch_tip(v_offset=-5)
             m300.air_gap(20)
             if park:
                 m300.drop_tip(spot)
@@ -225,7 +227,7 @@ resuming.')
                     m300.air_gap(20)
             m300.mix(mix_reps, 150, loc)
             m300.blow_out(m.top())
-			m300.touch_tip(v_offset=-5)
+            m300.touch_tip(v_offset=-5)
             m300.air_gap(20)
             if park:
                 m300.drop_tip(spot)
@@ -249,7 +251,7 @@ resuming.')
             m300.dispense(40, loc)
             m300.mix(10, 30, loc)
             m300.blow_out(m.bottom(5))
-			m300.touch_tip(v_offset=-5)
+            m300.touch_tip(v_offset=-5)
             m300.air_gap(20)
             if park:
                 m300.drop_tip(spot)
