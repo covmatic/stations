@@ -178,8 +178,8 @@ resuming.')
         for i, (well, spot) in enumerate(zip(mag_samples_m, parking_spots)):
             source = binding_buffer[i//(12//len(binding_buffer))]
             pick_up(m300)
-            for _ in range(5):
-                m300.aspirate(180, source.bottom(0.5))
+            for _ in range(8):
+                m300.aspirate(180, source.bottom(1))
                 m300.dispense(180, source.bottom(5))
             num_trans = math.ceil(vol/210)
             vol_per_trans = vol/num_trans
