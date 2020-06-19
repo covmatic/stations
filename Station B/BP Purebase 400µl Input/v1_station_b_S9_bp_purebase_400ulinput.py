@@ -135,7 +135,7 @@ resuming.')
 
     switch = True
     drop_count = 0
-    drop_threshold = 960  # number of tips trash will accommodate before prompting user to empty
+    drop_threshold = 296 # number of tips trash will accommodate before prompting user to empty
 
     def drop(pip):
         nonlocal switch
@@ -175,7 +175,7 @@ resuming.')
                 m300.move_to(m.center())
                 m300.transfer(vol_per_trans, loc, waste, new_tip='never',
                               air_gap=20)
-                m300.blow_out(waste)
+                #m300.blow_out(waste)	# eliminated not to have bubbles
                 m300.air_gap(20)
             drop(m300)
         m300.flow_rate.aspirate = DEFAULT_ASPIRATION_RATE
@@ -198,7 +198,7 @@ resuming.')
                 if t == 0:
                     m300.air_gap(20)
             m300.mix(5, 200, well)
-            m300.blow_out(well.top(-2))
+            #m300.blow_out(well.top(-2)) 	# eliminated not to have bubbles
             m300.touch_tip(v_offset=-5)
             m300.air_gap(20)
             if park:
@@ -231,7 +231,7 @@ resuming.')
                 if n < num_trans - 1:  # only air_gap if going back to source
                     m300.air_gap(20)
             m300.mix(mix_reps, 150, loc)
-            m300.blow_out(m.top())
+            #m300.blow_out(m.top())
             m300.touch_tip(v_offset=-5)
             m300.air_gap(20)
             if park:
@@ -256,7 +256,7 @@ resuming.')
             m300.move_to(m.center())
             m300.dispense(vol, loc)
             m300.mix(10, 30, loc)
-            m300.blow_out(m.bottom(5))
+            #m300.blow_out(m.bottom(5))		# trying not to make bubbles
             m300.touch_tip(v_offset=-5)
             m300.air_gap(20)
             if park:
@@ -270,8 +270,8 @@ for 5 minutes')
         magdeck.engage(height=magheight)
 
         if SKIP_DELAY == False:
-            ctx.delay(minutes=2, msg='Incubating on magnet at room temperature \
-for 2 minutes')
+            ctx.delay(minutes=3, msg='Incubating on magnet at room temperature \
+for 3 minutes')
 
         for i, (m, e, spot) in enumerate(
                 zip(mag_samples_m, elution_samples_m, parking_spots)):
@@ -282,7 +282,7 @@ for 2 minutes')
             side = -1 if i % 2 == 0 else 1
             loc = m.bottom(0.5).move(Point(x=side*2))
             m300.transfer(40, loc, e.bottom(5), air_gap=20, new_tip='never')
-            m300.blow_out(e.top(-2))
+            #m300.blow_out(e.top(-2))
             m300.air_gap(20)
             drop(m300)
 
