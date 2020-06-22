@@ -13,8 +13,14 @@ metadata = {
 
 NUM_SAMPLES = 96
 SAMPLE_VOLUME = 200
+LYSIS_VOLUME = 160
 TIP_TRACK = False
 
+DEFAULT_ASPIRATE = 100
+DEFAULT_DISPENSE = 100
+
+LYSYS_RATE_ASPIRATE = 100
+LYSYS_RATE_DISPENSE = 100
 
 def run(ctx: protocol_api.ProtocolContext):
 
@@ -36,17 +42,17 @@ def run(ctx: protocol_api.ProtocolContext):
         'opentrons_6_tuberack_falcon_50ml_conical', '4',
         '50ml tuberack for lysis buffer + PK (tube A1)').wells()[0]
     tipracks300 = [ctx.load_labware('opentrons_96_tiprack_300ul', slot,
-                                    '200Âµl filter tiprack')
+                                    '200µl filter tiprack')
                     for slot in ['8', '9', '11']]
     tipracks20 = [ctx.load_labware('opentrons_96_filtertiprack_20ul', '7',
-                                   '20Âµl filter tiprack')]
+                                   '20µl filter tiprack')]
 
     # load pipette
     m20 = ctx.load_instrument('p20_multi_gen2', 'left', tip_racks=tipracks20)
     p300 = ctx.load_instrument(
         'p300_single_gen2', 'right', tip_racks=tipracks300)
-    p300.flow_rate.aspirate = 150
-    p300.flow_rate.dispense = 300
+    p300.flow_rate.aspirate = DEFAULT_ASPIRATE
+    p300.flow_rate.dispense = DEFAULT_DISPENSE
     p300.flow_rate.blow_out = 300
 
     # setup samples
@@ -85,7 +91,7 @@ def run(ctx: protocol_api.ProtocolContext):
     def pick_up(pip):
         nonlocal tip_log
         if tip_log['count'][pip] == tip_log['max'][pip]:
-            ctx.pause('Replace ' + str(pip.max_volume) + 'Âµl tipracks before \
+            ctx.pause('Replace ' + str(pip.max_volume) + 'µl tipracks before \
 resuming.')
             pip.reset_tipracks()
             tip_log['count'][pip] = 0
@@ -108,15 +114,18 @@ resuming.')
     # transfer sample
     for s, d in zip(sources, dests_single):
         pick_up(p300)
+        p300.mix(5, 150, s)
         p300.transfer(SAMPLE_VOLUME, s.bottom(5), d.bottom(5), air_gap=20,
                        new_tip='never')
         p300.air_gap(20)
         p300.drop_tip()
 
     # transfer lysis buffer + proteinase K and mix
+    p300.flow_rate.aspirate = LYSIS_RATE_ASPIRATE
+    p300.flow_rate.dispense = LYSIS_RATE_DISPENSE
     for s, d in zip(sources, dests_single):
         pick_up(p300)
-        p300.transfer(210, h_track(lys_buff, 210), d.bottom(5), air_gap=20,
+        p300.transfer(LYSIS_VOLUME, h_track(lys_buff, 210), d.bottom(5), air_gap=20,
                        mix_after=(10, 100), new_tip='never')
         p300.air_gap(20)
         p300.drop_tip()
