@@ -12,18 +12,18 @@ metadata = {
 }
 
 NUM_SAMPLES = 16  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
-STARTING_VOL = 420
+STARTING_VOL = 370
 ELUTION_VOL = 40
 TIP_TRACK = False
 PARK = True
 
-SKIP_DELAY = False
+SKIP_DELAY = True
 
 BIND_MAX_TRANSFER_VOL = 180		# Maximum volume transferred of bind beads
 
 DEFAULT_ASPIRATION_RATE	= 150
 BIND_ASPIRATION_RATE = 50
-SUPERTANANT_REMOVAL_ASPIRATION_RATE = 25
+SUPERNATANT_REMOVAL_ASPIRATION_RATE = 25
 ELUTE_ASPIRATION_RATE = 50
 
 # Definitions for deck light flashing
@@ -50,6 +50,14 @@ def create_thread(ctx, cancel_token):
     t1.start()
     return t1
 
+def delay(minutesToDelay, message, context):
+    message += ' for ' + str(minutesToDelay) + ' minutes.'
+    if SKIP_DELAY:
+        context.pause(message  + "Pausing for skipping delay. Please resume")
+    else:
+        context.delay(minutes=minutesToDelay, msg=message)
+
+
 # Start protocol
 def run(ctx):
     # Setup for flashing lights notification to empty trash
@@ -73,7 +81,7 @@ def run(ctx):
 
     magdeck = ctx.load_module('Magnetic Module Gen2', '4')
     magdeck.disengage()
-    magheight = 6.8     # for GEN2 Magnetic module; was 13.7 for GEN1 module
+    magheight = 6.5     # for GEN2 Magnetic module; was 13.7 for GEN1 module
     magplate = magdeck.load_labware('nest_96_wellplate_2ml_deep')
     # magplate = magdeck.load_labware('biorad_96_wellplate_200ul_pcr')
     tempdeck = ctx.load_module('Temperature Module Gen2', '1')
@@ -159,7 +167,7 @@ resuming.')
             drop_count = 0
 
     def remove_supernatant(vol, park=False):
-        m300.flow_rate.aspirate = SUPERTANANT_REMOVAL_ASPIRATION_RATE
+        m300.flow_rate.aspirate = SUPERNATANT_REMOVAL_ASPIRATION_RATE
         num_trans = math.ceil(vol/200)
         vol_per_trans = vol/num_trans
         for i, (m, spot) in enumerate(zip(mag_samples_m, parking_spots)):
@@ -207,8 +215,7 @@ resuming.')
                 drop(m300)
 
         magdeck.engage(height=magheight)
-        if SKIP_DELAY == False:
-            ctx.delay(minutes=2, msg='Incubating on MagDeck for 2 minutes.')
+        delay(2, 'Incubating on MagDeck.', ctx)
 
         # remove initial supernatant
         remove_supernatant(vol+STARTING_VOL, park=park)
@@ -240,8 +247,7 @@ resuming.')
                 drop(m300)
 
         magdeck.engage(height=magheight)
-        if SKIP_DELAY == False:
-            ctx.delay(minutes=5, msg='Incubating on MagDeck for 5 minutes.')
+        delay(5, 'Incubating on MagDeck.', ctx)
 
         remove_supernatant(wash_vol, park=park)
 
@@ -264,14 +270,10 @@ resuming.')
             else:
                 drop(m300)
 
-        if SKIP_DELAY == False:
-            ctx.delay(minutes=5, msg='Incubating off magnet at room temperature \
-for 5 minutes')
+        delay(5, 'Incubating off magnet at room temperature.', ctx)
         magdeck.engage(height=magheight)
 
-        if SKIP_DELAY == False:
-            ctx.delay(minutes=3, msg='Incubating on magnet at room temperature \
-for 3 minutes')
+        delay(3, 'Incubating on magnet at room temperature.', ctx)
 
         for i, (m, e, spot) in enumerate(
                 zip(mag_samples_m, elution_samples_m, parking_spots)):
@@ -292,8 +294,6 @@ for 3 minutes')
     wash(800, etoh, 4, park=PARK)
 
     magdeck.disengage()
-    if SKIP_DELAY == False:
-        ctx.delay(minutes=10, msg='Airdrying beads at room temperature for 10 \
-minutes.')
+    delay(10, 'Airdrying beads at room temperature.', ctx)
 
     elute(ELUTION_VOL, park=PARK)

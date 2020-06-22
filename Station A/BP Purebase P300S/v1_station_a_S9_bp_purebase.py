@@ -11,7 +11,7 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 96
+NUM_SAMPLES = 16
 SAMPLE_VOLUME = 200
 LYSIS_VOLUME = 160
 TIP_TRACK = False
@@ -19,8 +19,9 @@ TIP_TRACK = False
 DEFAULT_ASPIRATE = 100
 DEFAULT_DISPENSE = 100
 
-LYSYS_RATE_ASPIRATE = 100
-LYSYS_RATE_DISPENSE = 100
+LYSIS_RATE_ASPIRATE = 100
+LYSIS_RATE_DISPENSE = 100
+LYSIS_START_HEIGHT = 40		#20
 
 def run(ctx: protocol_api.ProtocolContext):
 
@@ -98,7 +99,7 @@ resuming.')
         pip.pick_up_tip(tip_log['tips'][pip][tip_log['count'][pip]])
         tip_log['count'][pip] += 1
 
-    heights = {lys_buff: 20}
+    heights = {lys_buff: LYSIS_START_HEIGHT}
     radius = (lys_buff.diameter)/2
     min_h = 5
 
@@ -114,7 +115,7 @@ resuming.')
     # transfer sample
     for s, d in zip(sources, dests_single):
         pick_up(p300)
-        p300.mix(5, 150, s)
+        p300.mix(5, 150, s.bottom(2))
         p300.transfer(SAMPLE_VOLUME, s.bottom(5), d.bottom(5), air_gap=20,
                        new_tip='never')
         p300.air_gap(20)
@@ -138,6 +139,7 @@ Return to slot 4 when complete.')
         pick_up(m20)
         m20.transfer(10, internal_control, d.bottom(10), air_gap=5,
                      new_tip='never')
+        m20.mix(5, 20, d.bottom(2))
         m20.air_gap(5)
         m20.drop_tip()
 
