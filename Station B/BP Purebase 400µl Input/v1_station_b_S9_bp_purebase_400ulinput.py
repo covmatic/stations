@@ -213,9 +213,13 @@ resuming.')
                 m300.drop_tip(spot)
             else:
                 drop(m300)
-
+        
+        # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
+        delay(5, 'Waiting minutes before magnetic module activation.', ctx)
         magdeck.engage(height=magheight)
-        delay(2, 'Incubating on MagDeck.', ctx)
+        
+        #Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
+        delay(6, 'Incubating on MagDeck.', ctx)
 
         # remove initial supernatant
         remove_supernatant(vol+STARTING_VOL, park=park)
