@@ -11,10 +11,11 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 8  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
+NUM_SAMPLES = 16  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
 PREPARE_MASTERMIX = True
-TIP_TRACK = True
+TIP_TRACK = False
 
+MMIX_RATE_ASPIRATE = 100
 
 def run(ctx: protocol_api.ProtocolContext):
     global MM_TYPE
@@ -98,8 +99,10 @@ resuming.')
     }
 
     if PREPARE_MASTERMIX:
-        vol_overage = 1.2  # decrease overage for small sample number
+        vol_overage = 1.2
 
+        p300.flow_rate.aspirate = MMIX_RATE_ASPIRATE
+         
         for i, (tube, vol) in enumerate(mm_dict['components'].items()):
             comp_vol = vol*(NUM_SAMPLES)*vol_overage
             pick_up(p300)
@@ -107,7 +110,7 @@ resuming.')
             vol_per_trans = comp_vol/num_trans
             for _ in range(num_trans):
                 p300.air_gap(20)
-                p300.aspirate(vol_per_trans, tube)
+                p300.aspirate(vol_per_trans, tube.bottom(2))
                 ctx.delay(seconds=3)
                 p300.touch_tip(tube)
                 p300.air_gap(20)
