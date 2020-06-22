@@ -81,7 +81,7 @@ def run(ctx):
 
     magdeck = ctx.load_module('Magnetic Module Gen2', '4')
     magdeck.disengage()
-    magheight = 6.5     # for GEN2 Magnetic module; was 13.7 for GEN1 module
+    magheight = 6.65     # for GEN2 Magnetic module; was 13.7 for GEN1 module
     magplate = magdeck.load_labware('nest_96_wellplate_2ml_deep')
     # magplate = magdeck.load_labware('biorad_96_wellplate_200ul_pcr')
     tempdeck = ctx.load_module('Temperature Module Gen2', '1')
@@ -301,3 +301,4 @@ resuming.')
     delay(10, 'Airdrying beads at room temperature.', ctx)
 
     elute(ELUTION_VOL, park=PARK)
+    magdeck.disengage()

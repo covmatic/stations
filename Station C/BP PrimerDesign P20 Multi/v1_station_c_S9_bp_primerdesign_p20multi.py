@@ -81,7 +81,7 @@ def run(ctx: protocol_api.ProtocolContext):
     def pick_up(pip):
         nonlocal tip_log
         if tip_log['count'][pip] == tip_log['max'][pip]:
-            ctx.pause('Replace ' + str(pip.max_volume) + 'Âµl tipracks before \
+            ctx.pause('Replace ' + str(pip.max_volume) + 'µl tipracks before \
 resuming.')
             pip.reset_tipracks()
             tip_log['count'][pip] = 0
@@ -136,13 +136,13 @@ resuming.')
     if not p300.hw_pipette['has_tip']:
         pick_up(p300)
     for well in mm_strip:
-        p300.transfer(vol_per_strip_well, mm_tube, well, new_tip='never')
+        p300.transfer(vol_per_strip_well, mm_tube.bottom(2), well.bottom(2), new_tip='never')
     p300.drop_tip()
     
     # transfer mastermix to plate
     mm_vol = mm_dict['volume']
     pick_up(m20)
-    m20.transfer(mm_vol, mm_strip[0].bottom(0.5), sample_dests,
+    m20.transfer(mm_vol, mm_strip[0].bottom(1), sample_dests,
                  new_tip='never')
     m20.drop_tip()
 
