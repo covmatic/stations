@@ -17,7 +17,7 @@ ELUTION_VOL = 40
 TIP_TRACK = False
 PARK = True
 
-SKIP_DELAY = True
+SKIP_DELAY = False
 
 BIND_MAX_TRANSFER_VOL = 180		# Maximum volume transferred of bind beads
 
