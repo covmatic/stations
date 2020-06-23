@@ -21,10 +21,10 @@ DEFAULT_DISPENSE = 100
 
 LYSIS_RATE_ASPIRATE = 100
 LYSIS_RATE_DISPENSE = 100
-LYSIS_START_HEIGHT = 40		#20
 
 def run(ctx: protocol_api.ProtocolContext):
-
+    ctx.comment("Station B protocol for {} samples.".format(NUM_SAMPLES))
+    
     # load labware
     tempdeck = ctx.load_module('Temperature Module Gen2', '10')
     tempdeck.set_temperature(4)
@@ -99,17 +99,23 @@ resuming.')
         pip.pick_up_tip(tip_log['tips'][pip][tip_log['count'][pip]])
         tip_log['count'][pip] += 1
 
-    heights = {lys_buff: LYSIS_START_HEIGHT}
+    lysis_total_vol = LYSIS_VOLUME * NUM_SAMPLES
+
+    ctx.comment("Lysis buffer expected volume: {} mL".format(lysis_total_vol/1000))
+    
     radius = (lys_buff.diameter)/2
+    heights = {lys_buff: lysis_total_vol/(math.pi*(radius**2))}
+    ctx.comment("Lysis buffer expected initial height: {:.2f} mm".format(heights[lys_buff]))
     min_h = 5
 
-    def h_track(tube, vol):
+    def h_track(tube, vol, context):
         nonlocal heights
         dh = vol/(math.pi*(radius**2))
         if heights[tube] - dh > min_h:
             heights[tube] = heights[tube] - dh
         else:
-            heights[tube] = 5
+            heights[tube] = min_h
+        context.comment("Going {} mm deep".format(heights[tube]))
         return tube.bottom(heights[tube])
 
     # transfer sample
@@ -126,7 +132,7 @@ resuming.')
     p300.flow_rate.dispense = LYSIS_RATE_DISPENSE
     for s, d in zip(sources, dests_single):
         pick_up(p300)
-        p300.transfer(LYSIS_VOLUME, h_track(lys_buff, 210), d.bottom(5), air_gap=20,
+        p300.transfer(LYSIS_VOLUME, h_track(lys_buff, LYSIS_VOLUME, ctx), d.bottom(5), air_gap=20,
                        mix_after=(10, 100), new_tip='never')
         p300.air_gap(20)
         p300.drop_tip()
@@ -156,3 +162,4 @@ extraction.')
         }
         with open(tip_file_path, 'w') as outfile:
             json.dump(data, outfile)
+    
