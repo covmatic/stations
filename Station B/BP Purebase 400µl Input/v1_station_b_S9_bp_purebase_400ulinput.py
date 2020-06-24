@@ -12,7 +12,7 @@ metadata = {
 }
 
 NUM_SAMPLES = 16  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
-STARTING_VOL = 370
+STARTING_VOL = 380
 ELUTION_VOL = 40
 TIP_TRACK = False
 PARK = True
@@ -60,6 +60,9 @@ def delay(minutesToDelay, message, context):
 
 # Start protocol
 def run(ctx):
+    ctx.comment("Station B protocol for {} samples.".format(NUM_SAMPLES))
+   
+    
     # Setup for flashing lights notification to empty trash
     cancellationToken = CancellationToken()
 
@@ -219,7 +222,7 @@ resuming.')
         magdeck.engage(height=magheight)
         
         #Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
-        delay(6, 'Incubating on MagDeck.', ctx)
+        delay(9, 'Incubating on MagDeck.', ctx)
 
         # remove initial supernatant
         remove_supernatant(vol+STARTING_VOL, park=park)
@@ -298,7 +301,7 @@ resuming.')
     wash(800, etoh, 4, park=PARK)
 
     magdeck.disengage()
-    delay(10, 'Airdrying beads at room temperature.', ctx)
+    delay(12, 'Airdrying beads at room temperature.', ctx)
 
     elute(ELUTION_VOL, park=PARK)
     magdeck.disengage()
