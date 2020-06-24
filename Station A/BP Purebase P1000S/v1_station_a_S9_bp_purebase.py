@@ -11,23 +11,28 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 96
-SAMPLE_VOLUME = 400
+NUM_SAMPLES = 15
+SAMPLE_VOLUME = 200
+LYSIS_VOLUME = 160
+IEC_VOLUME = 20
 TIP_TRACK = False
 
+DEFAULT_ASPIRATE = 100
+DEFAULT_DISPENSE = 100
+
+LYSIS_RATE_ASPIRATE = 100
+LYSIS_RATE_DISPENSE = 100
 
 def run(ctx: protocol_api.ProtocolContext):
-
+    ctx.comment("Station A protocol for {} COPAN 330C samples.".format(NUM_SAMPLES))
     # load labware
     tempdeck = ctx.load_module('Temperature Module Gen2', '10')
     tempdeck.set_temperature(4)
     internal_control = tempdeck.load_labware(
         'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
         'chilled tubeblock for internal control (strip 1)').wells()[0]
-    source_racks = [
-        ctx.load_labware(
-            'opentrons_24_tuberack_eppendorf_2ml_safelock_snapcap', slot,
-            'source tuberack ' + str(i+1))
+    source_racks = [ctx.load_labware('copan_15_tuberack_14000ul', slot,
+			'source tuberack ' + str(i+1))
         for i, slot in enumerate(['2', '3', '5', '6'])
     ]
     dest_plate = ctx.load_labware(
@@ -45,9 +50,9 @@ def run(ctx: protocol_api.ProtocolContext):
     m20 = ctx.load_instrument('p20_multi_gen2', 'left', tip_racks=tipracks20)
     p1000 = ctx.load_instrument(
         'p1000_single_gen2', 'right', tip_racks=tipracks1000)
-    p1000.flow_rate.aspirate = 250
-    p1000.flow_rate.dispense = 500
-    p1000.flow_rate.blow_out = 500
+    p1000.flow_rate.aspirate = DEFAULT_ASPIRATE
+    p1000.flow_rate.dispense = DEFAULT_DISPENSE
+    p1000.flow_rate.blow_out = 300
 
     # setup samples
     sources = [
@@ -92,31 +97,40 @@ resuming.')
         pip.pick_up_tip(tip_log['tips'][pip][tip_log['count'][pip]])
         tip_log['count'][pip] += 1
 
-    heights = {lys_buff: 20}
+    lysis_total_vol = LYSIS_VOLUME * NUM_SAMPLES
+
+    ctx.comment("Lysis buffer expected volume: {} mL".format(lysis_total_vol/1000))
+    
     radius = (lys_buff.diameter)/2
+    heights = {lys_buff: lysis_total_vol/(math.pi*(radius**2))}
+    ctx.comment("Lysis buffer expected initial height: {:.2f} mm".format(heights[lys_buff]))
     min_h = 5
 
-    def h_track(tube, vol):
+    def h_track(tube, vol, context):
         nonlocal heights
         dh = vol/(math.pi*(radius**2))
         if heights[tube] - dh > min_h:
             heights[tube] = heights[tube] - dh
         else:
-            heights[tube] = 5
+            heights[tube] = min_h
+        context.comment("Going {} mm deep".format(heights[tube]))
         return tube.bottom(heights[tube])
 
     # transfer sample
     for s, d in zip(sources, dests_single):
         pick_up(p1000)
-        p1000.transfer(SAMPLE_VOLUME, s.bottom(5), d.bottom(5), air_gap=100,
-                       new_tip='never')
+        p1000.mix(5, 150, s.bottom(10))
+        p1000.transfer(SAMPLE_VOLUME, s.bottom(10), d.bottom(5), air_gap=100,
+						new_tip='never')
         p1000.air_gap(100)
         p1000.drop_tip()
 
     # transfer lysis buffer + proteinase K and mix
+    p1000.flow_rate.aspirate = LYSIS_RATE_ASPIRATE
+    p1000.flow_rate.dispense = LYSIS_RATE_DISPENSE
     for s, d in zip(sources, dests_single):
         pick_up(p1000)
-        p1000.transfer(210, h_track(lys_buff, 210), d.bottom(5), air_gap=100,
+        p1000.transfer(LYSIS_VOLUME, h_track(lys_buff, LYSIS_VOLUME, ctx), d.bottom(5), air_gap=100,
                        mix_after=(10, 100), new_tip='never')
         p1000.air_gap(100)
         p1000.drop_tip()
@@ -127,8 +141,9 @@ Return to slot 4 when complete.')
     # transfer internal control
     for d in dests_multi:
         pick_up(m20)
-        m20.transfer(10, internal_control, d.bottom(10), air_gap=5,
+        m20.transfer(IEC_VOLUME, internal_control, d.top(), air_gap=5,
                      new_tip='never')
+        m20.mix(5, 20, d.bottom(2))
         m20.air_gap(5)
         m20.drop_tip()
 
