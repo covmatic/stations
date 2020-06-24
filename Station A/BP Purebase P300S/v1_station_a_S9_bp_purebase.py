@@ -14,6 +14,7 @@ metadata = {
 NUM_SAMPLES = 16
 SAMPLE_VOLUME = 200
 LYSIS_VOLUME = 160
+IEC_VOLUME = 20
 TIP_TRACK = False
 
 DEFAULT_ASPIRATE = 100
@@ -23,7 +24,7 @@ LYSIS_RATE_ASPIRATE = 100
 LYSIS_RATE_DISPENSE = 100
 
 def run(ctx: protocol_api.ProtocolContext):
-    ctx.comment("Station B protocol for {} samples.".format(NUM_SAMPLES))
+    ctx.comment("Station A protocol for {} BPGenomics samples.".format(NUM_SAMPLES))
     
     # load labware
     tempdeck = ctx.load_module('Temperature Module Gen2', '10')
@@ -31,9 +32,7 @@ def run(ctx: protocol_api.ProtocolContext):
     internal_control = tempdeck.load_labware(
         'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
         'chilled tubeblock for internal control (strip 1)').wells()[0]
-    source_racks = [
-        ctx.load_labware(
-            'opentrons_24_tuberack_nest_1.5ml_screwcap', slot,
+    source_racks = [ctx.load_labware('opentrons_24_tuberack_nest_1.5ml_screwcap', slot,
             'source tuberack ' + str(i+1))
         for i, slot in enumerate(['2', '3', '5', '6'])
     ]
@@ -137,13 +136,13 @@ resuming.')
         p300.air_gap(20)
         p300.drop_tip()
 
-    ctx.pause('Incubate sample plate (slot 4) at 55-57ËšC for 20 minutes. \
+    ctx.pause('Incubate sample plate (slot 4) at 55-57°C for 20 minutes. \
 Return to slot 4 when complete.')
 
     # transfer internal control
     for d in dests_multi:
         pick_up(m20)
-        m20.transfer(10, internal_control, d.bottom(10), air_gap=5,
+        m20.transfer(IEC_VOLUME, internal_control, d.top(), air_gap=5,
                      new_tip='never')
         m20.mix(5, 20, d.bottom(2))
         m20.air_gap(5)
