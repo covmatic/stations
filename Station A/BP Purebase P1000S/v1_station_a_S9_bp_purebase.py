@@ -120,7 +120,7 @@ resuming.')
     for s, d in zip(sources, dests_single):
         pick_up(p1000)
         p1000.mix(5, 150, s.bottom(10))
-        p1000.transfer(SAMPLE_VOLUME, s.bottom(10), d.bottom(5), air_gap=100,
+        p1000.transfer(SAMPLE_VOLUME, s.bottom(8), d.bottom(5), air_gap=100,
 						new_tip='never')
         p1000.air_gap(100)
         p1000.drop_tip()
@@ -141,8 +141,10 @@ Return to slot 4 when complete.')
     # transfer internal control
     for d in dests_multi:
         pick_up(m20)
-        m20.transfer(IEC_VOLUME, internal_control, d.top(), air_gap=5,
-                     new_tip='never')
+        # transferring internal control
+        # no air gap to use 1 transfer only avoiding drop during multiple transfers.
+        m20.transfer(IEC_VOLUME, internal_control, d.top(),
+                             new_tip='never')
         m20.mix(5, 20, d.bottom(2))
         m20.air_gap(5)
         m20.drop_tip()

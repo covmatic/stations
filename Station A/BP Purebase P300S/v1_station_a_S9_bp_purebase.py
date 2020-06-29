@@ -142,7 +142,9 @@ Return to slot 4 when complete.')
     # transfer internal control
     for d in dests_multi:
         pick_up(m20)
-        m20.transfer(IEC_VOLUME, internal_control, d.top(), air_gap=5,
+        # transferring internal control
+        # no air gap to use 1 transfer only avoiding drop during multiple transfers.
+        m20.transfer(IEC_VOLUME, internal_control, d.top(),
                      new_tip='never')
         m20.mix(5, 20, d.bottom(2))
         m20.air_gap(5)
