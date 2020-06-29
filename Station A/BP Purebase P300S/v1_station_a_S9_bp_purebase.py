@@ -11,7 +11,7 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 16
+NUM_SAMPLES = 96
 SAMPLE_VOLUME = 200
 LYSIS_VOLUME = 160
 IEC_VOLUME = 20
@@ -29,9 +29,9 @@ def run(ctx: protocol_api.ProtocolContext):
     # load labware
     tempdeck = ctx.load_module('Temperature Module Gen2', '10')
     tempdeck.set_temperature(4)
-    internal_control = tempdeck.load_labware(
+    internal_control_strips = tempdeck.load_labware(
         'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
-        'chilled tubeblock for internal control (strip 1)').wells()[0]
+        'chilled tubeblock for internal control (strip 1)').wells()
     source_racks = [ctx.load_labware('opentrons_24_tuberack_nest_1.5ml_screwcap', slot,
             'source tuberack ' + str(i+1))
         for i, slot in enumerate(['2', '3', '5', '6'])
@@ -150,7 +150,13 @@ resuming.')
 Return to slot 4 when complete.')
 
     # transfer internal control
-    for d in dests_multi:
+    for i, d in enumerate(dests_multi):
+        # Choosing the first row for the first 48 sample.
+        if i < 48:
+            internal_control = internal_control_strips[0]
+        else:
+            internal_control = internal_control_strips[1]
+
         pick_up(m20)
         # transferring internal control
         # no air gap to use 1 transfer only avoiding drop during multiple transfers.
