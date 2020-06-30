@@ -31,12 +31,12 @@ class Station:
     @property
     def logger(self) -> logging.getLoggerClass():
         if ((not hasattr(self, "_logger")) or self._logger is None) and self._ctx is not None:
-            self._logger = logging.getLogger(self.loggerName)
+            self._logger = logging.getLogger(self.logger_name)
             self._logger.addHandler(ProtocolContextLoggingHandler(self._ctx))
         return self._logger
     
     @property
-    def loggerName(self) -> str:
+    def logger_name(self) -> str:
         return self.__class__.__name__
     
     @classmethod
@@ -44,19 +44,19 @@ class Station:
         return map(lambda x: (x[0], x[2]), sorted(map(lambda x: (x, *getattr(getattr(cls, x), key)), filter(lambda x: hasattr(getattr(cls, x), key), dir(cls))), key=lambda x: x[1]))
     
     @classmethod
-    def labwareLoaders(cls) -> map:
+    def labware_loaders(cls) -> map:
         return cls.loaders("_labware_load")
     
     @classmethod
-    def instrumentLoaders(cls) -> map:
+    def instrument_loaders(cls) -> map:
         return cls.loaders("_instr_load")
     
-    def loadIt(self, it):
+    def load_it(self, it):
         for method_name, _ in it:
             getattr(self, method_name)()
     
-    def loadLabware(self):
-        self.loadIt(self.labwareLoaders())
+    def load_labware(self):
+        self.load_it(self.labware_loaders())
     
-    def loadInstruments(self):
-        self.loadIt(self.instrumentLoaders())
+    def load_instruments(self):
+        self.load_it(self.instrument_loaders())

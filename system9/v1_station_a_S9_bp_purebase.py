@@ -16,16 +16,17 @@ _metadata = {
 }
 
 
-class v1_station_a_S9_bp_purebase(Station):
+class V1StationAS9BpPurebase(Station):
     def __init__(
         self, num_samples: int, samples_per_row: int = 8, sample_volume: float = 200, lysis_volume: float = 160,
         default_aspirate: float = 100, default_dispense: float = 100, default_blow_out: float = 300,
         lysis_rate_aspirate: float = 100, lysis_rate_dispense: float = 100,
         lysis_cone_height: float = 0, lysis_headroom_height: float = 5,
+        mix_repeats: int = 5, mix_volume: float = 150,
         tip_rack: bool = False, tip_log_folder_path: str = '/data/A', tip_log_filename: str = '/tip_log.json',
         metadata: dict = _metadata, logger: Optional[logging.getLoggerClass()] = None,
     ):
-        """ Build a :py:class:`.v1_station_a_S9_bp_purebase`.
+        """ Build a :py:class:`.V1StationAS9BpPurebase`.
 
         :param num_samples: The number of samples that will be loaded on the station A
         :param samples_per_row: The number of samples in a row of the destination plate
@@ -38,6 +39,8 @@ class v1_station_a_S9_bp_purebase(Station):
         :param lysis_rate_dispense: P300 dispensation flow rate when dispensing lysis buffer in uL/s
         :param lysis_cone_height: height of he conic bottom of the lysis buffer tube in mm
         :param lysis_headroom_height: headroom always to keep from the bottom of the lysis buffer tube in mm
+        :param mix_repeats: number of repetitions during mixing
+        :param mix_volume: volume aspirated for mixing
         :param tip_rack: If True, try and load previous tiprack log from the JSON file
         :param tip_log_folder_path: folder for the tip log JSON dump
         :param tip_log_filename: file name for the tip log JSON dump
@@ -56,6 +59,8 @@ class v1_station_a_S9_bp_purebase(Station):
         self._lysis_rate_dispense = lysis_rate_dispense
         self._lysis_cone_height = lysis_cone_height
         self._lysis_headroom_height = lysis_headroom_height
+        self._mix_repeats = mix_repeats
+        self._mix_volume = mix_volume
         self._tip_log_folder_path = tip_log_folder_path
         self._tip_log_filename = tip_log_filename
         self.metadata = metadata
@@ -63,7 +68,7 @@ class v1_station_a_S9_bp_purebase(Station):
         self._ctx = None
     
     @labware_loader(0, "_tempdeck", "_internal_control")
-    def loadTempDeck(self):
+    def load_tempdeck(self):
         self._tempdeck = self._ctx.load_module('Temperature Module Gen2', '10')
         self._tempdeck.set_temperature(4)
         self._internal_control = self._tempdeck.load_labware(
@@ -72,7 +77,7 @@ class v1_station_a_S9_bp_purebase(Station):
         ).wells()[0]
     
     @labware_loader(1, "_source_racks")
-    def loadSourceRacks(self):
+    def load_source_racks(self):
         self._source_racks = [
             self._ctx.load_labware(
                 'opentrons_24_tuberack_nest_1.5ml_screwcap', slot,
@@ -81,35 +86,35 @@ class v1_station_a_S9_bp_purebase(Station):
         ]
     
     @labware_loader(2, "_dest_plate")
-    def loadDestPlate(self):
+    def load_dest_plate(self):
         self._dest_plate = self._ctx.load_labware(
             'nest_96_wellplate_2ml_deep', '1', '96-deepwell sample plate'
         )
     
     @labware_loader(3, "_lys_buf")
-    def loadLysBuf(self):
+    def load_lys_buf(self):
         self._lys_buff = self._ctx.load_labware(
             'opentrons_6_tuberack_falcon_50ml_conical', '4',
             '50ml tuberack for lysis buffer + PK (tube A1)'
         ).wells()[0]
     
     @labware_loader(4, "_tipracks300")
-    def loadTipracks300(self):
+    def load_tipracks300(self):
         self._tipracks300 = [
             self._ctx.load_labware('opentrons_96_tiprack_300ul', slot, '200ul filter tiprack')
             for slot in ['8', '9', '11']
         ]
     
     @labware_loader(5, "_tipracks20")
-    def loadTipracks20(self):
+    def load_tipracks20(self):
         self._tipracks20 = [self._ctx.load_labware('opentrons_96_filtertiprack_20ul', '7', '20ul filter tiprack')]
     
     @instrument_loader(0, "_m20")
-    def loadM20(self):
+    def load_m20(self):
         self._m20 = self._ctx.load_instrument('p20_multi_gen2', 'left', tip_racks=self._tipracks20)
     
     @instrument_loader(1, "_p300")
-    def loadP300(self):
+    def load_p300(self):
         self._p300 = self._ctx.load_instrument('p300_single_gen2', 'right', tip_racks=self._tipracks300)
         self._p300.flow_rate.aspirate = self._default_aspirate
         self._p300.flow_rate.dispense = self._default_dispense
@@ -123,12 +128,12 @@ class v1_station_a_S9_bp_purebase(Station):
     def initlial_volume_lys(self) -> float:
         return self._num_samples * self._lysis_volume
     
-    def setupSamples(self):
+    def setup_samples(self):
         self._sources = list(islice(chain.from_iterable(rack.wells() for rack in self._source_racks), self._num_samples))
         self._dests_single = self._dest_plate.wells()[:self._num_samples]
         self._dests_multi = self._dest_plate.rows()[0][:self.num_rows]
     
-    def setupTipLog(self):
+    def setup_tip_log(self):
         self._tip_log = {'count': {}}
         tip_file_path = os.path.join(self._tip_log_folder_path, self._tip_log_filename)
         if self._tip_rack and not self._ctx.is_simulating():
@@ -146,7 +151,7 @@ class v1_station_a_S9_bp_purebase(Station):
         ))
         self._tip_log['max'] = {p: len(l) for p, l in self._tip_log['tips'].items()}
     
-    def setupLysTube(self):
+    def setup_lys_tube(self):
         self._lysis_tube = LysisTube(self._lys_buff.diameter / 2, self._lysis_cone_height)
         self._lysis_tube.height = self._lysis_headroom_height
         self._lysis_tube.fill(self.initlial_volume_lys)
@@ -162,16 +167,67 @@ class v1_station_a_S9_bp_purebase(Station):
         pip.pick_up_tip(self._tip_log['tips'][pip][self._tip_log['count'][pip]])
         self._tip_log['count'][pip] += 1
     
+    def transfer_sample(self, source, dest):
+        self.pickUp(self._p300)
+        self._p300.mix(self._mix_repeats, self._mix_volume, source.bottom(2))
+        self._p300.transfer(self._sample_volume, source.bottom(5), dest.bottom(5), air_gap=20, new_tip='never')
+        self._p300.air_gap(20)
+        self._p300.drop_tip()
+    
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx
-        self.loadLabware()
-        self.loadInstruments()
-        self.setupSamples()
-        self.setupTipLog()
-        self.setupLysTube()
+        self.load_labware()
+        self.load_instruments()
+        self.setup_samples()
+        self.setup_tip_log()
+        self.setup_lys_tube()
+        # transfer sample
+#     for s, d in zip(sources, dests_single):
+#         pick_up(p300)
+#         p300.mix(5, 150, s.bottom(2))
+#         p300.transfer(SAMPLE_VOLUME, s.bottom(5), d.bottom(5), air_gap=20,
+#                        new_tip='never')
+#         p300.air_gap(20)
+#         p300.drop_tip()
+# 
+#     # transfer lysis buffer + proteinase K and mix
+#     p300.flow_rate.aspirate = LYSIS_RATE_ASPIRATE
+#     p300.flow_rate.dispense = LYSIS_RATE_DISPENSE
+#     for s, d in zip(sources, dests_single):
+#         pick_up(p300)
+#         p300.transfer(LYSIS_VOLUME, h_track(lys_buff, LYSIS_VOLUME, ctx), d.bottom(5), air_gap=20,
+#                        mix_after=(10, 100), new_tip='never')
+#         p300.air_gap(20)
+#         p300.drop_tip()
+# 
+#     ctx.pause('Incubate sample plate (slot 4) at 55-57ËC for 20 minutes. \
+# Return to slot 4 when complete.')
+# 
+#     # transfer internal control
+#     for d in dests_multi:
+#         pick_up(m20)
+#         m20.transfer(10, internal_control, d.bottom(10), air_gap=5,
+#                      new_tip='never')
+#         m20.mix(5, 20, d.bottom(2))
+#         m20.air_gap(5)
+#         m20.drop_tip()
+# 
+#     ctx.comment('Move deepwell plate (slot 4) to Station B for RNA \
+# extraction.')
+# 
+#     # track final used tip
+#     if not ctx.is_simulating():
+#         if not os.path.isdir(folder_path):
+#             os.mkdir(folder_path)
+#         data = {
+#             'tips300': tip_log['count'][p300],
+#             'tips20': tip_log['count'][m20]
+#         }
+#         with open(tip_file_path, 'w') as outfile:
+#             json.dump(data, outfile)
 
 
-station_a = v1_station_a_S9_bp_purebase(num_samples=96)
+station_a = V1StationAS9BpPurebase(num_samples=96)
 metadata = station_a.metadata
 run = station_a.run
 
