@@ -6,7 +6,8 @@ import math
 import os
 import json
 import logging
-from typing import Optional, Any
+from typing import Optional, Tuple
+
 
 _metadata = {
     'protocolName': 'Version 1 S9 Station A BP Purebase',
@@ -21,8 +22,17 @@ class V1StationAS9BpPurebase(Station):
         self, num_samples: int = 96, samples_per_row: int = 8, sample_volume: float = 200, lysis_volume: float = 160, iec_volume: float = 20,
         default_aspirate: float = 100, default_dispense: float = 100, default_blow_out: float = 300,
         lysis_rate_aspirate: float = 100, lysis_rate_dispense: float = 100,
-        lysis_cone_height: float = 0, lysis_headroom_height: float = 5, air_gap_sample: float = 20,
+        lysis_cone_height: float = 16, lysis_headroom_height: float = 5, air_gap_sample: float = 20,
+        source_headroom_height: float = 8, source_position_top: float = 10,
+        dest_headroom_height: float = 5,
+        dest_multi_headroom_height: float = 2, air_gap_dest_multi: float = 5,
+        internal_control_idx_th: int = 48,
+        hover_height: float = -2,
+        max_speeds_a: float = 20,
         mix_repeats: int = 5, mix_volume: float = 150,
+        lys_mix_repeats: int = 10, lys_mix_volume: float = 100,
+        ic_mix_repeats: int = 5, ic_mix_volume: float = 20,
+        source_racks_slots: Tuple[str, ...] = ('2', '3', '5', '6'), tipracks300_slots: Tuple[str, ...] = ('8', '9', '11'),
         tip_rack: bool = False, tip_log_folder_path: str = './data/A', tip_log_filename: str = 'tip_log.json',
         metadata: dict = _metadata, logger: Optional[logging.getLoggerClass()] = None,
     ):
@@ -40,9 +50,22 @@ class V1StationAS9BpPurebase(Station):
         :param lysis_rate_dispense: P300 dispensation flow rate when dispensing lysis buffer in uL/s
         :param lysis_cone_height: height of he conic bottom of the lysis buffer tube in mm
         :param lysis_headroom_height: headroom always to keep from the bottom of the lysis buffer tube in mm
-        :param air_gap_sample: air gap for sample transfer
+        :param air_gap_sample: air gap for sample transfer in uL
+        :param source_headroom_height: headroom always to keep from the bottom of the source tube in mm
+        :param source_position_top: height from the top of the source tube in mm
+        :param dest_headroom_height: headroom always to keep from the bottom of the destination tube in mm
+        :param dest_multi_headroom_height: headroom always to keep from the bottom of the destination tube (multi) in mm
+        :param air_gap_dest_multi: air gap for destination tube (multi) in uL
+        :param internal_control_idx_th: internal control index threshold for choosing the strip 
+        :param hover_height: height from the top at which to hover (should be negative) in mm 
+        :param max_speeds_a: max speed for sample transfer
         :param mix_repeats: number of repetitions during mixing
-        :param mix_volume: volume aspirated for mixing
+        :param mix_volume: volume aspirated for mixing in uL
+        :param lys_mix_repeats: number of repetitions during mixing the lysis buffer
+        :param lys_mix_volume: volume aspirated for mixing the lysis buffer in uL
+        :param ic_mix_repeats: number of repetitions during mixing the internal control
+        :param ic_mix_volume: volume aspirated for mixing the internal control in uL
+        :param source_racks_slots: slots where source racks are installed
         :param tip_rack: If True, try and load previous tiprack log from the JSON file
         :param tip_log_folder_path: folder for the tip log JSON dump
         :param tip_log_filename: file name for the tip log JSON dump
@@ -63,8 +86,22 @@ class V1StationAS9BpPurebase(Station):
         self._lysis_cone_height = lysis_cone_height
         self._lysis_headroom_height = lysis_headroom_height
         self._air_gap_sample = air_gap_sample
+        self._source_headroom_height = source_headroom_height
+        self._source_position_top = source_position_top
+        self._internal_control_idx_th = internal_control_idx_th
+        self._dest_headroom_height = dest_headroom_height
+        self._dest_multi_headroom_height = dest_multi_headroom_height
+        self._air_gap_dest_multi = air_gap_dest_multi
+        self._hover_height = hover_height
+        self._max_speeds_a = max_speeds_a
         self._mix_repeats = mix_repeats
         self._mix_volume = mix_volume
+        self._lys_mix_repeats = lys_mix_repeats
+        self._lys_mix_volume = lys_mix_volume
+        self._ic_mix_repeats = ic_mix_repeats
+        self._ic_mix_volume = ic_mix_volume
+        self._source_racks_slots = source_racks_slots
+        self._tipracks300_slots = tipracks300_slots
         self._tip_log_folder_path = tip_log_folder_path
         self._tip_log_filename = tip_log_filename
         self.metadata = metadata
@@ -85,8 +122,8 @@ class V1StationAS9BpPurebase(Station):
         self._source_racks = [
             self._ctx.load_labware(
                 'opentrons_24_tuberack_nest_1.5ml_screwcap', slot,
-                'source tuberack ' + str(i+1)
-            ) for i, slot in enumerate(['2', '3', '5', '6'])
+                'source tuberack ' + str(i + 1)
+            ) for i, slot in enumerate(self._source_racks_slots)
         ]
     
     @labware_loader(2, "_dest_plate")
@@ -106,7 +143,7 @@ class V1StationAS9BpPurebase(Station):
     def load_tipracks300(self):
         self._tipracks300 = [
             self._ctx.load_labware('opentrons_96_tiprack_300ul', slot, '200ul filter tiprack')
-            for slot in ['8', '9', '11']
+            for slot in self._tipracks300_slots
         ]
     
     @labware_loader(5, "_tipracks20")
@@ -180,16 +217,16 @@ class V1StationAS9BpPurebase(Station):
         self.logger.debug("transferring from {} to {}".format(source, dest))
         self.pick_up(self._p300)
         
-        self._p300.move_to(source.top(10))
-        self._ctx.max_speeds['A'] = 20
+        self._p300.move_to(source.top(self._source_position_top))
+        self._ctx.max_speeds['A'] = self._max_speeds_a
         
-        self._p300.mix(self._mix_repeats, self._mix_volume, source.bottom(8))
-        self._p300.aspirate(self._sample_volume, source.bottom(8))        
+        self._p300.mix(self._mix_repeats, self._mix_volume, source.bottom(self._source_headroom_height))
+        self._p300.aspirate(self._sample_volume, source.bottom(self._source_headroom_height))        
         self._p300.air_gap(self._air_gap_sample)
         
         self._ctx.max_speeds['A'] = None
-        self._p300.dispense(20, dest.top(-2))
-        self._p300.dispense(self._sample_volume, dest.bottom(5))
+        self._p300.dispense(self._air_gap_sample, dest.top(self._hover_height))
+        self._p300.dispense(self._sample_volume, dest.bottom(self._dest_headroom_height))
         
         self._p300.drop_tip()
     
@@ -199,20 +236,21 @@ class V1StationAS9BpPurebase(Station):
         self._p300.transfer(
             self._lysis_volume,
             self._lys_buff.bottom(max(self._lysis_tube.extract(self._lysis_volume), self._lysis_headroom_height)),
-            dest.bottom(self._lysis_headroom_height), air_gap=self._air_gap_sample, mix_after=(10, 100), new_tip='never'
+            dest.bottom(self._lysis_headroom_height), air_gap=self._air_gap_sample,
+            mix_after=(self._lys_mix_repeats, self._lys_mix_volume), new_tip='never',
         )
         self._p300.air_gap(self._air_gap_sample)
         self._p300.drop_tip()
     
     def transfer_internal_control(self, idx: int, dest):
-        internal_control_idx = 0 if idx < 48 else 1
+        internal_control_idx = 0 if idx < self._internal_control_idx_th else 1
         self.logger.debug("transferring internal control #{} to {}".format(internal_control_idx, dest))
         internal_control = self._internal_control_strips[internal_control_idx]
         self.pick_up(self._m20)
         # no air gap to use 1 transfer only avoiding drop during multiple transfers
         self._m20.transfer(self._iec_volume, internal_control, dest.top(), new_tip='never')
-        self._m20.mix(5, 20, dest.bottom(2))
-        self._m20.air_gap(5)
+        self._m20.mix(self._ic_mix_repeats, self._ic_mix_volume, dest.bottom(self._dest_multi_headroom_height))
+        self._m20.air_gap(self._air_gap_dest_multi)
         self._m20.drop_tip()
     
     def track_tip(self):
@@ -254,7 +292,7 @@ class V1StationAS9BpPurebase(Station):
         self.track_tip()
 
 
-station_a = V1StationAS9BpPurebase(num_samples=96)
+station_a = V1StationAS9BpPurebase()
 metadata = station_a.metadata
 run = station_a.run
 
