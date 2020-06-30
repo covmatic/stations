@@ -21,9 +21,9 @@ class V1StationAS9BpPurebase(Station):
         self, num_samples: int, samples_per_row: int = 8, sample_volume: float = 200, lysis_volume: float = 160,
         default_aspirate: float = 100, default_dispense: float = 100, default_blow_out: float = 300,
         lysis_rate_aspirate: float = 100, lysis_rate_dispense: float = 100,
-        lysis_cone_height: float = 0, lysis_headroom_height: float = 5,
+        lysis_cone_height: float = 0, lysis_headroom_height: float = 5, air_gap_sample: float = 20,
         mix_repeats: int = 5, mix_volume: float = 150,
-        tip_rack: bool = False, tip_log_folder_path: str = '/data/A', tip_log_filename: str = '/tip_log.json',
+        tip_rack: bool = False, tip_log_folder_path: str = './data/A', tip_log_filename: str = 'tip_log.json',
         metadata: dict = _metadata, logger: Optional[logging.getLoggerClass()] = None,
     ):
         """ Build a :py:class:`.V1StationAS9BpPurebase`.
@@ -39,6 +39,7 @@ class V1StationAS9BpPurebase(Station):
         :param lysis_rate_dispense: P300 dispensation flow rate when dispensing lysis buffer in uL/s
         :param lysis_cone_height: height of he conic bottom of the lysis buffer tube in mm
         :param lysis_headroom_height: headroom always to keep from the bottom of the lysis buffer tube in mm
+        :param air_gap_sample: air gap for sample transfer
         :param mix_repeats: number of repetitions during mixing
         :param mix_volume: volume aspirated for mixing
         :param tip_rack: If True, try and load previous tiprack log from the JSON file
@@ -59,6 +60,7 @@ class V1StationAS9BpPurebase(Station):
         self._lysis_rate_dispense = lysis_rate_dispense
         self._lysis_cone_height = lysis_cone_height
         self._lysis_headroom_height = lysis_headroom_height
+        self._air_gap_sample = air_gap_sample
         self._mix_repeats = mix_repeats
         self._mix_volume = mix_volume
         self._tip_log_folder_path = tip_log_folder_path
@@ -133,16 +135,21 @@ class V1StationAS9BpPurebase(Station):
         self._dests_single = self._dest_plate.wells()[:self._num_samples]
         self._dests_multi = self._dest_plate.rows()[0][:self.num_rows]
     
+    @property
+    def _tip_log_filepath(self) -> str:
+        return os.path.join(self._tip_log_folder_path, self._tip_log_filename)
+    
     def setup_tip_log(self):
         self._tip_log = {'count': {}}
-        tip_file_path = os.path.join(self._tip_log_folder_path, self._tip_log_filename)
         if self._tip_rack and not self._ctx.is_simulating():
-            if os.path.isfile(tip_file_path):
-                with open(tip_file_path) as json_file:
+            self.logger.debug("logging tip info in {}".format(self._tip_log_filepath))
+            if os.path.isfile(self._tip_log_filepath):
+                with open(self._tip_log_filepath) as json_file:
                     data: dict = json.load(json_file)
                     self._tip_log['count'][self._p300] = data.get('tips300', 0)
                     self._tip_log['count'][self._m20] = data.get('tips20', 0)
         else:
+            self.logger.debug("not using tip log file")
             self._tip_log['count'] = {self._p300: 0, self._m20: 0}
         
         self._tip_log['tips'] = dict(zip(
@@ -158,7 +165,7 @@ class V1StationAS9BpPurebase(Station):
         self.logger.info("number of samples: {}. Lysis buffer expected volume: {} uL".format(self._num_samples, math.ceil(self._lysis_tube.volume)))
         self.logger.debug("lysis buffer expected height: {:.2f} mm".format(self._lysis_tube.height))
     
-    def pick_up(self, pip: Any):
+    def pick_up(self, pip):
         if self._tip_log['count'][pip] == self._tip_log['max'][pip]:
             # If empty, wait for refill
             self._ctx.pause('Replace {:.0f} uL tipracks before resuming.'.format(pip.max_volume))
@@ -168,11 +175,47 @@ class V1StationAS9BpPurebase(Station):
         self._tip_log['count'][pip] += 1
     
     def transfer_sample(self, source, dest):
-        self.pickUp(self._p300)
+        self.logger.debug("transferring from {} to {}".format(source, dest))
+        self.pick_up(self._p300)
         self._p300.mix(self._mix_repeats, self._mix_volume, source.bottom(2))
-        self._p300.transfer(self._sample_volume, source.bottom(5), dest.bottom(5), air_gap=20, new_tip='never')
-        self._p300.air_gap(20)
+        self._p300.transfer(
+            self._sample_volume,
+            source.bottom(self._lysis_headroom_height), dest.bottom(self._lysis_headroom_height),
+            air_gap=self._air_gap_sample, new_tip='never'
+        )
+        self._p300.air_gap(self._air_gap_sample)
         self._p300.drop_tip()
+    
+    def transfer_lys(self, dest):
+        self.logger.debug("transferring lysis to {}".format(dest))
+        self.pick_up(self._p300)
+        self._p300.transfer(
+            self._lysis_volume,
+            self._lys_buff.bottom(max(self._lysis_tube.extract(self._lysis_volume), self._lysis_headroom_height)),
+            dest.bottom(self._lysis_headroom_height), air_gap=self._air_gap_sample, mix_after=(10, 100), new_tip='never'
+        )
+        self._p300.air_gap(self._air_gap_sample)
+        self._p300.drop_tip()
+    
+    def transfer_internal_control(self, dest):
+        self.logger.debug("transferring internal control to {}".format(dest))
+        self.pick_up(self._m20)
+        self._m20.transfer(10, self._internal_control, dest.bottom(10), air_gap=5, new_tip='never')
+        self._m20.mix(5, 20, dest.bottom(2))
+        self._m20.air_gap(5)
+        self._m20.drop_tip()
+    
+    def track_tip(self):
+        if not self._ctx.is_simulating():
+            self.logger.debug("dumping logging tip info in {}".format(self._tip_log_filepath))
+            if not os.path.isdir(self._tip_log_folder_path):
+                os.mkdir(self._tip_log_folder_path)
+            data = {
+                'tips300': self._tip_log['count'][self._p300],
+                'tips20': self._tip_log['count'][self._m20]
+            }
+            with open(self._tip_log_filepath, 'w') as outfile:
+                json.dump(data, outfile)
     
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx
@@ -181,50 +224,23 @@ class V1StationAS9BpPurebase(Station):
         self.setup_samples()
         self.setup_tip_log()
         self.setup_lys_tube()
-        # transfer sample
-#     for s, d in zip(sources, dests_single):
-#         pick_up(p300)
-#         p300.mix(5, 150, s.bottom(2))
-#         p300.transfer(SAMPLE_VOLUME, s.bottom(5), d.bottom(5), air_gap=20,
-#                        new_tip='never')
-#         p300.air_gap(20)
-#         p300.drop_tip()
-# 
-#     # transfer lysis buffer + proteinase K and mix
-#     p300.flow_rate.aspirate = LYSIS_RATE_ASPIRATE
-#     p300.flow_rate.dispense = LYSIS_RATE_DISPENSE
-#     for s, d in zip(sources, dests_single):
-#         pick_up(p300)
-#         p300.transfer(LYSIS_VOLUME, h_track(lys_buff, LYSIS_VOLUME, ctx), d.bottom(5), air_gap=20,
-#                        mix_after=(10, 100), new_tip='never')
-#         p300.air_gap(20)
-#         p300.drop_tip()
-# 
-#     ctx.pause('Incubate sample plate (slot 4) at 55-57ËC for 20 minutes. \
-# Return to slot 4 when complete.')
-# 
-#     # transfer internal control
-#     for d in dests_multi:
-#         pick_up(m20)
-#         m20.transfer(10, internal_control, d.bottom(10), air_gap=5,
-#                      new_tip='never')
-#         m20.mix(5, 20, d.bottom(2))
-#         m20.air_gap(5)
-#         m20.drop_tip()
-# 
-#     ctx.comment('Move deepwell plate (slot 4) to Station B for RNA \
-# extraction.')
-# 
-#     # track final used tip
-#     if not ctx.is_simulating():
-#         if not os.path.isdir(folder_path):
-#             os.mkdir(folder_path)
-#         data = {
-#             'tips300': tip_log['count'][p300],
-#             'tips20': tip_log['count'][m20]
-#         }
-#         with open(tip_file_path, 'w') as outfile:
-#             json.dump(data, outfile)
+        
+        for s, d in zip(self._sources, self._dests_single):
+            self.transfer_sample(s, d)
+        
+        self._p300.flow_rate.aspirate = self._lysis_rate_aspirate
+        self._p300.flow_rate.dispense = self._lysis_rate_dispense
+        for d in self._dests_single:
+            self.transfer_lys(d)
+        
+        self.logger.info('incubate sample plate (slot 4) at 55-57°C for 20 minutes. Return to slot 4 when complete.')
+        self._ctx.pause('Pausing')
+        
+        for d in self._dests_multi:
+            self.transfer_internal_control(d)
+        
+        self.logger.info('move deepwell plate (slot 4) to Station B for RNA extraction.')
+        self.track_tip()
 
 
 station_a = V1StationAS9BpPurebase(num_samples=96)
