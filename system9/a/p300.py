@@ -1,5 +1,5 @@
-from .station import Station, labware_loader, instrument_loader
-from .geometry import LysisTube
+from ..station import Station, labware_loader, instrument_loader
+from ..geometry import LysisTube
 from opentrons.protocol_api import ProtocolContext
 from itertools import chain, islice
 import math
@@ -17,7 +17,7 @@ _metadata = {
 }
 
 
-class V1StationAS9BpPurebase(Station):
+class StationAP300(Station):
     def __init__(
         self, num_samples: int = 96, samples_per_row: int = 8, sample_volume: float = 200, lysis_volume: float = 160, iec_volume: float = 20,
         default_aspirate: float = 100, default_dispense: float = 100, default_blow_out: float = 300,
@@ -292,13 +292,11 @@ class V1StationAS9BpPurebase(Station):
         self.track_tip()
 
 
-station_a = V1StationAS9BpPurebase()
+station_a = StationAP300()
 metadata = station_a.metadata
 run = station_a.run
 
 
 if __name__ == "__main__":
-    from opentrons import simulate
-    station_a.metadata["apiLevel"] = "2.3"
-    
-    run(simulate.get_protocol_api(station_a.apiLevel))
+    from opentrons import simulate    
+    run(simulate.get_protocol_api("2.3"))
