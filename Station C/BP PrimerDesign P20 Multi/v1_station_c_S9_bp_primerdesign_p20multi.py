@@ -20,6 +20,7 @@ MMIX_RATE_ASPIRATE = 100
 def run(ctx: protocol_api.ProtocolContext):
     global MM_TYPE
 
+	ctx.comment("Station C protocol for {} samples".format(NUM_SAMPLES))
     # check source (elution) labware type
     source_plate = ctx.load_labware(
         'opentrons_96_aluminumblock_nest_wellplate_100ul', '1',
@@ -46,6 +47,7 @@ def run(ctx: protocol_api.ProtocolContext):
 
     # setup up sample sources and destinations
     num_cols = math.ceil(NUM_SAMPLES/8)
+	num_samples_by_eight = num_cols * 8
     sources = source_plate.rows()[0][:num_cols]
     sample_dests = pcr_plate.rows()[0][:num_cols]
 
@@ -104,7 +106,8 @@ resuming.')
         p300.flow_rate.aspirate = MMIX_RATE_ASPIRATE
          
         for i, (tube, vol) in enumerate(mm_dict['components'].items()):
-            comp_vol = vol*(NUM_SAMPLES)*vol_overage
+            comp_vol = vol*(num_samples_by_eight)*vol_overage
+            ctx.comment("--> {}: expected volume {} ul".format(tube, comp_vol))
             pick_up(p300)
             num_trans = math.ceil(comp_vol/160)
             vol_per_trans = comp_vol/num_trans
@@ -121,18 +124,24 @@ resuming.')
                 p300.touch_tip(mm_tube)
             if i < len(mm_dict['components'].items()) - 1:  # only keep tip if last component and p300 in use
                 p300.drop_tip()
-        mm_total_vol = mm_dict['volume']*(NUM_SAMPLES)*vol_overage
+        mm_total_vol = mm_dict['volume']*(num_samples_by_eight)*vol_overage
         if not p300.hw_pipette['has_tip']:  # pickup tip with P300 if necessary for mixing
             pick_up(p300)
         mix_vol = mm_total_vol / 2 if mm_total_vol / 2 <= 200 else 200  # mix volume is 1/2 MM total, maxing at 200µl
-        mix_loc = mm_tube.bottom(20) if NUM_SAMPLES > 48 else mm_tube.bottom(5)
+        mix_loc = mm_tube.bottom(20) if num_samples_by_eight > 48 else mm_tube.bottom(5)
         p300.mix(7, mix_vol, mix_loc)
         p300.blow_out(mm_tube.top())
         p300.touch_tip()
 
     # transfer mastermix to strips
     vol_per_strip_well = num_cols*mm_dict['volume']*1.1
+	
+	ctx.comment("Transferring {} ul of mastermix to each tube strip.".format(vol_per_strip_well))
+    
     mm_strip = mm_strips.columns()[0]
+	
+	ctx.comment("Total mastermix expected for {} well: {} ul.".format(len(mm_strip), vol_per_strip_well*len(mm_strip)))
+   
     if not p300.hw_pipette['has_tip']:
         pick_up(p300)
     for well in mm_strip:
@@ -150,10 +159,10 @@ resuming.')
     sample_vol = 20 - mm_vol
     for s, d in zip(sources, sample_dests):
         pick_up(m20)
-        m20.transfer(sample_vol, s.bottom(2), d.bottom(2), new_tip='never')
-        m20.mix(1, 10, d.bottom(2))
+        m20.transfer(sample_vol, s.bottom(2), d.bottom(2), new_tip='never', air_gap=5)
+        m20.mix(3, 10, d.bottom(2))
         m20.blow_out(d.top(-2))
-        m20.aspirate(5, d.top(2))  # suck in any remaining droplets on way to trash
+        m20.air_gap(5)
         m20.drop_tip()
 
     # track final used tip
