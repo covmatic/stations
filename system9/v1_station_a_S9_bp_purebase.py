@@ -18,7 +18,7 @@ _metadata = {
 
 class V1StationAS9BpPurebase(Station):
     def __init__(
-        self, num_samples: int, samples_per_row: int = 8, sample_volume: float = 200, lysis_volume: float = 160,
+        self, num_samples: int = 96, samples_per_row: int = 8, sample_volume: float = 200, lysis_volume: float = 160, iec_volume: float = 20,
         default_aspirate: float = 100, default_dispense: float = 100, default_blow_out: float = 300,
         lysis_rate_aspirate: float = 100, lysis_rate_dispense: float = 100,
         lysis_cone_height: float = 0, lysis_headroom_height: float = 5, air_gap_sample: float = 20,
@@ -32,6 +32,7 @@ class V1StationAS9BpPurebase(Station):
         :param samples_per_row: The number of samples in a row of the destination plate
         :param sample_volume: The volume of a sample in uL
         :param lysis_volume: The volume of lysis buffer to use per sample in uL
+        :param iec_volume: The volume of lysis buffer to use per sample in uL
         :param default_aspirate: P300 default aspiration flow rate in uL/s
         :param default_dispense: P300 default dispensation flow rate in uL/s
         :param default_blow_out: P300 default blow out flow rate in uL/s
@@ -52,6 +53,7 @@ class V1StationAS9BpPurebase(Station):
         self._samples_per_row = samples_per_row
         self._sample_volume = sample_volume
         self._lysis_volume = lysis_volume
+        self._iec_volume = iec_volume
         self._tip_rack = tip_rack
         self._default_aspirate = default_aspirate
         self._default_dispense = default_dispense
@@ -69,14 +71,14 @@ class V1StationAS9BpPurebase(Station):
         self._logger = logger
         self._ctx = None
     
-    @labware_loader(0, "_tempdeck", "_internal_control")
+    @labware_loader(0, "_tempdeck", "_internal_control_strips")
     def load_tempdeck(self):
         self._tempdeck = self._ctx.load_module('Temperature Module Gen2', '10')
         self._tempdeck.set_temperature(4)
-        self._internal_control = self._tempdeck.load_labware(
+        self._internal_control_strips = self._tempdeck.load_labware(
             'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
             'chilled tubeblock for internal control (strip 1)'
-        ).wells()[0]
+        ).wells()
     
     @labware_loader(1, "_source_racks")
     def load_source_racks(self):
@@ -177,13 +179,18 @@ class V1StationAS9BpPurebase(Station):
     def transfer_sample(self, source, dest):
         self.logger.debug("transferring from {} to {}".format(source, dest))
         self.pick_up(self._p300)
-        self._p300.mix(self._mix_repeats, self._mix_volume, source.bottom(2))
-        self._p300.transfer(
-            self._sample_volume,
-            source.bottom(self._lysis_headroom_height), dest.bottom(self._lysis_headroom_height),
-            air_gap=self._air_gap_sample, new_tip='never'
-        )
+        
+        self._p300.move_to(source.top(10))
+        self._ctx.max_speeds['A'] = 20
+        
+        self._p300.mix(self._mix_repeats, self._mix_volume, source.bottom(8))
+        self._p300.aspirate(self._sample_volume, source.bottom(8))        
         self._p300.air_gap(self._air_gap_sample)
+        
+        self._ctx.max_speeds['A'] = None
+        self._p300.dispense(20, dest.top(-2))
+        self._p300.dispense(self._sample_volume, dest.bottom(5))
+        
         self._p300.drop_tip()
     
     def transfer_lys(self, dest):
@@ -197,10 +204,13 @@ class V1StationAS9BpPurebase(Station):
         self._p300.air_gap(self._air_gap_sample)
         self._p300.drop_tip()
     
-    def transfer_internal_control(self, dest):
-        self.logger.debug("transferring internal control to {}".format(dest))
+    def transfer_internal_control(self, idx: int, dest):
+        internal_control_idx = 0 if idx < 48 else 1
+        self.logger.debug("transferring internal control #{} to {}".format(internal_control_idx, dest))
+        internal_control = self._internal_control_strips[internal_control_idx]
         self.pick_up(self._m20)
-        self._m20.transfer(10, self._internal_control, dest.bottom(10), air_gap=5, new_tip='never')
+        # no air gap to use 1 transfer only avoiding drop during multiple transfers
+        self._m20.transfer(self._iec_volume, internal_control, dest.top(), new_tip='never')
         self._m20.mix(5, 20, dest.bottom(2))
         self._m20.air_gap(5)
         self._m20.drop_tip()
@@ -219,6 +229,7 @@ class V1StationAS9BpPurebase(Station):
     
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx
+        self.logger.info("station A protocol for BPGenomics samples.")
         self.load_labware()
         self.load_instruments()
         self.setup_samples()
@@ -236,8 +247,8 @@ class V1StationAS9BpPurebase(Station):
         self.logger.info('incubate sample plate (slot 4) at 55-57°C for 20 minutes. Return to slot 4 when complete.')
         self._ctx.pause('Pausing')
         
-        for d in self._dests_multi:
-            self.transfer_internal_control(d)
+        for i, d in enumerate(self._dests_multi):
+            self.transfer_internal_control(i, d)
         
         self.logger.info('move deepwell plate (slot 4) to Station B for RNA extraction.')
         self.track_tip()
