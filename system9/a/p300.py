@@ -13,64 +13,83 @@ _metadata = {
     'protocolName': 'Version 1 S9 Station A BP Purebase',
     'author': 'Nick <protocols@opentrons.com>',
     'source': 'Custom Protocol Request',
-    'apiLevel': '2.0'
+    'apiLevel': '2.3'
 }
 
 
 class StationAP300(Station):
     def __init__(
-        self, num_samples: int = 96, samples_per_row: int = 8, sample_volume: float = 200, lysis_volume: float = 160, iec_volume: float = 20,
-        default_aspirate: float = 100, default_dispense: float = 100, default_blow_out: float = 300,
-        lysis_rate_aspirate: float = 100, lysis_rate_dispense: float = 100,
-        lysis_cone_height: float = 16, lysis_headroom_height: float = 5, air_gap_sample: float = 20,
-        source_headroom_height: float = 8, source_position_top: float = 10,
+        self,
+        air_gap_dest_multi: float = 5,
+        air_gap_sample: float = 20,
+        default_aspirate: float = 100,
+        default_blow_out: float = 300,
+        default_dispense: float = 100,
         dest_headroom_height: float = 5,
-        dest_multi_headroom_height: float = 2, air_gap_dest_multi: float = 5,
-        internal_control_idx_th: int = 48,
+        dest_multi_headroom_height: float = 2,
         hover_height: float = -2,
+        ic_mix_repeats: int = 5,
+        ic_mix_volume: float = 20,
+        iec_volume: float = 20,
+        internal_control_idx_th: int = 48,
+        logger: Optional[logging.getLoggerClass()] = None,
+        lysis_cone_height: float = 16,
+        lysis_headroom_height: float = 5,
+        lysis_rate_aspirate: float = 100,
+        lysis_rate_dispense: float = 100,
+        lysis_volume: float = 160,
+        lys_mix_repeats: int = 10,
+        lys_mix_volume: float = 100,
         max_speeds_a: float = 20,
-        mix_repeats: int = 5, mix_volume: float = 150,
-        lys_mix_repeats: int = 10, lys_mix_volume: float = 100,
-        ic_mix_repeats: int = 5, ic_mix_volume: float = 20,
-        source_racks_slots: Tuple[str, ...] = ('2', '3', '5', '6'), tipracks300_slots: Tuple[str, ...] = ('8', '9', '11'),
-        tip_rack: bool = False, tip_log_folder_path: str = './data/A', tip_log_filename: str = 'tip_log.json',
-        metadata: dict = _metadata, logger: Optional[logging.getLoggerClass()] = None,
+        metadata: dict = _metadata,
+        mix_repeats: int = 5,
+        mix_volume: float = 150,
+        num_samples: int = 96,
+        samples_per_row: int = 8,
+        sample_volume: float = 200,
+        source_headroom_height: float = 8,
+        source_position_top: float = 10,
+        source_racks_slots: Tuple[str, ...] = ('2', '3', '5', '6'),
+        tip_log_filename: str = 'tip_log.json',
+        tip_log_folder_path: str = './data/A',
+        tip_rack: bool = False,
+        tipracks300_slots: Tuple[str, ...] = ('8', '9', '11'),
     ):
         """ Build a :py:class:`.V1StationAS9BpPurebase`.
 
+        :param air_gap_dest_multi: air gap for destination tube (multi) in uL
+        :param air_gap_sample: air gap for sample transfer in uL
+        :param default_aspirate: P300 default aspiration flow rate in uL/s
+        :param default_blow_out: P300 default blow out flow rate in uL/s
+        :param default_dispense: P300 default dispensation flow rate in uL/s
+        :param dest_headroom_height: headroom always to keep from the bottom of the destination tube in mm
+        :param dest_multi_headroom_height: headroom always to keep from the bottom of the destination tube (multi) in mm
+        :param hover_height: height from the top at which to hover (should be negative) in mm 
+        :param ic_mix_repeats: number of repetitions during mixing the internal control
+        :param ic_mix_volume: volume aspirated for mixing the internal control in uL
+        :param iec_volume: The volume of lysis buffer to use per sample in uL
+        :param internal_control_idx_th: internal control index threshold for choosing the strip 
+        :param logger: logger object. If not specified, the default logger is used that logs through the ProtocolContext comment method
+        :param lysis_cone_height: height of he conic bottom of the lysis buffer tube in mm
+        :param lysis_headroom_height: headroom always to keep from the bottom of the lysis buffer tube in mm
+        :param lysis_rate_aspirate: P300 aspiration flow rate when aspirating lysis buffer in uL/s
+        :param lysis_rate_dispense: P300 dispensation flow rate when dispensing lysis buffer in uL/s
+        :param lysis_volume: The volume of lysis buffer to use per sample in uL
+        :param lys_mix_repeats: number of repetitions during mixing the lysis buffer
+        :param lys_mix_volume: volume aspirated for mixing the lysis buffer in uL
+        :param mix_repeats: number of repetitions during mixing
+        :param mix_volume: volume aspirated for mixing in uL
+        :param max_speeds_a: max speed for sample transfer
+        :param metadata: protocol metadata
         :param num_samples: The number of samples that will be loaded on the station A
         :param samples_per_row: The number of samples in a row of the destination plate
         :param sample_volume: The volume of a sample in uL
-        :param lysis_volume: The volume of lysis buffer to use per sample in uL
-        :param iec_volume: The volume of lysis buffer to use per sample in uL
-        :param default_aspirate: P300 default aspiration flow rate in uL/s
-        :param default_dispense: P300 default dispensation flow rate in uL/s
-        :param default_blow_out: P300 default blow out flow rate in uL/s
-        :param lysis_rate_aspirate: P300 aspiration flow rate when aspirating lysis buffer in uL/s
-        :param lysis_rate_dispense: P300 dispensation flow rate when dispensing lysis buffer in uL/s
-        :param lysis_cone_height: height of he conic bottom of the lysis buffer tube in mm
-        :param lysis_headroom_height: headroom always to keep from the bottom of the lysis buffer tube in mm
-        :param air_gap_sample: air gap for sample transfer in uL
         :param source_headroom_height: headroom always to keep from the bottom of the source tube in mm
         :param source_position_top: height from the top of the source tube in mm
-        :param dest_headroom_height: headroom always to keep from the bottom of the destination tube in mm
-        :param dest_multi_headroom_height: headroom always to keep from the bottom of the destination tube (multi) in mm
-        :param air_gap_dest_multi: air gap for destination tube (multi) in uL
-        :param internal_control_idx_th: internal control index threshold for choosing the strip 
-        :param hover_height: height from the top at which to hover (should be negative) in mm 
-        :param max_speeds_a: max speed for sample transfer
-        :param mix_repeats: number of repetitions during mixing
-        :param mix_volume: volume aspirated for mixing in uL
-        :param lys_mix_repeats: number of repetitions during mixing the lysis buffer
-        :param lys_mix_volume: volume aspirated for mixing the lysis buffer in uL
-        :param ic_mix_repeats: number of repetitions during mixing the internal control
-        :param ic_mix_volume: volume aspirated for mixing the internal control in uL
         :param source_racks_slots: slots where source racks are installed
-        :param tip_rack: If True, try and load previous tiprack log from the JSON file
-        :param tip_log_folder_path: folder for the tip log JSON dump
         :param tip_log_filename: file name for the tip log JSON dump
-        :param metadata: protocol metadata
-        :param logger: logger object. If not specified, the default logger is used that logs through the ProtocolContext comment method
+        :param tip_log_folder_path: folder for the tip log JSON dump
+        :param tip_rack: If True, try and load previous tiprack log from the JSON file
         """
         self._num_samples = num_samples
         self._samples_per_row = samples_per_row
@@ -299,4 +318,4 @@ run = station_a.run
 
 if __name__ == "__main__":
     from opentrons import simulate    
-    run(simulate.get_protocol_api("2.3"))
+    run(simulate.get_protocol_api(metadata["apiLevel"]))
