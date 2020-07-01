@@ -101,7 +101,8 @@ resuming.')
     }
 
     if PREPARE_MASTERMIX:
-        vol_overage = 1.2
+        ctx.comment("Preparing mastermix for {} samples.".format(num_samples_by_eight))
+        vol_overage = 1.1
 
         p300.flow_rate.aspirate = MMIX_RATE_ASPIRATE
          
@@ -151,7 +152,7 @@ resuming.')
     # transfer mastermix to plate
     mm_vol = mm_dict['volume']
     pick_up(m20)
-    m20.transfer(mm_vol, mm_strip[0].bottom(1), sample_dests,
+    m20.transfer(mm_vol, mm_strip[0].bottom(0.5), sample_dests,
                  new_tip='never')
     m20.drop_tip()
 
