@@ -12,7 +12,7 @@ metadata = {
 }
 
 NUM_SAMPLES = 16  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
-PREPARE_MASTERMIX = True
+PREPARE_MASTERMIX = False
 TIP_TRACK = False
 
 MMIX_RATE_ASPIRATE = 100
@@ -20,7 +20,7 @@ MMIX_RATE_ASPIRATE = 100
 def run(ctx: protocol_api.ProtocolContext):
     global MM_TYPE
 
-	ctx.comment("Station C protocol for {} samples".format(NUM_SAMPLES))
+    ctx.comment("Station C protocol for {} samples".format(NUM_SAMPLES))
     # check source (elution) labware type
     source_plate = ctx.load_labware(
         'opentrons_96_aluminumblock_nest_wellplate_100ul', '1',
@@ -47,7 +47,7 @@ def run(ctx: protocol_api.ProtocolContext):
 
     # setup up sample sources and destinations
     num_cols = math.ceil(NUM_SAMPLES/8)
-	num_samples_by_eight = num_cols * 8
+    num_samples_by_eight = num_cols * 8
     sources = source_plate.rows()[0][:num_cols]
     sample_dests = pcr_plate.rows()[0][:num_cols]
 
@@ -133,16 +133,16 @@ resuming.')
         p300.mix(7, mix_vol, mix_loc)
         p300.blow_out(mm_tube.top())
         p300.touch_tip()
+    else:
+        ctx.comment("Expecting already prepared mastermix in {}.".format(mm_tube))
 
     # transfer mastermix to strips
     vol_per_strip_well = num_cols*mm_dict['volume']*1.1
-	
-	ctx.comment("Transferring {} ul of mastermix to each tube strip.".format(vol_per_strip_well))
-    
     mm_strip = mm_strips.columns()[0]
 	
-	ctx.comment("Total mastermix expected for {} well: {} ul.".format(len(mm_strip), vol_per_strip_well*len(mm_strip)))
-   
+    ctx.comment("Total mastermix expected: {:.2f} ul.".format(vol_per_strip_well*len(mm_strip)))
+    ctx.comment("Transferring {:.2f} ul of mastermix to each tube strip.".format(vol_per_strip_well))
+    
     if not p300.hw_pipette['has_tip']:
         pick_up(p300)
     for well in mm_strip:
