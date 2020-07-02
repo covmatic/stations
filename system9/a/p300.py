@@ -5,7 +5,7 @@ class StationAP300(StationA):
     _protocol_description: str = "station A protocol for BPGenomics samples."
 
 
-station_a = StationAP300()
+station_a = StationAP300(num_samples=2)
 metadata = station_a.metadata
 run = station_a.run
 
