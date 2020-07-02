@@ -137,11 +137,13 @@ resuming.')
         ctx.comment("Expecting already prepared mastermix in {}.".format(mm_tube))
 
     # transfer mastermix to strips
-    vol_per_strip_well = num_cols*mm_dict['volume']*1.1
+    vol_per_strip_well = num_cols*mm_dict['volume']*1.05
     mm_strip = mm_strips.columns()[0]
 	
     ctx.comment("Total mastermix expected: {:.2f} ul.".format(vol_per_strip_well*len(mm_strip)))
     ctx.comment("Transferring {:.2f} ul of mastermix to each tube strip.".format(vol_per_strip_well))
+    
+    p300.flow_rate.aspirate = MMIX_RATE_ASPIRATE
     
     if not p300.hw_pipette['has_tip']:
         pick_up(p300)
@@ -152,11 +154,15 @@ resuming.')
     # transfer mastermix to plate
     mm_vol = mm_dict['volume']
     pick_up(m20)
-    m20.transfer(mm_vol, mm_strip[0].bottom(0.5), sample_dests,
+    m20.transfer(mm_vol, mm_strip[0].bottom(2), sample_dests,
                  new_tip='never')
     m20.drop_tip()
 
     # transfer samples to corresponding locations
+    # Please: do not go too deep with source rack 
+    #         to avoid aspirating the dirty on the bottom;
+    #         do not go too deep with destination rack
+    #         to avoid tip not mixing.
     sample_vol = 20 - mm_vol
     for s, d in zip(sources, sample_dests):
         pick_up(m20)
