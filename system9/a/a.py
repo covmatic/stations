@@ -29,6 +29,8 @@ class StationA(Station):
         dest_headroom_height: float = 5,
         dest_multi_headroom_height: float = 2,
         hover_height: float = -2,
+        ic_capacity: float = 200,
+        ic_headroom: float = 1.1,
         ic_mix_repeats: int = 5,
         ic_mix_volume: float = 20,
         iec_volume: float = 20,
@@ -49,7 +51,7 @@ class StationA(Station):
         mix_repeats: int = 5,
         mix_volume: float = 150,
         num_samples: int = 96,
-        samples_per_row: int = 8,
+        samples_per_col: int = 8,
         sample_volume: float = 200,
         source_headroom_height: float = 8,
         source_position_top: float = 10,
@@ -72,7 +74,9 @@ class StationA(Station):
         :param default_dispense: P300 default dispensation flow rate in uL/s
         :param dest_headroom_height: headroom always to keep from the bottom of the destination tube in mm
         :param dest_multi_headroom_height: headroom always to keep from the bottom of the destination tube (multi) in mm
-        :param hover_height: height from the top at which to hover (should be negative) in mm 
+        :param hover_height: height from the top at which to hover (should be negative) in mm
+        :param ic_capacity: capacity of the internal control tube
+        :param ic_headroom: headroom for the internal control tube (multiplier)
         :param ic_mix_repeats: number of repetitions during mixing the internal control
         :param ic_mix_volume: volume aspirated for mixing the internal control in uL
         :param iec_volume: The volume of lysis buffer to use per sample in uL
@@ -93,7 +97,7 @@ class StationA(Station):
         :param max_speeds_a: max speed for sample transfer
         :param metadata: protocol metadata
         :param num_samples: The number of samples that will be loaded on the station A
-        :param samples_per_row: The number of samples in a row of the destination plate
+        :param samples_per_col: The number of samples in a column of the destination plate
         :param sample_volume: The volume of a sample in uL
         :param source_headroom_height: headroom always to keep from the bottom of the source tube in mm
         :param source_position_top: height from the top of the source tube in mm
@@ -106,13 +110,15 @@ class StationA(Station):
         :param tip_rack: If True, try and load previous tiprack log from the JSON file
         :param jupyter: Specify whether the protocol is run on Jupyter (or Python) instead of the robot
         """
+        self._ic_capacity = ic_capacity
+        self._ic_headroom = ic_headroom
         self._main_pipette = main_pipette
         self._main_tiprack = main_tiprack
         self._main_tiprack_label = main_tiprack_label
         self._source_racks_definition_filepath = source_racks_definition_filepath
         self._tempdeck_temp = tempdeck_temp
         self._num_samples = num_samples
-        self._samples_per_row = samples_per_row
+        self._samples_per_col = samples_per_col
         self._sample_volume = sample_volume
         self._lysis_volume = lysis_volume
         self._iec_volume = iec_volume
@@ -156,7 +162,8 @@ class StationA(Station):
         self._internal_control_strips = self._tempdeck.load_labware(
             'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
             'chilled tubeblock for internal control (strip 1)'
-        ).wells()
+        ).rows()[0][:self.num_ic_strips]
+        self.logger.info("using {} internal control strips with {} uL each".format(self.num_ic_strips, self.cols_per_strip * self._iec_volume * self._ic_headroom))
     
     def _load_source_racks(self):
         self._source_racks = [
@@ -207,8 +214,16 @@ class StationA(Station):
         self._p_main.flow_rate.blow_out = self._default_blow_out
     
     @property
-    def num_rows(self) -> int:
-        return math.ceil(self._num_samples/self._samples_per_row)
+    def num_cols(self) -> int:
+        return math.ceil(self._num_samples/self._samples_per_col)
+    
+    @property
+    def num_ic_strips(self) -> int:
+        return math.ceil(self._iec_volume * self.num_cols * self._ic_headroom / self._ic_capacity)
+    
+    @property
+    def cols_per_strip(self) -> int:
+        return math.ceil(self.num_cols / self.num_ic_strips)
     
     @property
     def initlial_volume_lys(self) -> float:
@@ -217,7 +232,7 @@ class StationA(Station):
     def setup_samples(self):
         self._sources = list(islice(chain.from_iterable(rack.wells() for rack in self._source_racks), self._num_samples))
         self._dests_single = self._dest_plate.wells()[:self._num_samples]
-        self._dests_multi = self._dest_plate.rows()[0][:self.num_rows]
+        self._dests_multi = self._dest_plate.rows()[0][:self.num_cols]
     
     @property
     def _tip_log_filepath(self) -> str:
@@ -293,9 +308,9 @@ class StationA(Station):
         self._p_main.drop_tip()
     
     def transfer_internal_control(self, idx: int, dest):
-        internal_control_idx = 0 if idx < self._internal_control_idx_th else 1
-        self.logger.debug("transferring internal control #{} to {}".format(internal_control_idx, dest))
-        internal_control = self._internal_control_strips[internal_control_idx]
+        strip_ind = idx // self.cols_per_strip
+        self.logger.debug("transferring internal control strip {}/{} to {}".format(strip_ind + 1, self.num_ic_strips, dest))
+        internal_control = self._internal_control_strips[strip_ind]
         self.pick_up(self._m20)
         # no air gap to use 1 transfer only avoiding drop during multiple transfers
         self._m20.transfer(self._iec_volume, internal_control, dest.top(), new_tip='never')
