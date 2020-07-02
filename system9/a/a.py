@@ -64,7 +64,7 @@ class StationA(Station):
         tip_log_folder_path: str = './data/A',
         tip_rack: bool = False,
         tipracks_slots: Tuple[str, ...] = ('8', '9', '11'),
-        jupyter: bool = False,
+        jupyter: bool = True,
     ):
         """ Build a :py:class:`.StationA`.
 
