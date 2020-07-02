@@ -197,6 +197,7 @@ class StationA(Station):
             self._ctx.load_labware(self._main_tiprack, slot, self._main_tiprack_label)
             for slot in self._tipracks_slots
         ]
+        self.logger.debug("main tipracks: {}".format(", ".join(map(str, self._tipracks_main))))
     
     @labware_loader(5, "_tipracks20")
     def load_tipracks20(self):
@@ -212,6 +213,7 @@ class StationA(Station):
         self._p_main.flow_rate.aspirate = self._default_aspirate
         self._p_main.flow_rate.dispense = self._default_dispense
         self._p_main.flow_rate.blow_out = self._default_blow_out
+        self.logger.debug("main pipette: {}".format(self._p_main))
     
     @property
     def num_cols(self) -> int:
