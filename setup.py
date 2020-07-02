@@ -1,28 +1,25 @@
-import logging
-import os
-from functools import partial
+import setuptools
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
-logging.basicConfig(level=logging.INFO)
-
-# Configuration
-source = "./custom_defaults"
-dest = os.path.expanduser("~/.opentrons")
-logging.info("Installing configuration files in {}".format(dest))
-
-
-def install():
-    if not os.path.isdir(dest):
-        os.mkdir(dest)
-    for f in filter(os.path.isfile, map(partial(os.path.join, source), os.listdir(source))):
-        logging.info("'{}'".format(f))
-        os.system("cp '{}' '{}'".format(f, dest))
-
-
-install()
-
-# Labware
-source = "./custom_labware"
-dest = os.path.expanduser("~/.opentrons/labware/v2/custom_definitions/")
-logging.info("Installing custom labware files in {}".format(dest))
-install()
+setuptools.setup(
+    name="covid19-system9",
+    version="0.0.0.dev",
+    author="Marco Tiraboschi",
+    author_email="marcotiraboschi@hotmail.it",
+    description="Package for the COVID19 System-9 (Calcinate)",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/OpenSourceCovidTesting/covid19-system-9",
+    packages=setuptools.find_packages(),
+    install_requires=[
+        'opentrons',
+    ],
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: Apache Software License",
+        "Operating System :: OS Independent",
+    ],
+    python_requires='>=3.7',
+)
