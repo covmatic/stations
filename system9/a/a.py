@@ -1,3 +1,4 @@
+from .. import __version__
 from ..station import Station, labware_loader, instrument_loader
 from ..geometry import LysisTube
 from opentrons.protocol_api import ProtocolContext
@@ -333,6 +334,7 @@ class StationA(Station):
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx
         self.logger.info(self._protocol_description)
+        self.logger.info("using system9 version {}".format(__version__))
         self.load_labware()
         self.load_instruments()
         self.setup_samples()
