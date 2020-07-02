@@ -9,6 +9,9 @@ class StationAP1000(StationA):
     def __init__(
         self,
         air_gap_sample: float = 100,
+        main_pipette: str = 'p1000_single_gen2',
+        main_tiprack: str = 'opentrons_96_filtertiprack_1000ul',
+        main_tiprack_label: str = '1000µl filter tiprack',
         source_headroom_height: float = 8,
         source_racks: str = 'copan_15_tuberack_14000ul',
         source_racks_definition_filepath: str = os.path.join(os.path.split(__file__)[0], "COPAN 15 Tube Rack 14000 µL.json"), 
@@ -16,6 +19,9 @@ class StationAP1000(StationA):
     ):
         super(StationAP1000, self).__init__(
             air_gap_sample=air_gap_sample,
+            main_pipette=main_pipette,
+            main_tiprack=main_tiprack,
+            main_tiprack_label=main_tiprack_label,
             source_headroom_height=source_headroom_height,
             source_racks=source_racks,
             source_racks_definition_filepath=source_racks_definition_filepath,
