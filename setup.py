@@ -32,6 +32,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/OpenSourceCovidTesting/covid19-system-9",
     packages=setuptools.find_packages(),
+    include_package_data=True,
     install_requires=[
         'opentrons',
     ],
