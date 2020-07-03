@@ -57,8 +57,16 @@ def run(ctx: protocol_api.ProtocolContext):
     p1000.flow_rate.blow_out = 300
 
     # setup samples
+    # we try to allocate the maximum number of samples available in racks (e.g. 15*number of racks)
+    # and after we will ask the user to replace the samples to reach NUM_SAMPLES
+    # if number of samples is bigger than samples in racks.
     sources = [
         well for rack in source_racks for well in rack.wells()][:NUM_SAMPLES]
+    max_sample_per_set = len(sources)
+    set_of_samples = math.ceil(NUM_SAMPLES/max_sample_per_set)
+   
+
+    # setup destinations
     dests_single = dest_plate.wells()[:NUM_SAMPLES]
     dests_multi = dest_plate.rows()[0][:math.ceil(NUM_SAMPLES/8)]
 
@@ -127,13 +135,34 @@ resuming.')
         return tube.bottom(heights[tube])
 
     # transfer sample
-    for s, d in zip(sources, dests_single):
-        pick_up(p1000)
-        p1000.mix(5, 150, s.bottom(6))
-        p1000.transfer(SAMPLE_VOLUME, s.bottom(6), d.bottom(5), air_gap=100,
-						new_tip='never')
-        p1000.air_gap(100)
-        p1000.drop_tip()
+    done_samples = 0
+    refill_of_samples = set_of_samples - 1  # the first set is already filled before start
+    ctx.comment("Using {} samples per time".format(max_sample_per_set))
+    ctx.comment("We need {} samples refill.".format(refill_of_samples))
+    
+    for i in range(set_of_samples):
+        # setup samples
+        remaining_samples = NUM_SAMPLES - done_samples
+        ctx.comment("Remaining {} samples".format(remaining_samples))
+        
+        set_of_sources = sources[:remaining_samples]    # just eventually pick the remaining samples if less than full rack
+        destinations = dests_single[done_samples:(done_samples + len(sources))]
+  
+        ctx.comment("Transferring {} samples".format(len(sources)))
+        
+        for s, d in zip(sources, destinations):
+            pick_up(p1000)
+            p1000.mix(5, 150, s.bottom(6))
+            p1000.transfer(SAMPLE_VOLUME, s.bottom(6), d.bottom(5), air_gap=100,
+                                                    new_tip='never')
+            p1000.air_gap(100)
+            p1000.drop_tip()
+
+        done_samples = done_samples + len(sources)
+        ctx.comment("Done {} samples".format(done_samples))
+
+        if i < (refill_of_samples):
+            ctx.pause("Please refill samples")
 
     # transfer lysis buffer + proteinase K and mix
     p1000.flow_rate.aspirate = LYSIS_RATE_ASPIRATE
@@ -162,7 +191,7 @@ Return to slot 4 when complete.')
         m20.air_gap(5)
         m20.drop_tip()
 
-    ctx.comment('Move deepwell plate (slot 4) to Station B for RNA \
+    ctx.comment('Move deepwell plate (slot 1) to Station B for RNA \
 extraction.')
 
     # track final used tip
