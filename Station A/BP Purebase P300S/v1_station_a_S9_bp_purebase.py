@@ -23,15 +23,18 @@ DEFAULT_DISPENSE = 100
 LYSIS_RATE_ASPIRATE = 100
 LYSIS_RATE_DISPENSE = 100
 
+ic_headroom = 1.1
+ic_capacity = 180
+
 def run(ctx: protocol_api.ProtocolContext):
     ctx.comment("Station A protocol for {} BPGenomics samples.".format(NUM_SAMPLES))
     
     # load labware
     tempdeck = ctx.load_module('Temperature Module Gen2', '10')
     tempdeck.set_temperature(4)
-    internal_control_strips = tempdeck.load_labware(
+    internal_control_labware = tempdeck.load_labware(
         'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
-        'chilled tubeblock for internal control (strip 1)').wells()
+        'chilled tubeblock for internal control (strip 1)')
     source_racks = [ctx.load_labware('opentrons_24_tuberack_nest_1.5ml_screwcap', slot,
             'source tuberack ' + str(i+1))
         for i, slot in enumerate(['2', '3', '5', '6'])
@@ -42,10 +45,10 @@ def run(ctx: protocol_api.ProtocolContext):
         'opentrons_6_tuberack_falcon_50ml_conical', '4',
         '50ml tuberack for lysis buffer + PK (tube A1)').wells()[0]
     tipracks300 = [ctx.load_labware('opentrons_96_tiprack_300ul', slot,
-                                    '200µl filter tiprack')
+                                    '200ul filter tiprack')
                     for slot in ['8', '9', '11']]
     tipracks20 = [ctx.load_labware('opentrons_96_filtertiprack_20ul', '7',
-                                   '20µl filter tiprack')]
+                                   '20ul filter tiprack')]
 
     # load pipette
     m20 = ctx.load_instrument('p20_multi_gen2', 'left', tip_racks=tipracks20)
@@ -88,10 +91,18 @@ def run(ctx: protocol_api.ProtocolContext):
         for pip in [p300, m20]
     }
 
+    # setup internal control	
+    num_cols = math.ceil(NUM_SAMPLES/8)
+    num_ic_strips = math.ceil( IEC_VOLUME * num_cols * ic_headroom / ic_capacity)
+    ic_cols_per_strip = math.ceil(num_cols / num_ic_strips)
+    
+    internal_control_strips = internal_control_labware.rows()[0][:num_ic_strips]
+    ctx.comment("Internal Control: using {} strips with at least {:.2f} uL each".format(num_ic_strips, ic_cols_per_strip * IEC_VOLUME * ic_headroom))
+
     def pick_up(pip):
         nonlocal tip_log
         if tip_log['count'][pip] == tip_log['max'][pip]:
-            ctx.pause('Replace ' + str(pip.max_volume) + 'µl tipracks before \
+            ctx.pause('Replace ' + str(pip.max_volume) + 'ul tipracks before \
 resuming.')
             pip.reset_tipracks()
             tip_log['count'][pip] = 0
@@ -146,27 +157,24 @@ resuming.')
         p300.air_gap(20)
         p300.drop_tip()
 
-    ctx.pause('Incubate sample plate (slot 4) at 55-57°C for 20 minutes. \
+    ctx.pause('Incubate sample plate (slot 4) at 55-57C for 20 minutes. \
 Return to slot 4 when complete.')
 
     # transfer internal control
-    for i, d in enumerate(dests_multi):
-        # Choosing the first row for the first 48 sample.
-        if i < 48:
-            internal_control = internal_control_strips[0]
-        else:
-            internal_control = internal_control_strips[1]
-
+    for idx, d in enumerate(dests_multi):
+        strip_ind = idx // ic_cols_per_strip
+        internal_control = internal_control_strips[strip_ind]
+        
         pick_up(m20)
         # transferring internal control
         # no air gap to use 1 transfer only avoiding drop during multiple transfers.
-        m20.transfer(IEC_VOLUME, internal_control, d.top(),
+        m20.transfer(IEC_VOLUME, internal_control, d.bottom(2),
                      new_tip='never')
         m20.mix(5, 20, d.bottom(2))
         m20.air_gap(5)
         m20.drop_tip()
 
-    ctx.comment('Move deepwell plate (slot 4) to Station B for RNA \
+    ctx.comment('Move deepwell plate (slot 1) to Station B for RNA \
 extraction.')
 
     # track final used tip

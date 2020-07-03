@@ -11,7 +11,7 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 15
+NUM_SAMPLES = 48
 SAMPLE_VOLUME = 200
 LYSIS_VOLUME = 160
 IEC_VOLUME = 20
@@ -23,14 +23,16 @@ DEFAULT_DISPENSE = 100
 LYSIS_RATE_ASPIRATE = 100
 LYSIS_RATE_DISPENSE = 100
 
+ic_headroom = 1.1
+ic_capacity = 180
 def run(ctx: protocol_api.ProtocolContext):
     ctx.comment("Station A protocol for {} COPAN 330C samples.".format(NUM_SAMPLES))
     # load labware
     tempdeck = ctx.load_module('Temperature Module Gen2', '10')
     tempdeck.set_temperature(4)
-    internal_control = tempdeck.load_labware(
-        'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
-        'chilled tubeblock for internal control (strip 1)').wells()[0]
+    internal_control_labware = tempdeck.load_labware(
+       'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
+       'chilled tubeblock for internal control (strip 1)')
     source_racks = [ctx.load_labware('copan_15_tuberack_14000ul', slot,
 			'source tuberack ' + str(i+1))
         for i, slot in enumerate(['2', '3', '5', '6'])
@@ -87,6 +89,14 @@ def run(ctx: protocol_api.ProtocolContext):
         for pip in [p1000, m20]
     }
 
+    # setup internal control	
+    num_cols = math.ceil(NUM_SAMPLES/8)
+    num_ic_strips = math.ceil( IEC_VOLUME * num_cols * ic_headroom / ic_capacity)
+    ic_cols_per_strip = math.ceil(num_cols / num_ic_strips)
+    
+    internal_control_strips = internal_control_labware.rows()[0][:num_ic_strips]
+    ctx.comment("Internal Control: using {} strips with at least {:.2f} uL each".format(num_ic_strips, ic_cols_per_strip * IEC_VOLUME * ic_headroom))
+
     def pick_up(pip):
         nonlocal tip_log
         if tip_log['count'][pip] == tip_log['max'][pip]:
@@ -139,12 +149,15 @@ resuming.')
 Return to slot 4 when complete.')
 
     # transfer internal control
-    for d in dests_multi:
+    for idx, d in enumerate(dests_multi):
+        strip_ind = idx // ic_cols_per_strip
+        internal_control = internal_control_strips[strip_ind]
+        
         pick_up(m20)
         # transferring internal control
         # no air gap to use 1 transfer only avoiding drop during multiple transfers.
-        m20.transfer(IEC_VOLUME, internal_control, d.top(),
-                             new_tip='never')
+        m20.transfer(IEC_VOLUME, internal_control, d.bottom(2),
+                     new_tip='never')
         m20.mix(5, 20, d.bottom(2))
         m20.air_gap(5)
         m20.drop_tip()
