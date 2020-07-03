@@ -119,8 +119,8 @@ resuming.')
     # transfer sample
     for s, d in zip(sources, dests_single):
         pick_up(p1000)
-        p1000.mix(5, 150, s.bottom(10))
-        p1000.transfer(SAMPLE_VOLUME, s.bottom(8), d.bottom(5), air_gap=100,
+        p1000.mix(5, 150, s.bottom(6))
+        p1000.transfer(SAMPLE_VOLUME, s.bottom(6), d.bottom(5), air_gap=100,
 						new_tip='never')
         p1000.air_gap(100)
         p1000.drop_tip()
