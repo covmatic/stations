@@ -136,7 +136,7 @@ resuming.')
         
         ctx.max_speeds['A'] = 20
         
-        p300.mix(5, 150, s.bottom(8))
+        p300.mix(3, 150, s.bottom(8))
         p300.aspirate(SAMPLE_VOLUME, s.bottom(8))
         
         p300.air_gap(20)
