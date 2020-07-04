@@ -11,30 +11,27 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 96
+NUM_SAMPLES = 12
 SAMPLE_VOLUME = 200
 LYSIS_VOLUME = 160
 IEC_VOLUME = 20
 TIP_TRACK = False
 
-DEFAULT_ASPIRATE = 25
-DEFAULT_DISPENSE = 25
+DEFAULT_ASPIRATE = 100
+DEFAULT_DISPENSE = 100
 
 LYSIS_RATE_ASPIRATE = 100
 LYSIS_RATE_DISPENSE = 100
-
-ic_headroom = 1.1
-ic_capacity = 180
 
 def run(ctx: protocol_api.ProtocolContext):
     ctx.comment("Station A protocol for {} BPGenomics samples.".format(NUM_SAMPLES))
     
     # load labware
     tempdeck = ctx.load_module('Temperature Module Gen2', '10')
-    tempdeck.set_temperature(4)
-    internal_control_labware = tempdeck.load_labware(
+    # tempdeck.set_temperature(4)
+    internal_control = tempdeck.load_labware(
         'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
-        'chilled tubeblock for internal control (strip 1)')
+        'chilled tubeblock for internal control (strip 1)').wells()[0]
     source_racks = [ctx.load_labware('opentrons_24_tuberack_nest_1.5ml_screwcap', slot,
             'source tuberack ' + str(i+1))
         for i, slot in enumerate(['2', '3', '5', '6'])
@@ -45,10 +42,10 @@ def run(ctx: protocol_api.ProtocolContext):
         'opentrons_6_tuberack_falcon_50ml_conical', '4',
         '50ml tuberack for lysis buffer + PK (tube A1)').wells()[0]
     tipracks300 = [ctx.load_labware('opentrons_96_tiprack_300ul', slot,
-                                    '200ul filter tiprack')
+                                    '200µl filter tiprack')
                     for slot in ['8', '9', '11']]
     tipracks20 = [ctx.load_labware('opentrons_96_filtertiprack_20ul', '7',
-                                   '20ul filter tiprack')]
+                                   '20µl filter tiprack')]
 
     # load pipette
     m20 = ctx.load_instrument('p20_multi_gen2', 'left', tip_racks=tipracks20)
@@ -91,18 +88,10 @@ def run(ctx: protocol_api.ProtocolContext):
         for pip in [p300, m20]
     }
 
-    # setup internal control	
-    num_cols = math.ceil(NUM_SAMPLES/8)
-    num_ic_strips = math.ceil( IEC_VOLUME * num_cols * ic_headroom / ic_capacity)
-    ic_cols_per_strip = math.ceil(num_cols / num_ic_strips)
-    
-    internal_control_strips = internal_control_labware.rows()[0][:num_ic_strips]
-    ctx.comment("Internal Control: using {} strips with at least {:.2f} uL each".format(num_ic_strips, ic_cols_per_strip * IEC_VOLUME * ic_headroom))
-
     def pick_up(pip):
         nonlocal tip_log
         if tip_log['count'][pip] == tip_log['max'][pip]:
-            ctx.pause('Replace ' + str(pip.max_volume) + 'ul tipracks before \
+            ctx.pause('Replace ' + str(pip.max_volume) + 'µl tipracks before \
 resuming.')
             pip.reset_tipracks()
             tip_log['count'][pip] = 0
@@ -129,7 +118,7 @@ resuming.')
         return tube.bottom(heights[tube])
 
     # transfer sample
-    for s, d in zip(sources, dests_single):
+    for s, d in zip(sources, dests_single):    
         pick_up(p300)
         
         p300.move_to(s.top(10))
@@ -138,15 +127,18 @@ resuming.')
         
         p300.mix(5, 150, s.bottom(8))
         p300.aspirate(SAMPLE_VOLUME, s.bottom(8))
-        
         p300.air_gap(20)
         
         ctx.max_speeds['A'] = None 
         
         p300.dispense(20, d.top(-2))
         p300.dispense(SAMPLE_VOLUME, d.bottom(5))
-        
         p300.air_gap(20)
+        
+        #p300.transfer(SAMPLE_VOLUME, s.bottom(8), d.bottom(5), air_gap=20,
+        #               new_tip='never')          
+        #p300.air_gap(20)
+        
         p300.drop_tip()
 
     # transfer lysis buffer + proteinase K and mix
@@ -159,24 +151,21 @@ resuming.')
         p300.air_gap(20)
         p300.drop_tip()
 
-    ctx.pause('Incubate sample plate (slot 4) at 55-57C for 20 minutes. \
+    ctx.pause('Incubate sample plate (slot 4) at 55-57°C for 20 minutes. \
 Return to slot 4 when complete.')
 
     # transfer internal control
-    for idx, d in enumerate(dests_multi):
-        strip_ind = idx // ic_cols_per_strip
-        internal_control = internal_control_strips[strip_ind]
-        
+    for d in dests_multi:
         pick_up(m20)
-        # transferring internal control
-        # no air gap to use 1 transfer only avoiding drop during multiple transfers.
-        m20.transfer(IEC_VOLUME, internal_control, d.bottom(2),
+        m20.transfer(IEC_VOLUME, internal_control, d.top(),
                      new_tip='never')
+        #m20.transfer(IEC_VOLUME, internal_control, d.top(), air_gap=5,
+        #             new_tip='never')
         m20.mix(5, 20, d.bottom(2))
         m20.air_gap(5)
         m20.drop_tip()
 
-    ctx.comment('Move deepwell plate (slot 1) to Station B for RNA \
+    ctx.comment('Move deepwell plate (slot 4) to Station B for RNA \
 extraction.')
 
     # track final used tip
