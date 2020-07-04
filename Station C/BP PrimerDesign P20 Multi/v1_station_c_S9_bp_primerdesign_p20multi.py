@@ -11,7 +11,7 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 16  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
+NUM_SAMPLES = 96  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
 PREPARE_MASTERMIX = False
 TIP_TRACK = False
 
@@ -157,7 +157,7 @@ resuming.')
     m20.transfer(mm_vol, mm_strip[0].bottom(2), sample_dests,
                  new_tip='never')
     m20.drop_tip()
-
+    
     # transfer samples to corresponding locations
     # Please: do not go too deep with source rack 
     #         to avoid aspirating the dirty on the bottom;
@@ -167,7 +167,11 @@ resuming.')
     for s, d in zip(sources, sample_dests):
         pick_up(m20)
         m20.transfer(sample_vol, s.bottom(2), d.bottom(2), new_tip='never', air_gap=5)
-        m20.mix(3, 10, d.bottom(2))
+        # Mixing at different height to avoid aspirating air.
+        m20.mix(1, 10, d.bottom(2))
+        m20.mix(1, 10, d.bottom(1))
+        m20.mix(1, 10, d.bottom(2))
+        
         m20.blow_out(d.top(-2))
         m20.air_gap(5)
         m20.drop_tip()
