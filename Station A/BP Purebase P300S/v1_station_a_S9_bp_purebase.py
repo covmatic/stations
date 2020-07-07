@@ -17,14 +17,21 @@ LYSIS_VOLUME = 160
 IEC_VOLUME = 20
 TIP_TRACK = False
 
-DEFAULT_ASPIRATE = 25
-DEFAULT_DISPENSE = 25
+SAMPLE_ASPIRATE = 30
+SAMPLE_DISPENSE = 30
 
 LYSIS_RATE_ASPIRATE = 100
 LYSIS_RATE_DISPENSE = 100
 
-ic_headroom = 1.1
+LYSIS_SAMPLE_MIXING_ASPIRATE = 100
+LYSIS_SAMPLE_MIXING_DISPENSE = 100
+
+SAMPLE_SPEED_APPROACHING = 20
+
+ic_and_lysis_headroom = 1.1
 ic_capacity = 180
+
+positive_control_well = 'A10'
 
 def run(ctx: protocol_api.ProtocolContext):
     ctx.comment("Station A protocol for {} BPGenomics samples.".format(NUM_SAMPLES))
@@ -54,8 +61,6 @@ def run(ctx: protocol_api.ProtocolContext):
     m20 = ctx.load_instrument('p20_multi_gen2', 'left', tip_racks=tipracks20)
     p300 = ctx.load_instrument(
         'p300_single_gen2', 'right', tip_racks=tipracks300)
-    p300.flow_rate.aspirate = DEFAULT_ASPIRATE
-    p300.flow_rate.dispense = DEFAULT_DISPENSE
     p300.flow_rate.blow_out = 300
 
     # setup samples
@@ -63,7 +68,11 @@ def run(ctx: protocol_api.ProtocolContext):
         well for rack in source_racks for well in rack.wells()][:NUM_SAMPLES]
     dests_single = dest_plate.wells()[:NUM_SAMPLES]
     dests_multi = dest_plate.rows()[0][:math.ceil(NUM_SAMPLES/8)]
-
+    
+    # setup positive control well
+    ctx.comment("Positive control in {} of destination rack".format(positive_control_well))
+    
+    
     tip_log = {'count': {}}
     folder_path = '/data/A'
     tip_file_path = folder_path + '/tip_log.json'
@@ -93,11 +102,11 @@ def run(ctx: protocol_api.ProtocolContext):
 
     # setup internal control	
     num_cols = math.ceil(NUM_SAMPLES/8)
-    num_ic_strips = math.ceil( IEC_VOLUME * num_cols * ic_headroom / ic_capacity)
+    num_ic_strips = math.ceil( IEC_VOLUME * num_cols * ic_and_lysis_headroom / ic_capacity)
     ic_cols_per_strip = math.ceil(num_cols / num_ic_strips)
     
     internal_control_strips = internal_control_labware.rows()[0][:num_ic_strips]
-    ctx.comment("Internal Control: using {} strips with at least {:.2f} uL each".format(num_ic_strips, ic_cols_per_strip * IEC_VOLUME * ic_headroom))
+    ctx.comment("Internal Control: using {} strips with at least {:.2f} uL each".format(num_ic_strips, ic_cols_per_strip * IEC_VOLUME * ic_and_lysis_headroom))
 
     def pick_up(pip):
         nonlocal tip_log
@@ -111,7 +120,7 @@ resuming.')
 
     lysis_total_vol = LYSIS_VOLUME * NUM_SAMPLES
 
-    ctx.comment("Lysis buffer expected volume: {} mL".format(lysis_total_vol/1000))
+    ctx.comment("Lysis buffer expected volume: {} mL".format(lysis_total_vol * ic_and_lysis_headroom/1000))
     
     radius = (lys_buff.diameter)/2
     heights = {lys_buff: lysis_total_vol/(math.pi*(radius**2))}
@@ -127,35 +136,68 @@ resuming.')
             heights[tube] = min_h
         context.comment("Going {} mm deep".format(heights[tube]))
         return tube.bottom(heights[tube])
+    
+    def is_positive_control_well(well):
+        nonlocal dest_plate
+        if d == dest_plate[positive_control_well]:
+            return True
+        return False
+    
+    # transfer lysis buffer + proteinase K and mix
+    p300.flow_rate.aspirate = LYSIS_RATE_ASPIRATE
+    p300.flow_rate.dispense = LYSIS_RATE_DISPENSE
+    pick_up(p300)
+    for s, d in zip(sources, dests_single):
+        if is_positive_control_well(d):
+            ctx.comment("Positive control. Skipping.")
+            continue
+        p300.transfer(LYSIS_VOLUME, h_track(lys_buff, LYSIS_VOLUME, ctx), d.bottom(5), air_gap=20,
+                      new_tip='never')
+        p300.air_gap(20)
+        p300.dispense(20, lys_buff.top())
+    p300.drop_tip()
 
     # transfer sample
+    p300.flow_rate.aspirate = SAMPLE_ASPIRATE
+    p300.flow_rate.dispense = SAMPLE_DISPENSE
+    
     for s, d in zip(sources, dests_single):
+        if is_positive_control_well(d):
+            ctx.comment("Positive control. Skipping.")
+            continue
         pick_up(p300)
         
-        p300.move_to(s.top(10))
+        p300.move_to(s.top(-10))
         
-        ctx.max_speeds['A'] = 20
+        ctx.max_speeds['A'] = SAMPLE_SPEED_APPROACHING
         
-        p300.mix(3, 150, s.bottom(8))
+        for _ in range(3):
+            p300.aspirate(150, s.bottom(8))
+            p300.dispense(150, s.bottom(10))
+
         p300.aspirate(SAMPLE_VOLUME, s.bottom(8))
         
-        p300.air_gap(20)
+        ctx.delay(1)		# wait to be sure the sample is aspirated
+        
+        p300.move_to(s.top(-10))
         
         ctx.max_speeds['A'] = None 
+        
+        p300.air_gap(20)        
         
         p300.dispense(20, d.top(-2))
         p300.dispense(SAMPLE_VOLUME, d.bottom(5))
         
-        p300.air_gap(20)
-        p300.drop_tip()
-
-    # transfer lysis buffer + proteinase K and mix
-    p300.flow_rate.aspirate = LYSIS_RATE_ASPIRATE
-    p300.flow_rate.dispense = LYSIS_RATE_DISPENSE
-    for s, d in zip(sources, dests_single):
-        pick_up(p300)
-        p300.transfer(LYSIS_VOLUME, h_track(lys_buff, LYSIS_VOLUME, ctx), d.bottom(5), air_gap=20,
-                       mix_after=(10, 100), new_tip='never')
+        p300.flow_rate.aspirate = LYSIS_SAMPLE_MIXING_ASPIRATE
+        p300.flow_rate.dispense = LYSIS_SAMPLE_MIXING_DISPENSE
+        
+        for _ in range(10):
+            p300.aspirate(100, d.bottom(2))
+            p300.dispense(100, d.bottom(5))
+        
+        p300.flow_rate.aspirate = SAMPLE_ASPIRATE
+        p300.flow_rate.dispense = SAMPLE_DISPENSE
+       
         p300.air_gap(20)
         p300.drop_tip()
 
