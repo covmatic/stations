@@ -11,10 +11,10 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 48
+NUM_SAMPLES = 96
 SAMPLE_VOLUME = 200
 LYSIS_VOLUME = 160
-IEC_VOLUME = 20
+IEC_VOLUME = 19
 TIP_TRACK = False
 
 DEFAULT_ASPIRATE = 100
@@ -187,7 +187,7 @@ Return to slot 4 when complete.')
         # no air gap to use 1 transfer only avoiding drop during multiple transfers.
         m20.transfer(IEC_VOLUME, internal_control, d.bottom(2),
                      new_tip='never')
-        m20.mix(5, 20, d.bottom(2))
+        m20.mix(2, 20, d.bottom(2))
         m20.air_gap(5)
         m20.drop_tip()
 
