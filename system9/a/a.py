@@ -303,6 +303,10 @@ class StationA(Station):
         
         self._p_main.drop_tip()
     
+    def transfer_samples(self):
+        for s, d in zip(self._sources, self._dests_single):
+            self.transfer_sample(s, d)
+    
     def transfer_lys(self, dest):
         self.logger.debug("transferring lysis to {}".format(dest))
         self.pick_up(self._p_main)
@@ -348,8 +352,7 @@ class StationA(Station):
         self.setup_tip_log()
         self.setup_lys_tube()
         
-        for s, d in zip(self._sources, self._dests_single):
-            self.transfer_sample(s, d)
+        self.transfer_samples()
         
         self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
         self._p_main.flow_rate.dispense = self._lysis_rate_dispense
