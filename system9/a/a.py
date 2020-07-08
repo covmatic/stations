@@ -50,7 +50,7 @@ class StationA(Station):
         main_tiprack_label: str = '200ul filter tiprack',
         max_speeds_a: float = 20,
         metadata: dict = _metadata,
-        mix_repeats: int = 5,
+        mix_repeats: int = 3,
         mix_volume: float = 150,
         num_samples: int = 96,
         samples_per_col: int = 8,
