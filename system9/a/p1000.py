@@ -12,7 +12,7 @@ class StationAP1000(StationA):
         main_pipette: str = 'p1000_single_gen2',
         main_tiprack: str = 'opentrons_96_filtertiprack_1000ul',
         main_tiprack_label: str = '1000µl filter tiprack',
-        source_headroom_height: float = 8,
+        source_headroom_height: float = 6,
         source_racks: str = 'copan_15_tuberack_14000ul',
         source_racks_definition_filepath: str = os.path.join(os.path.split(__file__)[0], "COPAN 15 Tube Rack 14000 µL.json"), 
         **kwargs
