@@ -58,7 +58,7 @@ class StationAP1000(StationA):
         self._p_main.drop_tip()
 
 
-station_a = StationAP1000(num_samples=15)
+station_a = StationAP1000(num_samples=48)
 metadata = station_a.metadata
 run = station_a.run
 

@@ -30,8 +30,9 @@ class StationA(Station):
         dest_headroom_height: float = 5,
         dest_multi_headroom_height: float = 2,
         hover_height: float = -2,
-        ic_capacity: float = 200,
+        ic_capacity: float = 180,
         ic_headroom: float = 1.1,
+        ic_headroom_bottom: float = 2,
         ic_mix_repeats: int = 5,
         ic_mix_volume: float = 20,
         iec_volume: float = 20,
@@ -78,6 +79,7 @@ class StationA(Station):
         :param hover_height: height from the top at which to hover (should be negative) in mm
         :param ic_capacity: capacity of the internal control tube
         :param ic_headroom: headroom for the internal control tube (multiplier)
+        :param ic_headroom_bottom: headroom always to keep from the bottom of the internal control tube in mm
         :param ic_mix_repeats: number of repetitions during mixing the internal control
         :param ic_mix_volume: volume aspirated for mixing the internal control in uL
         :param iec_volume: The volume of lysis buffer to use per sample in uL
@@ -111,6 +113,7 @@ class StationA(Station):
         :param tip_rack: If True, try and load previous tiprack log from the JSON file
         :param jupyter: Specify whether the protocol is run on Jupyter (or Python) instead of the robot
         """
+        self._ic_headroom_bottom = ic_headroom_bottom
         self._ic_capacity = ic_capacity
         self._ic_headroom = ic_headroom
         self._main_pipette = main_pipette
@@ -320,7 +323,7 @@ class StationA(Station):
         internal_control = self._internal_control_strips[strip_ind]
         self.pick_up(self._m20)
         # no air gap to use 1 transfer only avoiding drop during multiple transfers
-        self._m20.transfer(self._iec_volume, internal_control, dest.top(), new_tip='never')
+        self._m20.transfer(self._iec_volume, internal_control, dest.bottom(self._ic_headroom_bottom), new_tip='never')
         self._m20.mix(self._ic_mix_repeats, self._ic_mix_volume, dest.bottom(self._dest_multi_headroom_height))
         self._m20.air_gap(self._air_gap_dest_multi)
         self._m20.drop_tip()
@@ -359,5 +362,5 @@ class StationA(Station):
         for i, d in enumerate(self._dests_multi):
             self.transfer_internal_control(i, d)
         
-        self.logger.info('move deepwell plate (slot 4) to Station B for RNA extraction.')
+        self.logger.info('move deepwell plate (slot 1) to Station B for RNA extraction.')
         self.track_tip()
