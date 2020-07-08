@@ -1,6 +1,7 @@
 from .. import __version__
 from ..station import Station, labware_loader, instrument_loader
 from ..geometry import LysisTube
+from ..utils import mix_bottom_top
 from opentrons.protocol_api import ProtocolContext
 from itertools import chain, islice, repeat
 import math
@@ -24,17 +25,16 @@ class StationA(Station):
         self,
         air_gap_dest_multi: float = 5,
         air_gap_sample: float = 20,
-        default_aspirate: float = 100,
-        default_blow_out: float = 300,
-        default_dispense: float = 100,
-        dest_headroom_height: float = 5,
+        dest_headroom_height: float = 2,
+        dest_top_height: float = 5,
         dest_multi_headroom_height: float = 2,
         hover_height: float = -2,
-        ic_capacity: float = 200,
-        ic_headroom: float = 1.1,
+        ic_capacity: float = 180,
+        ic_lys_headroom: float = 1.1,
+        ic_headroom_bottom: float = 2,
         ic_mix_repeats: int = 5,
         ic_mix_volume: float = 20,
-        iec_volume: float = 20,
+        iec_volume: float = 19,
         internal_control_idx_th: int = 48,
         logger: Optional[logging.getLoggerClass()] = None,
         lysis_cone_height: float = 16,
@@ -49,13 +49,18 @@ class StationA(Station):
         main_tiprack_label: str = '200ul filter tiprack',
         max_speeds_a: float = 20,
         metadata: dict = _metadata,
-        mix_repeats: int = 5,
+        mix_repeats: int = 3,
         mix_volume: float = 150,
         num_samples: int = 96,
+        positive_control_well: str = 'A10',
+        sample_aspirate: float = 30,
+        sample_blow_out: float = 300,
+        sample_dispense: float = 30,
         samples_per_col: int = 8,
         sample_volume: float = 200,
         source_headroom_height: float = 8,
-        source_position_top: float = 10,
+        source_position_top: float = -10,
+        source_top_height: float = 10,
         source_racks: str = 'opentrons_24_tuberack_nest_1.5ml_screwcap',
         source_racks_definition_filepath: str = "",
         source_racks_slots: Tuple[str, ...] = ('2', '3', '5', '6'),
@@ -70,14 +75,13 @@ class StationA(Station):
 
         :param air_gap_dest_multi: air gap for destination tube (multi) in uL
         :param air_gap_sample: air gap for sample transfer in uL
-        :param default_aspirate: P300 default aspiration flow rate in uL/s
-        :param default_blow_out: P300 default blow out flow rate in uL/s
-        :param default_dispense: P300 default dispensation flow rate in uL/s
         :param dest_headroom_height: headroom always to keep from the bottom of the destination tube in mm
+        :param dest_top_height: top height from the bottom of the destination tube in mm when mixing
         :param dest_multi_headroom_height: headroom always to keep from the bottom of the destination tube (multi) in mm
         :param hover_height: height from the top at which to hover (should be negative) in mm
         :param ic_capacity: capacity of the internal control tube
-        :param ic_headroom: headroom for the internal control tube (multiplier)
+        :param ic_lys_headroom: headroom for the internal control and lysis tube (multiplier)
+        :param ic_headroom_bottom: headroom always to keep from the bottom of the internal control tube in mm
         :param ic_mix_repeats: number of repetitions during mixing the internal control
         :param ic_mix_volume: volume aspirated for mixing the internal control in uL
         :param iec_volume: The volume of lysis buffer to use per sample in uL
@@ -98,10 +102,15 @@ class StationA(Station):
         :param max_speeds_a: max speed for sample transfer
         :param metadata: protocol metadata
         :param num_samples: The number of samples that will be loaded on the station A
+        :param positive_control_well: Position of the positive control well
+        :param sample_aspirate: P300 samples aspiration flow rate in uL/s
+        :param sample_blow_out: P300 samples blow out flow rate in uL/s
+        :param sample_dispense: P300 samples dispensation flow rate in uL/s
         :param samples_per_col: The number of samples in a column of the destination plate
         :param sample_volume: The volume of a sample in uL
         :param source_headroom_height: headroom always to keep from the bottom of the source tube in mm
-        :param source_position_top: height from the top of the source tube in mm
+        :param source_position_top: height from the top of the source tube in mm (should be negative)
+        :param source_top_height: top height from the bottom of the source tube in mm when mixing
         :param source_racks: source racks to load
         :param source_racks_definition_filepath: filepath for source racks definitions
         :param source_racks_slots: slots where source racks are installed
@@ -111,8 +120,12 @@ class StationA(Station):
         :param tip_rack: If True, try and load previous tiprack log from the JSON file
         :param jupyter: Specify whether the protocol is run on Jupyter (or Python) instead of the robot
         """
+        self._dest_top_height = dest_top_height
+        self._source_top_height = source_top_height
+        self._positive_control_well = positive_control_well
+        self._ic_headroom_bottom = ic_headroom_bottom
         self._ic_capacity = ic_capacity
-        self._ic_headroom = ic_headroom
+        self._ic_lys_headroom = ic_lys_headroom
         self._main_pipette = main_pipette
         self._main_tiprack = main_tiprack
         self._main_tiprack_label = main_tiprack_label
@@ -124,9 +137,9 @@ class StationA(Station):
         self._lysis_volume = lysis_volume
         self._iec_volume = iec_volume
         self._tip_rack = tip_rack
-        self._default_aspirate = default_aspirate
-        self._default_dispense = default_dispense
-        self._default_blow_out = default_blow_out
+        self._sample_aspirate = sample_aspirate
+        self._sample_dispense = sample_dispense
+        self._sample_blow_out = sample_blow_out
         self._lysis_rate_aspirate = lysis_rate_aspirate
         self._lysis_rate_dispense = lysis_rate_dispense
         self._lysis_cone_height = lysis_cone_height
@@ -164,7 +177,7 @@ class StationA(Station):
             'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
             'chilled tubeblock for internal control (strip 1)'
         ).rows()[0][:self.num_ic_strips]
-        self.logger.info("using {} internal control strips with {} uL each".format(self.num_ic_strips, self.cols_per_strip * self._iec_volume * self._ic_headroom))
+        self.logger.info("using {} internal control strips with {} uL each".format(self.num_ic_strips, self.cols_per_strip * self._iec_volume * self._ic_lys_headroom))
     
     def _load_source_racks(self):
         self._source_racks = [
@@ -211,9 +224,7 @@ class StationA(Station):
     @instrument_loader(1, "_p_main")
     def load_p_main(self):
         self._p_main = self._ctx.load_instrument(self._main_pipette, 'right', tip_racks=self._tipracks_main)
-        self._p_main.flow_rate.aspirate = self._default_aspirate
-        self._p_main.flow_rate.dispense = self._default_dispense
-        self._p_main.flow_rate.blow_out = self._default_blow_out
+        self._p_main.flow_rate.blow_out = self._sample_blow_out
         self.logger.debug("main pipette: {}".format(self._p_main))
     
     @property
@@ -222,7 +233,7 @@ class StationA(Station):
     
     @property
     def num_ic_strips(self) -> int:
-        return math.ceil(self._iec_volume * self.num_cols * self._ic_headroom / self._ic_capacity)
+        return math.ceil(self._iec_volume * self.num_cols * self._ic_lys_headroom / self._ic_capacity)
     
     @property
     def cols_per_strip(self) -> int:
@@ -230,12 +241,13 @@ class StationA(Station):
     
     @property
     def initlial_volume_lys(self) -> float:
-        return self._num_samples * self._lysis_volume
+        return self._num_samples * self._lysis_volume * self._ic_lys_headroom
     
     def setup_samples(self):
         self._sources = list(islice(chain.from_iterable(rack.wells() for rack in self._source_racks), self._num_samples))
         self._dests_single = self._dest_plate.wells()[:self._num_samples]
         self._dests_multi = self._dest_plate.rows()[0][:self.num_cols]
+        self.logger.debug("positive control in {} of destination rack".format(self._positive_control_well))
     
     @property
     def _tip_log_filepath(self) -> str:
@@ -289,29 +301,66 @@ class StationA(Station):
         self._p_main.move_to(source.top(self._source_position_top))
         self._ctx.max_speeds['A'] = self._max_speeds_a
         
-        self._p_main.mix(self._mix_repeats, self._mix_volume, source.bottom(self._source_headroom_height))
+        # Mix by aspirating and dispensing at different heights
+        mix_bottom_top(
+            self._p_main, self._mix_repeats, self._mix_volume,
+            source.bottom, self._source_headroom_height, self._source_top_height
+        )
         self._p_main.aspirate(self._sample_volume, source.bottom(self._source_headroom_height))        
-        self._p_main.air_gap(self._air_gap_sample)
         
+        # Wait to be sure the sample is aspirated
+        self._ctx.delay(1)
+        self._p_main.move_to(source.top(self._source_position_top))
         self._ctx.max_speeds['A'] = None
-        self._p_main.dispense(self._air_gap_sample, dest.top(self._hover_height))
-        self._p_main.dispense(self._sample_volume, dest.bottom(self._dest_headroom_height))
         self._p_main.air_gap(self._air_gap_sample)
         
+        self._p_main.dispense(self._air_gap_sample, dest.top(self._hover_height))
+        self._p_main.dispense(self._sample_volume, dest.bottom(self._dest_top_height))
+        
+        self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
+        self._p_main.flow_rate.dispense = self._lysis_rate_dispense
+        
+        # Mix with lysis buffer
+        mix_bottom_top(
+            self._p_main, self._lys_mix_repeats, self._lys_mix_volume,
+            dest.bottom, self._dest_headroom_height, self._dest_top_height
+        )
+        
+        self._p_main.flow_rate.aspirate = self._sample_aspirate
+        self._p_main.flow_rate.dispense = self._sample_dispense
+        
+        self._p_main.air_gap(self._air_gap_sample)
         self._p_main.drop_tip()
     
-    def transfer_lys(self, dest):
-        self.logger.debug("transferring lysis to {}".format(dest))
+    def is_positive_control_well(self, dest) -> bool:
+        return dest == self._dest_plate[self._positive_control_well]
+    
+    def non_control_positions(self, sources=None, dests=None):
+        """Returns the iterator for the source/dest couples, excluding the couple where the destination is meant for the positive control.
+        Sources and dests default to self._sources and self._dests"""
+        sources = sources or self._sources
+        dests = dests or self._dests_single
+        return filter(lambda t: not self.is_positive_control_well(t[1]), zip(sources, dests))
+    
+    def transfer_samples(self):
+        for s, d in self.non_control_positions():
+            self.transfer_sample(s, d)
+    
+    def transfer_lys(self):
         self.pick_up(self._p_main)
-        h = max(self._lysis_tube.extract(self._lysis_volume), self._lysis_headroom_height)
-        self.logger.debug("going {} mm deep".format(h))
-        self._p_main.transfer(
-            self._lysis_volume,
-            self._lys_buff.bottom(h),
-            dest.bottom(self._lysis_headroom_height), air_gap=self._air_gap_sample,
-            mix_after=(self._lys_mix_repeats, self._lys_mix_volume), new_tip='never',
-        )
-        self._p_main.air_gap(self._air_gap_sample)
+        for _, dest in self.non_control_positions():        
+            self.logger.debug("transferring lysis to {}".format(dest))
+            h = max(self._lysis_tube.extract(self._lysis_volume), self._lysis_headroom_height)
+            self.logger.debug("going {} mm deep".format(h))
+            self._p_main.transfer(
+                self._lysis_volume,
+                self._lys_buff.bottom(h),
+                dest.bottom(self._lysis_headroom_height),
+                air_gap=self._air_gap_sample,
+                new_tip='never',
+            )
+            self._p_main.air_gap(self._air_gap_sample)
+            self._p_main.dispense(self._air_gap_sample, self._lys_buff.top())
         self._p_main.drop_tip()
     
     def transfer_internal_control(self, idx: int, dest):
@@ -320,7 +369,7 @@ class StationA(Station):
         internal_control = self._internal_control_strips[strip_ind]
         self.pick_up(self._m20)
         # no air gap to use 1 transfer only avoiding drop during multiple transfers
-        self._m20.transfer(self._iec_volume, internal_control, dest.top(), new_tip='never')
+        self._m20.transfer(self._iec_volume, internal_control, dest.bottom(self._ic_headroom_bottom), new_tip='never')
         self._m20.mix(self._ic_mix_repeats, self._ic_mix_volume, dest.bottom(self._dest_multi_headroom_height))
         self._m20.air_gap(self._air_gap_dest_multi)
         self._m20.drop_tip()
@@ -345,13 +394,13 @@ class StationA(Station):
         self.setup_tip_log()
         self.setup_lys_tube()
         
-        for s, d in zip(self._sources, self._dests_single):
-            self.transfer_sample(s, d)
-        
         self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
         self._p_main.flow_rate.dispense = self._lysis_rate_dispense
-        for d in self._dests_single:
-            self.transfer_lys(d)
+        self.transfer_lys()
+        
+        self._p_main.flow_rate.aspirate = self._sample_aspirate
+        self._p_main.flow_rate.dispense = self._sample_dispense
+        self.transfer_samples()
         
         self.logger.info('incubate sample plate (slot 4) at 55-57°C for 20 minutes. Return to slot 4 when complete.')
         self._ctx.pause('Pausing')
@@ -359,5 +408,5 @@ class StationA(Station):
         for i, d in enumerate(self._dests_multi):
             self.transfer_internal_control(i, d)
         
-        self.logger.info('move deepwell plate (slot 4) to Station B for RNA extraction.')
+        self.logger.info('move deepwell plate (slot 1) to Station B for RNA extraction.')
         self.track_tip()
