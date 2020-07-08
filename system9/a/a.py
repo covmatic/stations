@@ -242,6 +242,7 @@ class StationA(Station):
         return os.path.join(self._tip_log_folder_path, self._tip_log_filename)
     
     def _tiprack_log_args(self):
+        # first of each is the m20, second the main pipette
         return ('m20', self._main_pipette), (self._m20, self._p_main), (self._tipracks20, self._tipracks_main)
     
     def setup_tip_log(self):
@@ -259,10 +260,10 @@ class StationA(Station):
             self.logger.debug("not using tip log file")
             self._tip_log['count'] = dict(zip(pipettes, repeat(0)))
         
-        self._tip_log['tips'] = dict(zip(
-            pipettes,
-            map(lambda tiprack: list(chain.from_iterable(rack.rows()[0] for rack in tiprack)), tipracks)
-        ))
+        self._tip_log['tips'] = {
+            pipettes[0]: list(chain.from_iterable(rack.rows()[0] for rack in tipracks[0])),
+            pipettes[1]: list(chain.from_iterable(rack.wells() for rack in tipracks[1])),
+        }
         self._tip_log['max'] = {p: len(l) for p, l in self._tip_log['tips'].items()}
     
     def setup_lys_tube(self):
@@ -295,15 +296,18 @@ class StationA(Station):
         self._ctx.max_speeds['A'] = None
         self._p_main.dispense(self._air_gap_sample, dest.top(self._hover_height))
         self._p_main.dispense(self._sample_volume, dest.bottom(self._dest_headroom_height))
+        self._p_main.air_gap(self._air_gap_sample)
         
         self._p_main.drop_tip()
     
     def transfer_lys(self, dest):
         self.logger.debug("transferring lysis to {}".format(dest))
         self.pick_up(self._p_main)
+        h = max(self._lysis_tube.extract(self._lysis_volume), self._lysis_headroom_height)
+        self.logger.debug("going {} mm deep".format(h))
         self._p_main.transfer(
             self._lysis_volume,
-            self._lys_buff.bottom(max(self._lysis_tube.extract(self._lysis_volume), self._lysis_headroom_height)),
+            self._lys_buff.bottom(h),
             dest.bottom(self._lysis_headroom_height), air_gap=self._air_gap_sample,
             mix_after=(self._lys_mix_repeats, self._lys_mix_volume), new_tip='never',
         )
