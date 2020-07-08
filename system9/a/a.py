@@ -34,7 +34,7 @@ class StationA(Station):
         ic_headroom_bottom: float = 2,
         ic_mix_repeats: int = 5,
         ic_mix_volume: float = 20,
-        iec_volume: float = 20,
+        iec_volume: float = 19,
         internal_control_idx_th: int = 48,
         logger: Optional[logging.getLoggerClass()] = None,
         lysis_cone_height: float = 16,
