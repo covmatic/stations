@@ -38,6 +38,7 @@ class StationA(Station):
         internal_control_idx_th: int = 48,
         logger: Optional[logging.getLoggerClass()] = None,
         lysis_cone_height: float = 16,
+        lysis_first: bool = False,
         lysis_headroom_height: float = 5,
         lysis_rate_aspirate: float = 100,
         lysis_rate_dispense: float = 100,
@@ -88,6 +89,7 @@ class StationA(Station):
         :param internal_control_idx_th: internal control index threshold for choosing the strip 
         :param logger: logger object. If not specified, the default logger is used that logs through the ProtocolContext comment method
         :param lysis_cone_height: height of he conic bottom of the lysis buffer tube in mm
+        :param lysis_first: whether to transfer the lysis buffer first or else the sample first
         :param lysis_headroom_height: headroom always to keep from the bottom of the lysis buffer tube in mm
         :param lysis_rate_aspirate: P300 aspiration flow rate when aspirating lysis buffer in uL/s
         :param lysis_rate_dispense: P300 dispensation flow rate when dispensing lysis buffer in uL/s
@@ -143,6 +145,7 @@ class StationA(Station):
         self._lysis_rate_aspirate = lysis_rate_aspirate
         self._lysis_rate_dispense = lysis_rate_dispense
         self._lysis_cone_height = lysis_cone_height
+        self._lysis_first = lysis_first
         self._lysis_headroom_height = lysis_headroom_height
         self._air_gap_sample = air_gap_sample
         self._source_headroom_height = source_headroom_height
@@ -317,18 +320,19 @@ class StationA(Station):
         self._p_main.dispense(self._air_gap_sample, dest.top(self._hover_height))
         self._p_main.dispense(self._sample_volume, dest.bottom(self._dest_top_height))
         
-        self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
-        self._p_main.flow_rate.dispense = self._lysis_rate_dispense
-        
-        # Mix with lysis buffer
-        mix_bottom_top(
-            self._p_main, self._lys_mix_repeats, self._lys_mix_volume,
-            dest.bottom, self._dest_headroom_height, self._dest_top_height
-        )
-        
-        self._p_main.flow_rate.aspirate = self._sample_aspirate
-        self._p_main.flow_rate.dispense = self._sample_dispense
-        
+        if self._lysis_first:
+            self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
+            self._p_main.flow_rate.dispense = self._lysis_rate_dispense
+            
+            # Mix with lysis buffer
+            mix_bottom_top(
+                self._p_main, self._lys_mix_repeats, self._lys_mix_volume,
+                dest.bottom, self._dest_headroom_height, self._dest_top_height
+            )
+            
+            self._p_main.flow_rate.aspirate = self._sample_aspirate
+            self._p_main.flow_rate.dispense = self._sample_dispense
+            
         self._p_main.air_gap(self._air_gap_sample)
         self._p_main.drop_tip()
     
@@ -347,8 +351,12 @@ class StationA(Station):
             self.transfer_sample(s, d)
     
     def transfer_lys(self):
-        self.pick_up(self._p_main)
-        for _, dest in self.non_control_positions():        
+        if self._lysis_first:
+            self.pick_up(self._p_main)
+        mix = {} if self._lysis_first else {'mix_after': (self._lys_mix_repeats, self._lys_mix_volume)}
+        for _, dest in self.non_control_positions():
+            if not self._lysis_first:
+                self.pick_up(self._p_main)
             self.logger.debug("transferring lysis to {}".format(dest))
             h = max(self._lysis_tube.extract(self._lysis_volume), self._lysis_headroom_height)
             self.logger.debug("going {} mm deep".format(h))
@@ -358,10 +366,15 @@ class StationA(Station):
                 dest.bottom(self._lysis_headroom_height),
                 air_gap=self._air_gap_sample,
                 new_tip='never',
+                **mix
             )
             self._p_main.air_gap(self._air_gap_sample)
-            self._p_main.dispense(self._air_gap_sample, self._lys_buff.top())
-        self._p_main.drop_tip()
+            if self._lysis_first:
+                self._p_main.dispense(self._air_gap_sample, self._lys_buff.top())
+            else:
+                self._p_main.drop_tip()
+        if self._lysis_first:
+            self._p_main.drop_tip()
     
     def transfer_internal_control(self, idx: int, dest):
         strip_ind = idx // self.cols_per_strip
@@ -394,13 +407,19 @@ class StationA(Station):
         self.setup_tip_log()
         self.setup_lys_tube()
         
-        self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
-        self._p_main.flow_rate.dispense = self._lysis_rate_dispense
-        self.transfer_lys()
+        def t_lys():
+            self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
+            self._p_main.flow_rate.dispense = self._lysis_rate_dispense
+            self.transfer_lys()
         
-        self._p_main.flow_rate.aspirate = self._sample_aspirate
-        self._p_main.flow_rate.dispense = self._sample_dispense
-        self.transfer_samples()
+        def t_smp():
+            self._p_main.flow_rate.aspirate = self._sample_aspirate
+            self._p_main.flow_rate.dispense = self._sample_dispense
+            self.transfer_samples()
+        
+        T = (t_lys, t_smp)
+        for t in (T if self._lysis_first else reversed(T)):
+            t()
         
         self.logger.info('incubate sample plate (slot 4) at 55-57°C for 20 minutes. Return to slot 4 when complete.')
         self._ctx.pause('Pausing')
