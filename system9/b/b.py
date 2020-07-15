@@ -1,5 +1,7 @@
 from ..station import Station, labware_loader, instrument_loader
 from opentrons.protocol_api import ProtocolContext
+from typing import Optional
+import logging
 
 
 _metadata = {
@@ -17,6 +19,7 @@ class StationB(Station):
         default_aspiration_rate: float = 150,
         elute_aspiration_rate: float = 50,
         elution_vol: float = 40,
+        logger: Optional[logging.getLoggerClass()] = None,
         metadata: dict = _metadata,
         num_samples: int = 96,
         park: bool = True,
@@ -31,6 +34,7 @@ class StationB(Station):
         :param default_aspiration_rate: Default aspiration flow rate in uL/s
         :param elute_aspiration_rate: Aspiration flow rate when aspirating elution buffer in uL/s
         :param elution_vol: The volume of elution buffer to aspirate in uL
+        :param logger: logger object. If not specified, the default logger is used that logs through the ProtocolContext comment method
         :param metadata: protocol metadata
         :param num_samples: The number of samples that will be loaded on the station B
         :param park: Whether to park or not
@@ -51,6 +55,19 @@ class StationB(Station):
         self._supernatant_removal_aspiration_rate = supernatant_removal_aspiration_rate
         self._starting_vol = starting_vol
         self._tip_rack = tip_rack
+        self._logger = logger
+    
+    def delay(self, mins: float, msg: str):
+        msg = "{} for {} minutes".format(msg, mins)
+        if self._skip_delay:
+            self.logger.info("{}. Pausing for skipping delay. Please resume".format(msg))
+            self._ctx.pause()
+        else:
+            self.logger.info(msg)
+            self._ctx.delay(minutes=mins)
+    
+    def run(self, ctx: ProtocolContext):
+        self._ctx = ctx
 
 
 station_b = StationB()
