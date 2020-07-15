@@ -120,6 +120,9 @@ class StationA(Station):
             metadata=metadata,
             num_samples=num_samples,
             samples_per_col=samples_per_col,
+            tip_log_filename=tip_log_filename,
+            tip_log_folder_path=tip_log_folder_path,
+            tip_rack=tip_rack,
         )
         self._air_gap_dest_multi = air_gap_dest_multi
         self._air_gap_sample = air_gap_sample
@@ -160,9 +163,6 @@ class StationA(Station):
         self._source_racks_slots = source_racks_slots
         self._source_top_height = source_top_height
         self._tempdeck_temp = tempdeck_temp
-        self._tip_log_filename = tip_log_filename
-        self._tip_log_folder_path = tip_log_folder_path
-        self._tip_rack = tip_rack
         self._tipracks_slots = tipracks_slots
     
     @labware_loader(0, "_tempdeck", "_internal_control_strips")
@@ -241,50 +241,12 @@ class StationA(Station):
         self._dests_multi = self._dest_plate.rows()[0][:self.num_cols]
         self.logger.debug("positive control in {} of destination rack".format(self._positive_control_well))
     
-    @property
-    def _tip_log_filepath(self) -> str:
-        return os.path.join(self._tip_log_folder_path, self._tip_log_filename)
-    
-    def _tiprack_log_args(self):
-        # first of each is the m20, second the main pipette
-        return ('m20', self._main_pipette), (self._m20, self._p_main), (self._tipracks20, self._tipracks_main)
-    
-    def setup_tip_log(self):
-        labels, pipettes, tipracks = self._tiprack_log_args()
-        
-        self._tip_log = {'count': {}}
-        if self._tip_rack and not self._ctx.is_simulating():
-            self.logger.debug("logging tip info in {}".format(self._tip_log_filepath))
-            if os.path.isfile(self._tip_log_filepath):
-                with open(self._tip_log_filepath) as json_file:
-                    data: dict = json.load(json_file)
-                    for p, l in zip(pipettes, labels):
-                        self._tip_log['count'][p] = data.get(l, 0)
-        else:
-            self.logger.debug("not using tip log file")
-            self._tip_log['count'] = dict(zip(pipettes, repeat(0)))
-        
-        self._tip_log['tips'] = {
-            pipettes[0]: list(chain.from_iterable(rack.rows()[0] for rack in tipracks[0])),
-            pipettes[1]: list(chain.from_iterable(rack.wells() for rack in tipracks[1])),
-        }
-        self._tip_log['max'] = {p: len(l) for p, l in self._tip_log['tips'].items()}
-    
     def setup_lys_tube(self):
         self._lysis_tube = LysisTube(self._lys_buff.diameter / 2, self._lysis_cone_height)
         self._lysis_tube.height = self._lysis_headroom_height
         self._lysis_tube.fill(self.initlial_volume_lys)
         self.logger.info("number of samples: {}. Lysis buffer expected volume: {} uL".format(self._num_samples, math.ceil(self._lysis_tube.volume)))
         self.logger.debug("lysis buffer expected height: {:.2f} mm".format(self._lysis_tube.height))
-    
-    def pick_up(self, pip):
-        if self._tip_log['count'][pip] == self._tip_log['max'][pip]:
-            # If empty, wait for refill
-            self._ctx.pause('Replace {:.0f} uL tipracks before resuming.'.format(pip.max_volume))
-            pip.reset_tipracks()
-            self._tip_log['count'][pip] = 0
-        pip.pick_up_tip(self._tip_log['tips'][pip][self._tip_log['count'][pip]])
-        self._tip_log['count'][pip] += 1
     
     def transfer_sample(self, source, dest):
         self.logger.debug("transferring from {} to {}".format(source, dest))
@@ -376,24 +338,13 @@ class StationA(Station):
         self._m20.air_gap(self._air_gap_dest_multi)
         self._m20.drop_tip()
     
-    def track_tip(self):
-        labels, pipettes, tipracks = self._tiprack_log_args()
-        if not self._ctx.is_simulating():
-            self.logger.debug("dumping logging tip info in {}".format(self._tip_log_filepath))
-            if not os.path.isdir(self._tip_log_folder_path):
-                os.mkdir(self._tip_log_folder_path)
-            data = dict(zip(labels, map(self._tip_log['count'].__getitem__, pipettes)))
-            with open(self._tip_log_filepath, 'w') as outfile:
-                json.dump(data, outfile)
+    def _tiprack_log_args(self):
+        # first of each is the m20, second the main pipette
+        return ('m20', self._main_pipette), (self._m20, self._p_main), (self._tipracks20, self._tipracks_main)
     
     def run(self, ctx: ProtocolContext):
-        self._ctx = ctx
-        self.logger.info(self._protocol_description)
-        self.logger.info("using system9 version {}".format(__version__))
-        self.load_labware()
-        self.load_instruments()
+        super(StationA, self).run(ctx)
         self.setup_samples()
-        self.setup_tip_log()
         self.setup_lys_tube()
         
         def t_lys():

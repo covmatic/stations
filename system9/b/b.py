@@ -28,6 +28,8 @@ class StationB(Station):
         skip_delay: bool = False,
         supernatant_removal_aspiration_rate: float = 25,
         starting_vol: float = 380,
+        tip_log_filename: str = 'tip_log.json',
+        tip_log_folder_path: str = './data/B',
         tip_rack: bool = False,
         tipracks_slots: Tuple[str, ...] = ('3', '6', '8', '9', '10'),
     ):
@@ -49,6 +51,8 @@ class StationB(Station):
         :param skip_delay: If True, pause instead of delay.
         :param supernatant_removal_aspiration_rate: Aspiration flow rate when removing the supernatant in uL/s
         :param starting_vol: Sample volume at start (volume coming from Station A) 
+        :param tip_log_filename: file name for the tip log JSON dump
+        :param tip_log_folder_path: folder for the tip log JSON dump
         :param tip_rack: If True, try and load previous tiprack log from the JSON file
         :param tipracks_slots: Slots where the tipracks are positioned
         """
@@ -58,6 +62,9 @@ class StationB(Station):
             metadata=metadata,
             num_samples=num_samples,
             samples_per_col=samples_per_col,
+            tip_log_filename=tip_log_filename,
+            tip_log_folder_path=tip_log_folder_path,
+            tip_rack=tip_rack,
         )
         self._bind_aspiration_rate = bind_aspiration_rate
         self._bind_blowout_rate = bind_blowout_rate
@@ -72,7 +79,6 @@ class StationB(Station):
         self._skip_delay = skip_delay
         self._supernatant_removal_aspiration_rate = supernatant_removal_aspiration_rate
         self._starting_vol = starting_vol
-        self._tip_rack = tip_rack
         self._tipracks_slots = tipracks_slots
     
     def delay(self, mins: float, msg: str):
@@ -166,6 +172,10 @@ class StationB(Station):
         self._m300.flow_rate.aspirate = self._bind_aspiration_rate
         self._m300.flow_rate.dispense = self._bind_dispense_rate
         self._m300.flow_rate.blow_out = self._bind_blowout_rate
+        
+    def _tiprack_log_args(self):
+        # first of each is the m20, second the main pipette
+        return ('m300',), (self._m300,), (self._tips300,)
     
     def run(self, ctx: ProtocolContext):
         super(StationB, self).run(ctx)

@@ -1,9 +1,13 @@
 from . import __version__
 from .utils import ProtocolContextLoggingHandler, logging
 from opentrons.protocol_api import ProtocolContext
+from abc import ABCMeta, abstractmethod
 from functools import wraps
-from typing import Optional, Callable
+from itertools import chain, repeat
+from typing import Optional, Callable, Iterable, Tuple
+import json
 import math
+import os
 
 
 def loader(key):
@@ -27,7 +31,7 @@ labware_loader = loader("_labware_load")
 instrument_loader = loader("_instr_load")
 
 
-class Station:
+class Station(metaclass=ABCMeta):
     _protocol_description = "[BRIEFLY DESCRIBE YOUR PROTOCOL]"
     
     def __init__(self,
@@ -36,6 +40,9 @@ class Station:
         metadata: Optional[dict] = None,
         num_samples: int = 96,
         samples_per_col: int = 8,
+        tip_log_filename: str = 'tip_log.json',
+        tip_log_folder_path: str = './data/',
+        tip_rack: bool = False,
         **kwargs,
     ):
         self.jupyter = jupyter
@@ -43,6 +50,9 @@ class Station:
         self.metadata = metadata
         self._num_samples = num_samples
         self._samples_per_col = samples_per_col
+        self._tip_log_filename = tip_log_filename
+        self._tip_log_folder_path = tip_log_folder_path
+        self._tip_rack = tip_rack
         self._ctx: Optional[ProtocolContext] = None
     
     def __getattr__(self, item: str):
@@ -85,12 +95,61 @@ class Station:
     def num_cols(self) -> int:
         return math.ceil(self._num_samples/self._samples_per_col)
     
+    @property
+    def _tip_log_filepath(self) -> str:
+        return os.path.join(self._tip_log_folder_path, self._tip_log_filename)
+    
+    @abstractmethod
+    def _tiprack_log_args(self) -> Tuple[Iterable, Iterable, Iterable]:
+        pass
+    
+    def setup_tip_log(self):
+        labels, pipettes, tipracks = self._tiprack_log_args()
+        
+        self._tip_log = {'count': {}}
+        if self._tip_rack and not self._ctx.is_simulating():
+            self.logger.debug("logging tip info in {}".format(self._tip_log_filepath))
+            if os.path.isfile(self._tip_log_filepath):
+                with open(self._tip_log_filepath) as json_file:
+                    data: dict = json.load(json_file)
+                    for p, l in zip(pipettes, labels):
+                        self._tip_log['count'][p] = data.get(l, 0)
+        else:
+            self.logger.debug("not using tip log file")
+            self._tip_log['count'] = dict(zip(pipettes, repeat(0)))
+        
+        self._tip_log['tips'] = {
+            p: list(chain.from_iterable(rack.wells() if i else rack.rows()[0] for rack in t))
+            for i, (p, t) in enumerate(zip(pipettes, tipracks))
+        }
+        self._tip_log['max'] = {p: len(l) for p, l in self._tip_log['tips'].items()}
+    
+    def track_tip(self):
+        labels, pipettes, tipracks = self._tiprack_log_args()
+        if not self._ctx.is_simulating():
+            self.logger.debug("dumping logging tip info in {}".format(self._tip_log_filepath))
+            if not os.path.isdir(self._tip_log_folder_path):
+                os.mkdir(self._tip_log_folder_path)
+            data = dict(zip(labels, map(self._tip_log['count'].__getitem__, pipettes)))
+            with open(self._tip_log_filepath, 'w') as outfile:
+                json.dump(data, outfile)
+    
+    def pick_up(self, pip):
+        if self._tip_log['count'][pip] == self._tip_log['max'][pip]:
+            # If empty, wait for refill
+            self._ctx.pause('Replace {:.0f} uL tipracks before resuming.'.format(pip.max_volume))
+            pip.reset_tipracks()
+            self._tip_log['count'][pip] = 0
+        pip.pick_up_tip(self._tip_log['tips'][pip][self._tip_log['count'][pip]])
+        self._tip_log['count'][pip] += 1
+    
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx
         self.logger.info(self._protocol_description)
         self.logger.info("using system9 version {}".format(__version__))
         self.load_labware()
         self.load_instruments()
+        self.setup_tip_log()
     
     def simulate(self):
         from opentrons import simulate
