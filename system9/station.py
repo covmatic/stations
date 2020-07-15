@@ -2,7 +2,8 @@ from . import __version__
 from .utils import ProtocolContextLoggingHandler, logging
 from opentrons.protocol_api import ProtocolContext
 from functools import wraps
-from typing import Optional, Callable, Any
+from typing import Optional, Callable
+import math
 
 
 def loader(key):
@@ -33,11 +34,15 @@ class Station:
         jupyter: bool = True,
         logger: Optional[logging.getLoggerClass()] = None,
         metadata: Optional[dict] = None,
+        num_samples: int = 96,
+        samples_per_col: int = 8,
         **kwargs,
     ):
         self.jupyter = jupyter
         self._logger = logger
         self.metadata = metadata
+        self._num_samples = num_samples
+        self._samples_per_col = samples_per_col
         self._ctx: Optional[ProtocolContext] = None
     
     def __getattr__(self, item: str):
@@ -75,6 +80,10 @@ class Station:
     
     def load_instruments(self):
         self.load_it(self.instrument_loaders())
+    
+    @property
+    def num_cols(self) -> int:
+        return math.ceil(self._num_samples/self._samples_per_col)
     
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx

@@ -111,12 +111,15 @@ class StationA(Station):
         :param tip_log_filename: file name for the tip log JSON dump
         :param tip_log_folder_path: folder for the tip log JSON dump
         :param tip_rack: If True, try and load previous tiprack log from the JSON file
+        :param tipracks_slots: Slots where the tipracks are positioned
         :param jupyter: Specify whether the protocol is run on Jupyter (or Python) instead of the robot
         """
         super(StationA, self).__init__(
             jupyter=jupyter,
             logger=logger,
             metadata=metadata,
+            num_samples=num_samples,
+            samples_per_col=samples_per_col,
         )
         self._air_gap_dest_multi = air_gap_dest_multi
         self._air_gap_sample = air_gap_sample
@@ -145,12 +148,10 @@ class StationA(Station):
         self._max_speeds_a = max_speeds_a
         self._mix_repeats = mix_repeats
         self._mix_volume = mix_volume
-        self._num_samples = num_samples
         self._positive_control_well = positive_control_well
         self._sample_aspirate = sample_aspirate
         self._sample_blow_out = sample_blow_out
         self._sample_dispense = sample_dispense
-        self._samples_per_col = samples_per_col
         self._sample_volume = sample_volume
         self._source_headroom_height = source_headroom_height
         self._source_position_top = source_position_top
@@ -221,10 +222,6 @@ class StationA(Station):
         self._p_main = self._ctx.load_instrument(self._main_pipette, 'right', tip_racks=self._tipracks_main)
         self._p_main.flow_rate.blow_out = self._sample_blow_out
         self.logger.debug("main pipette: {}".format(self._p_main))
-    
-    @property
-    def num_cols(self) -> int:
-        return math.ceil(self._num_samples/self._samples_per_col)
     
     @property
     def num_ic_strips(self) -> int:
