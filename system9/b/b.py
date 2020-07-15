@@ -4,14 +4,9 @@ from typing import Optional
 import logging
 
 
-_metadata = {
-    'protocolName': 'Version 1 S9 Station B BP Purebase (400µl sample input)',
-    'author': 'Nick <ndiehl@opentrons.com',
-    'apiLevel': '2.3'
-}
-
-
 class StationB(Station):
+    _protocol_description = "station B protocol"
+    
     def __init__(
         self,
         bind_aspiration_rate: float = 50,
@@ -19,8 +14,9 @@ class StationB(Station):
         default_aspiration_rate: float = 150,
         elute_aspiration_rate: float = 50,
         elution_vol: float = 40,
+        jupyter: bool = True,
         logger: Optional[logging.getLoggerClass()] = None,
-        metadata: dict = _metadata,
+        metadata: Optional[dict] = None,
         num_samples: int = 96,
         park: bool = True,
         skip_delay: bool = False,
@@ -43,19 +39,22 @@ class StationB(Station):
         :param starting_vol: Sample volume at start (volume coming from Station A) 
         :param tip_rack: If True, try and load previous tiprack log from the JSON file
         """
+        super(StationB, self).__init__(
+            jupyter=jupyter,
+            logger=logger,
+            metadata=metadata,
+        )
         self._bind_aspiration_rate = bind_aspiration_rate
         self._bind_max_transfer_vol = bind_max_transfer_vol
         self._default_aspiration_rate = default_aspiration_rate
         self._elute_aspiration_rate = elute_aspiration_rate
         self._elution_vol = elution_vol
-        self.metadata = metadata
         self._num_samples = num_samples
         self._park = park
         self._skip_delay = skip_delay
         self._supernatant_removal_aspiration_rate = supernatant_removal_aspiration_rate
         self._starting_vol = starting_vol
         self._tip_rack = tip_rack
-        self._logger = logger
     
     def delay(self, mins: float, msg: str):
         msg = "{} for {} minutes".format(msg, mins)
@@ -67,14 +66,8 @@ class StationB(Station):
             self._ctx.delay(minutes=mins)
     
     def run(self, ctx: ProtocolContext):
-        self._ctx = ctx
-
-
-station_b = StationB()
-metadata = station_b.metadata
-run = station_b.run
+        super(StationB, self).run(ctx)
 
 
 if __name__ == "__main__":
-    from opentrons import simulate    
-    run(simulate.get_protocol_api(metadata["apiLevel"]))
+    StationB(metadata={'apiLevel': '2.3'}).simulate()

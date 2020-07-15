@@ -1,4 +1,6 @@
+from . import __version__
 from .utils import ProtocolContextLoggingHandler, logging
+from opentrons.protocol_api import ProtocolContext
 from functools import wraps
 from typing import Optional, Callable, Any
 
@@ -25,6 +27,19 @@ instrument_loader = loader("_instr_load")
 
 
 class Station:
+    _protocol_description = "[BRIEFLY DESCRIBE YOUR PROTOCOL]"
+    
+    def __init__(self,
+        jupyter: bool = True,
+        logger: Optional[logging.getLoggerClass()] = None,
+        metadata: Optional[dict] = None,
+        **kwargs,
+    ):
+        self.jupyter = jupyter
+        self._logger = logger
+        self.metadata = metadata
+        self._ctx: Optional[ProtocolContext] = None
+    
     def __getattr__(self, item: str):
         return self.metadata[item]
     
@@ -60,3 +75,14 @@ class Station:
     
     def load_instruments(self):
         self.load_it(self.instrument_loaders())
+    
+    def run(self, ctx: ProtocolContext):
+        self._ctx = ctx
+        self.logger.info(self._protocol_description)
+        self.logger.info("using system9 version {}".format(__version__))
+        self.load_labware()
+        self.load_instruments()
+    
+    def simulate(self):
+        from opentrons import simulate
+        self.run(simulate.get_protocol_api(self.metadata["apiLevel"]))

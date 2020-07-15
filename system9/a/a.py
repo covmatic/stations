@@ -11,15 +11,6 @@ import logging
 from typing import Optional, Tuple
 
 
-_metadata = {
-    'protocolName': 'Version 1 S9 Station A BP Purebase',
-    'author': 'Nick <protocols@opentrons.com>',
-    'refactoring': 'Marco <marcotiraboschi@hotmail.it>',
-    'source': 'Custom Protocol Request',
-    'apiLevel': '2.3'
-}
-
-
 class StationA(Station):    
     def __init__(
         self,
@@ -36,6 +27,7 @@ class StationA(Station):
         ic_mix_volume: float = 20,
         iec_volume: float = 19,
         internal_control_idx_th: int = 48,
+        jupyter: bool = True,
         logger: Optional[logging.getLoggerClass()] = None,
         lysis_cone_height: float = 16,
         lysis_first: bool = False,
@@ -49,7 +41,7 @@ class StationA(Station):
         main_tiprack: str = 'opentrons_96_tiprack_300ul',
         main_tiprack_label: str = '200ul filter tiprack',
         max_speeds_a: float = 20,
-        metadata: dict = _metadata,
+        metadata: dict = None,
         mix_repeats: int = 3,
         mix_volume: float = 150,
         num_samples: int = 96,
@@ -70,7 +62,6 @@ class StationA(Station):
         tip_log_folder_path: str = './data/A',
         tip_rack: bool = False,
         tipracks_slots: Tuple[str, ...] = ('8', '9', '11'),
-        jupyter: bool = True,
     ):
         """ Build a :py:class:`.StationA`.
 
@@ -122,55 +113,56 @@ class StationA(Station):
         :param tip_rack: If True, try and load previous tiprack log from the JSON file
         :param jupyter: Specify whether the protocol is run on Jupyter (or Python) instead of the robot
         """
+        super(StationA, self).__init__(
+            jupyter=jupyter,
+            logger=logger,
+            metadata=metadata,
+        )
+        self._air_gap_dest_multi = air_gap_dest_multi
+        self._air_gap_sample = air_gap_sample
+        self._dest_headroom_height = dest_headroom_height
+        self._dest_multi_headroom_height = dest_multi_headroom_height
         self._dest_top_height = dest_top_height
-        self._source_top_height = source_top_height
-        self._positive_control_well = positive_control_well
-        self._ic_headroom_bottom = ic_headroom_bottom
+        self._hover_height = hover_height
         self._ic_capacity = ic_capacity
+        self._ic_headroom_bottom = ic_headroom_bottom
         self._ic_lys_headroom = ic_lys_headroom
-        self._main_pipette = main_pipette
-        self._main_tiprack = main_tiprack
-        self._main_tiprack_label = main_tiprack_label
-        self._source_racks_definition_filepath = source_racks_definition_filepath
-        self._tempdeck_temp = tempdeck_temp
-        self._num_samples = num_samples
-        self._samples_per_col = samples_per_col
-        self._sample_volume = sample_volume
-        self._lysis_volume = lysis_volume
+        self._ic_mix_repeats = ic_mix_repeats
+        self._ic_mix_volume = ic_mix_volume
         self._iec_volume = iec_volume
-        self._tip_rack = tip_rack
-        self._sample_aspirate = sample_aspirate
-        self._sample_dispense = sample_dispense
-        self._sample_blow_out = sample_blow_out
-        self._lysis_rate_aspirate = lysis_rate_aspirate
-        self._lysis_rate_dispense = lysis_rate_dispense
+        self._internal_control_idx_th = internal_control_idx_th
         self._lysis_cone_height = lysis_cone_height
         self._lysis_first = lysis_first
         self._lysis_headroom_height = lysis_headroom_height
-        self._air_gap_sample = air_gap_sample
-        self._source_headroom_height = source_headroom_height
-        self._source_position_top = source_position_top
-        self._internal_control_idx_th = internal_control_idx_th
-        self._dest_headroom_height = dest_headroom_height
-        self._dest_multi_headroom_height = dest_multi_headroom_height
-        self._air_gap_dest_multi = air_gap_dest_multi
-        self._hover_height = hover_height
+        self._lysis_rate_aspirate = lysis_rate_aspirate
+        self._lysis_rate_dispense = lysis_rate_dispense
+        self._lysis_volume = lysis_volume
+        self._lys_mix_repeats = lys_mix_repeats
+        self._lys_mix_volume = lys_mix_volume
+        self._main_pipette = main_pipette
+        self._main_tiprack = main_tiprack
+        self._main_tiprack_label = main_tiprack_label
         self._max_speeds_a = max_speeds_a
         self._mix_repeats = mix_repeats
         self._mix_volume = mix_volume
-        self._lys_mix_repeats = lys_mix_repeats
-        self._lys_mix_volume = lys_mix_volume
-        self._ic_mix_repeats = ic_mix_repeats
-        self._ic_mix_volume = ic_mix_volume
+        self._num_samples = num_samples
+        self._positive_control_well = positive_control_well
+        self._sample_aspirate = sample_aspirate
+        self._sample_blow_out = sample_blow_out
+        self._sample_dispense = sample_dispense
+        self._samples_per_col = samples_per_col
+        self._sample_volume = sample_volume
+        self._source_headroom_height = source_headroom_height
+        self._source_position_top = source_position_top
         self._source_racks = source_racks
+        self._source_racks_definition_filepath = source_racks_definition_filepath
         self._source_racks_slots = source_racks_slots
-        self._tipracks_slots = tipracks_slots
-        self._tip_log_folder_path = tip_log_folder_path
+        self._source_top_height = source_top_height
+        self._tempdeck_temp = tempdeck_temp
         self._tip_log_filename = tip_log_filename
-        self.metadata = metadata
-        self._logger = logger
-        self._ctx = None
-        self.jupyter = jupyter
+        self._tip_log_folder_path = tip_log_folder_path
+        self._tip_rack = tip_rack
+        self._tipracks_slots = tipracks_slots
     
     @labware_loader(0, "_tempdeck", "_internal_control_strips")
     def load_tempdeck(self):
