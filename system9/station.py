@@ -134,14 +134,17 @@ class Station(metaclass=ABCMeta):
             with open(self._tip_log_filepath, 'w') as outfile:
                 json.dump(data, outfile)
     
-    def pick_up(self, pip):
-        if self._tip_log['count'][pip] == self._tip_log['max'][pip]:
-            # If empty, wait for refill
-            self._ctx.pause('Replace {:.0f} uL tipracks before resuming.'.format(pip.max_volume))
-            pip.reset_tipracks()
-            self._tip_log['count'][pip] = 0
-        pip.pick_up_tip(self._tip_log['tips'][pip][self._tip_log['count'][pip]])
-        self._tip_log['count'][pip] += 1
+    def pick_up(self, pip, loc=None):
+        if loc is None:
+            if self._tip_log['count'][pip] == self._tip_log['max'][pip]:
+                # If empty, wait for refill
+                self._ctx.pause('Replace {:.0f} uL tipracks before resuming.'.format(pip.max_volume))
+                pip.reset_tipracks()
+                self._tip_log['count'][pip] = 0
+            pip.pick_up_tip(self._tip_log['tips'][pip][self._tip_log['count'][pip]])
+            self._tip_log['count'][pip] += 1
+        else:
+            pip.pick_up_tip(loc)
     
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx

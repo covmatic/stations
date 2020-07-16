@@ -177,12 +177,6 @@ class StationB(Station):
         # first of each is the m20, second the main pipette
         return ('m300',), (self._m300,), (self._tips300,)
     
-    def pick_up(self, pip, loc=None):
-        if loc is None:
-            super(StationB, self).pick_up(pip)
-        else:
-            pip.pick_up_tip(loc)
-    
     def run(self, ctx: ProtocolContext):
         super(StationB, self).run(ctx)
 
