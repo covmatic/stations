@@ -2,7 +2,31 @@ from opentrons import protocol_api
 import json
 import os
 import math
-from itertools import cycle, islice
+
+from opentrons.protocol_api import ProtocolContext
+from threading import Thread
+import time
+
+
+class BlinkingLight(Thread):
+    def __init__(self, ctx: ProtocolContext, t: float = 1):
+        super(BlinkingLight, self).__init__()
+        self._on = False
+        self._ctx = ctx
+        self._t = t
+    
+    def stop(self):
+        self._on = False
+        self.join()
+    
+    def run(self):
+        self._on = True
+        state = self._ctx._hw_manager.hardware.get_lights()
+        while self._on:
+            self._ctx._hw_manager.hardware.set_lights(rails=not self._ctx._hw_manager.hardware.get_lights())
+            time.sleep(self._t)
+        self._ctx._hw_manager.hardware.set_lights(rails=state)
+
 
 # metadata
 metadata = {
@@ -154,8 +178,11 @@ before resuming.')
             remaining_samples -= 8
         
         if remaining_samples > 0:
+            blight = BlinkingLight(ctx=ctx)
+            blight.start()
             # print("Please, load a new plate from station B. Resume when it is ready")
             ctx.pause("Please, load a new plate from station B. Resume when it is ready")
+            blight.stop()
     #### END REPEATED SECTION
     
     # track final used tip
