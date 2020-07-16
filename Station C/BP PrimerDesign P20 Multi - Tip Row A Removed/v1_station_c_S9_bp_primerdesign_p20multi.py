@@ -25,7 +25,7 @@ def run(ctx: protocol_api.ProtocolContext):
         'chilled elution plate on block from Station B')
     tips20 = [
         ctx.load_labware('opentrons_96_filtertiprack_20ul', slot)
-        for slot in ['3', '6', '7', '8', '9']
+        for slot in ['2', '3', '6', '7', '9']
     ]
     tips20_no_a = [
         ctx.load_labware('opentrons_96_filtertiprack_20ul', '11',
@@ -36,13 +36,13 @@ def run(ctx: protocol_api.ProtocolContext):
     pcr_plate = tempdeck.load_labware(
         'opentrons_96_aluminumblock_biorad_wellplate_200ul', 'PCR plate')
     mm_strips = ctx.load_labware(
-        'opentrons_96_aluminumblock_generic_pcr_strip_200ul', '5',
+        'opentrons_96_aluminumblock_generic_pcr_strip_200ul', '8',
         'mastermix strips')
     tempdeck.set_temperature(4)
     tube_block = ctx.load_labware(
-        'opentrons_24_aluminumblock_nest_1.5ml_snapcap', '2',
+        'opentrons_24_aluminumblock_nest_1.5ml_snapcap', '5',
         '2ml screw tube aluminum block for mastermix + controls')
-
+    
     # pipette
     m20 = ctx.load_instrument('p20_multi_gen2', 'right', tip_racks=tips20)
     p300 = ctx.load_instrument('p300_single_gen2', 'left', tip_racks=tips300)
