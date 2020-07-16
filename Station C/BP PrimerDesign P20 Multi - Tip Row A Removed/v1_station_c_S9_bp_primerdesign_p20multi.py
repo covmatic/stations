@@ -14,7 +14,7 @@ metadata = {
 
 
 NUM_SAMPLES = 96*5  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
-TIP_TRACK = True
+TIP_TRACK = False
 
 
 def run(ctx: protocol_api.ProtocolContext):
@@ -118,13 +118,13 @@ before resuming.')
         }
     }
     
-    vol_per_strip_well = num_cols*mm_dict['volume']*1.1
     mm_strip = mm_strips.columns()[0]
-    
     remaining_samples = NUM_SAMPLES
     
     #### START REPEATED SECTION
-    while remaining_samples > 0:    
+    while remaining_samples > 0:
+        vol_per_strip_well = min(remaining_samples, 96)/8*mm_dict['volume']*1.1
+        
         # transfer mastermix to strips
         pick_up(p300)
         for well in mm_strip:
