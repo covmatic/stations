@@ -2,6 +2,7 @@ from opentrons import protocol_api
 import json
 import os
 import math
+from typing import Optional
 
 from opentrons.protocol_api import ProtocolContext
 from threading import Thread
@@ -12,20 +13,25 @@ class BlinkingLight(Thread):
     def __init__(self, ctx: ProtocolContext, t: float = 1):
         super(BlinkingLight, self).__init__()
         self._on = False
+        self._state = True
         self._ctx = ctx
         self._t = t
     
     def stop(self):
         self._on = False
         self.join()
-    
+
+    def switch(self, x: Optional[bool] = None):
+        self._state = not self._state if x is None else x
+        self._ctx._hw_manager.hardware.set_lights(rails=self._state)
+            
     def run(self):
         self._on = True
         state = self._ctx._hw_manager.hardware.get_lights()
         while self._on:
-            self._ctx._hw_manager.hardware.set_lights(rails=not self._ctx._hw_manager.hardware.get_lights())
+            self.switch()
             time.sleep(self._t)
-        self._ctx._hw_manager.hardware.set_lights(rails=state)
+        self.switch(state)
 
 
 # metadata
@@ -63,7 +69,7 @@ def run(ctx: protocol_api.ProtocolContext):
     mm_strips = ctx.load_labware(
         'opentrons_96_aluminumblock_generic_pcr_strip_200ul', '8',
         'mastermix strips')
-    tempdeck.set_temperature(4)
+    # tempdeck.set_temperature(4)
     tube_block = ctx.load_labware(
         'opentrons_24_aluminumblock_nest_1.5ml_snapcap', '5',
         '2ml screw tube aluminum block for mastermix + controls')
@@ -144,6 +150,12 @@ before resuming.')
     
     mm_strip = mm_strips.columns()[0]
     remaining_samples = NUM_SAMPLES
+
+    for _ in range(5):
+        test_light = BlinkingLight(ctx)
+        test_light.start()
+        ctx.delay(30)
+        test_light.stop()
     
     #### START REPEATED SECTION
     while remaining_samples > 0:
