@@ -2,6 +2,7 @@ from opentrons import protocol_api
 import json
 import os
 import math
+from itertools import cycle, islice
 
 # metadata
 metadata = {
@@ -11,8 +12,8 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 96  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
-PREPARE_MASTERMIX = True
+
+NUM_SAMPLES = 96*5  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
 TIP_TRACK = True
 
 
@@ -89,12 +90,13 @@ def run(ctx: protocol_api.ProtocolContext):
     def pick_up(pip):
         nonlocal tip_log
         if tip_log['count'][pip] == tip_log['max'][pip]:
-            ctx.pause('Replace ' + str(pip.max_volume) + 'µl tipracks before \
-resuming.')
+            # print('Replace ' + str(pip.max_volume) + 'µl tipracks before resuming.')
+            ctx.pause('Replace ' + str(pip.max_volume) + 'µl tipracks before resuming.')
             pip.reset_tipracks()
             tip_log['count'][pip] = 0
         pip.pick_up_tip(tip_log['tips'][pip][tip_log['count'][pip]])
         tip_log['count'][pip] += 1
+        # print("Picked up {} with {} [#{}]".format(tip_log['tips'][pip][tip_log['count'][pip]-1], pip, tip_log['count'][pip]))
 
     def pick_up_no_a():
         nonlocal tip_log
@@ -104,6 +106,7 @@ before resuming.')
             tip_log['count']['tips20_no_a'] = 0
         m20.pick_up_tip(tip_log['tips']['tips20_no_a'][tip_log['count']['tips20_no_a']])
         tip_log['count']['tips20_no_a'] += 1
+        # print("Picked up {} with {} [#{}]".format(tip_log['tips']['tips20_no_a'][tip_log['count']['tips20_no_a']-1], 'tips20_no_a', tip_log['count']['tips20_no_a']))
 
     """ mastermix component maps """
     mm_tube = tube_block.wells()[0]
@@ -114,65 +117,47 @@ before resuming.')
             for tube, vol in zip(tube_block.columns()[1], [10, 2])
         }
     }
-
-    if PREPARE_MASTERMIX:
-        vol_overage = 1.2  # decrease overage for small sample number
-
-        for i, (tube, vol) in enumerate(mm_dict['components'].items()):
-            comp_vol = vol*(NUM_SAMPLES)*vol_overage
-            pick_up(p300)
-            num_trans = math.ceil(comp_vol/160)
-            vol_per_trans = comp_vol/num_trans
-            for _ in range(num_trans):
-                p300.air_gap(20)
-                p300.aspirate(vol_per_trans, tube)
-                ctx.delay(seconds=3)
-                p300.touch_tip(tube)
-                p300.air_gap(20)
-                p300.dispense(20, mm_tube.top())  # void air gap
-                p300.dispense(vol_per_trans, mm_tube.bottom(2))
-                p300.dispense(20, mm_tube.top())  # void pre-loaded air gap
-                p300.blow_out(mm_tube.top())
-                p300.touch_tip(mm_tube)
-            if i < len(mm_dict['components'].items()) - 1:  # only keep tip if last component and p300 in use
-                p300.drop_tip()
-        mm_total_vol = mm_dict['volume']*(NUM_SAMPLES)*vol_overage
-        if not p300.hw_pipette['has_tip']:  # pickup tip with P300 if necessary for mixing
-            pick_up(p300)
-        mix_vol = mm_total_vol / 2 if mm_total_vol / 2 <= 200 else 200  # mix volume is 1/2 MM total, maxing at 200µl
-        mix_loc = mm_tube.bottom(20) if NUM_SAMPLES > 48 else mm_tube.bottom(5)
-        p300.mix(7, mix_vol, mix_loc)
-        p300.blow_out(mm_tube.top())
-        p300.touch_tip()
-
-    # transfer mastermix to strips
+    
     vol_per_strip_well = num_cols*mm_dict['volume']*1.1
     mm_strip = mm_strips.columns()[0]
-    if not p300.hw_pipette['has_tip']:
+    
+    remaining_samples = NUM_SAMPLES
+    
+    #### START REPEATED SECTION
+    while remaining_samples > 0:    
+        # transfer mastermix to strips
         pick_up(p300)
-    for well in mm_strip:
-        p300.transfer(vol_per_strip_well, mm_tube, well, new_tip='never')
-
-    # transfer mastermix to plate
-    mm_vol = mm_dict['volume']
-    pick_up(m20)
-    m20.transfer(mm_vol, mm_strip[0].bottom(0.5), sample_dests,
-                 new_tip='never')
-    m20.drop_tip()
-
-    # transfer samples to corresponding locations
-    sample_vol = 20 - mm_vol
-    for i, (s, d) in enumerate(zip(sources, sample_dests)):
-        if i == 9:
-            pick_up_no_a()
-        else:
-            pick_up(m20)
-        m20.transfer(sample_vol, s.bottom(2), d.bottom(2), new_tip='never')
-        m20.mix(1, 10, d.bottom(2))
-        m20.blow_out(d.top(-2))
-        m20.aspirate(5, d.top(2))  # suck in any remaining droplets on way to trash
+        for well in mm_strip:
+            p300.transfer(vol_per_strip_well, mm_tube, well, new_tip='never')
+        p300.drop_tip()
+    
+        # transfer mastermix to plate
+        mm_vol = mm_dict['volume']
+        pick_up(m20)
+        m20.transfer(mm_vol, mm_strip[0].bottom(0.5), sample_dests,
+                     new_tip='never')
         m20.drop_tip()
-
+    
+        # transfer samples to corresponding locations
+        sample_vol = 20 - mm_vol
+        for i, (s, d) in enumerate(zip(sources, sample_dests)):
+            # print(i, end=" ")
+            if i == 9:
+                pick_up_no_a()
+            else:
+                pick_up(m20)
+            m20.transfer(sample_vol, s.bottom(2), d.bottom(2), new_tip='never')
+            m20.mix(1, 10, d.bottom(2))
+            m20.blow_out(d.top(-2))
+            m20.aspirate(5, d.top(2))  # suck in any remaining droplets on way to trash
+            m20.drop_tip()
+            remaining_samples -= 8
+        
+        if remaining_samples > 0:
+            # print("Please, load a new plate from station B. Resume when it is ready")
+            ctx.pause("Please, load a new plate from station B. Resume when it is ready")
+    #### END REPEATED SECTION
+    
     # track final used tip
     if TIP_TRACK and not ctx.is_simulating():
         if not os.path.isdir(folder_path):
@@ -184,3 +169,8 @@ before resuming.')
         }
         with open(tip_file_path, 'w') as outfile:
             json.dump(data, outfile)
+
+
+if __name__ == "__main__":
+    from opentrons import simulate  
+    run(simulate.get_protocol_api(metadata["apiLevel"]))
