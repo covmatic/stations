@@ -2,7 +2,8 @@ from opentrons import protocol_api
 import json
 import os
 import math
-from typing import Optional
+from typing import Optional, Tuple
+from itertools import cycle, islice, repeat
 
 from opentrons.protocol_api import ProtocolContext
 from threading import Thread
@@ -45,9 +46,62 @@ metadata = {
 
 NUM_SAMPLES = 96*5  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
 TIP_TRACK = False
+TEST_PAUSE = True
+TEST_BUTTON = True
+
+
+class Button:
+    _base_cols = ['red', 'green', 'blue']
+    _mixtures = {
+        'yellow': '110',
+        'magenta': '101',
+        'cyan': '011',
+        'white': '111',
+        'black': '000',
+    }
+    
+    def __init__(self, ctx: protocol_api.ProtocolContext, color: str = 'blue'):
+        self._ctx = ctx
+        self.color = color
+
+    @classmethod
+    def decode(cls, state):
+        if sum(state.values()) == 1:
+            for k, v in state.items():
+                if v:
+                    return k
+        code = ''.join(str(int(state[k])) for k in cls._base_cols)
+        for k, v in cls._mixtures.items():
+            if code == v:
+                return k
+
+    @classmethod
+    def encode(cls, color):
+        state = dict(zip(cls._base_cols, repeat(False)))
+        if color in cls._base_cols:
+            state[color] = True
+        elif color in cls._mixtures:
+            state = dict(zip(cls._base_cols, map(bool, map(int, cls._mixtures[color]))))
+        return state
+    
+    @property
+    def color(self):
+        return self.decode(self._state)
+
+    @color.setter
+    def color(self, color):
+        self._state = self.encode(color)
+        self._ctx._hw_manager.hardware._backend.gpio_chardev.set_button_light(**self._state)
 
 
 def run(ctx: protocol_api.ProtocolContext):
+    button = Button(ctx)
+
+    if TEST_BUTTON:
+        for c in islice(cycle(('red', 'yellow', 'green', 'cyan', 'blue', 'magenta', 'white', 'black')), 128):
+            button.color = c
+            ctx.delay(0.5)
+    
     global MM_TYPE
 
     # check source (elution) labware type
@@ -151,11 +205,17 @@ before resuming.')
     mm_strip = mm_strips.columns()[0]
     remaining_samples = NUM_SAMPLES
 
-    for _ in range(5):
-        test_light = BlinkingLight(ctx)
-        test_light.start()
-        ctx.delay(30)
-        test_light.stop()
+    if TEST_PAUSE:
+        for _ in range(5):
+            button.color = 'yellow'
+            test_light = BlinkingLight(ctx)
+            test_light.start()
+            ctx.delay(seconds=16)
+            test_light.stop()
+            ctx.pause()
+            ctx.delay(seconds=0.1) # avoid executing color change before pausing
+            button.color = 'blue'
+            ctx.delay(seconds=16, msg="Simulate work in progress")
     
     #### START REPEATED SECTION
     while remaining_samples > 0:
@@ -173,7 +233,7 @@ before resuming.')
         m20.transfer(mm_vol, mm_strip[0].bottom(0.5), sample_dests,
                      new_tip='never')
         m20.drop_tip()
-    
+
         # transfer samples to corresponding locations
         sample_vol = 20 - mm_vol
         for i, (s, d) in enumerate(zip(sources, sample_dests)):
@@ -191,11 +251,16 @@ before resuming.')
         
         ctx.home()
         if remaining_samples > 0:
+            button.color = 'yellow'
             blight = BlinkingLight(ctx=ctx)
             blight.start()
+            ctx.delay(seconds=16, msg="Cycle finished!")
+            blight.stop()
             # print("Please, load a new plate from station B. Resume when it is ready")
             ctx.pause("Please, load a new plate from station B. Resume when it is ready")
-            blight.stop()
+            ctx.delay(0.1)
+            button.color = 'blue'
+            
     #### END REPEATED SECTION
     
     # track final used tip
