@@ -189,6 +189,7 @@ before resuming.')
             m20.drop_tip()
             remaining_samples -= 8
         
+        ctx.home()
         if remaining_samples > 0:
             blight = BlinkingLight(ctx=ctx)
             blight.start()
