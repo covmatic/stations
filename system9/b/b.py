@@ -1,8 +1,10 @@
 from ..station import Station, labware_loader, instrument_loader
 from opentrons.protocol_api import ProtocolContext
+from opentrons.types import Point
 from itertools import repeat
 from typing import Optional, Tuple
 import logging
+import math
 
 
 class StationB(Station):
@@ -29,7 +31,9 @@ class StationB(Station):
         park: bool = True,
         samples_per_col: int = 8,
         skip_delay: bool = False,
+        supernatant_removal_air_gap: float = 20,
         supernatant_removal_aspiration_rate: float = 25,
+        supernatant_removal_height: float = 0.5,
         starting_vol: float = 380,
         tip_log_filename: str = 'tip_log.json',
         tip_log_folder_path: str = './data/B',
@@ -55,7 +59,9 @@ class StationB(Station):
         :param park: Whether to park or not
         :param samples_per_col: The number of samples in a column of the destination plate
         :param skip_delay: If True, pause instead of delay.
+        :param supernatant_removal_air_gap: Air gap when removing the supernatant in uL
         :param supernatant_removal_aspiration_rate: Aspiration flow rate when removing the supernatant in uL/s
+        :param supernatant_removal_height: Height from the bottom when removing the supernatant in mm
         :param starting_vol: Sample volume at start (volume coming from Station A) 
         :param tip_log_filename: file name for the tip log JSON dump
         :param tip_log_folder_path: folder for the tip log JSON dump
@@ -86,7 +92,9 @@ class StationB(Station):
         self._magheight = magheight
         self._magplate_model = magplate_model
         self._park = park
+        self._supernatant_removal_air_gap = supernatant_removal_air_gap
         self._supernatant_removal_aspiration_rate = supernatant_removal_aspiration_rate
+        self._supernatant_removal_height = supernatant_removal_height
         self._starting_vol = starting_vol
         self._tipracks_slots = tipracks_slots
     
@@ -175,6 +183,24 @@ class StationB(Station):
         
     def _tiprack_log_args(self):
         return ('m300',), (self._m300,), (self._tips300,)
+    
+    def remove_supernatant(self, vol: float, park=False):
+        self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
+        num_trans = math.ceil(vol / self._bind_max_transfer_vol)
+        vol_per_trans = vol / num_trans
+        
+        for i, (m, spot) in enumerate(zip(self.mag_samples_m, self._parking_spots)):
+            self.pick_up(self._m300, spot if park else None)
+            loc = m.bottom(self._supernatant_removal_height).move(Point(x=(-1 if i % 2 == 0 else 1)*2))
+            for _ in range(num_trans):
+                if self._m300.current_volume > 0:
+                    self._m300.dispense(self._m300.current_volume, m.top())
+                self._m300.move_to(m.center())
+                self._m300.transfer(vol_per_trans, loc, self._waste, new_tip='never', air_gap=self._supernatant_removal_air_gap)
+                self._m300.blow_out(self._waste)
+                self._m300.air_gap(self._supernatant_removal_air_gap)
+            self.drop(self._m300)
+        self._m300.flow_rate.aspirate = self._default_aspiration_rate
     
     def run(self, ctx: ProtocolContext):
         super(StationB, self).run(ctx)
