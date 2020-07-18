@@ -3,7 +3,7 @@ from .utils import ProtocolContextLoggingHandler, logging
 from .lights import Button, BlinkingLight
 from opentrons.protocol_api import ProtocolContext
 from abc import ABCMeta, abstractmethod
-from functools import wraps
+from functools import wraps, partial
 from itertools import chain, repeat
 from opentrons.types import Location
 from typing import Optional, Callable, Iterable, Tuple
@@ -43,6 +43,7 @@ class Station(metaclass=ABCMeta):
         metadata: Optional[dict] = None,
         num_samples: int = 96,
         samples_per_col: int = 8,
+        skip_delay: bool = False,
         tip_log_filename: str = 'tip_log.json',
         tip_log_folder_path: str = './data/',
         tip_rack: bool = False,
@@ -53,6 +54,7 @@ class Station(metaclass=ABCMeta):
         self.metadata = metadata
         self._num_samples = num_samples
         self._samples_per_col = samples_per_col
+        self._skip_delay = skip_delay
         self._tip_log_filename = tip_log_filename
         self._tip_log_folder_path = tip_log_folder_path
         self._tip_rack = tip_rack
@@ -151,27 +153,50 @@ class Station(metaclass=ABCMeta):
     
     def pause(self,
         msg: str = "",
-        color: str = 'yellow',
-        pause: bool = True,
-        home: bool = True,
-        blink_time: float = 16,
+        blink: bool = False,
         blink_period: float = 2,
+        color: str = 'yellow',
+        color_after: str = 'blue',
+        delay_time: float = 16,
+        home: bool = True,
         level: int = logging.WARNING,
-        color_after: str = 'blue'
+        pause: bool = True,
     ):
         button = Button(self._ctx, color)
         if msg:
             self.logger.log(level, msg)
         if home:
             self._ctx.home()
-        lt = BlinkingLight(self._ctx, t=blink_period/2)
-        lt.start()
-        self._ctx.delay(blink_time)
-        lt.stop()
+        if blink:
+            lt = BlinkingLight(self._ctx, t=blink_period/2)
+            lt.start()
+        if delay_time > 0:
+            self._ctx.delay(delay_time)
+        if blink:
+            lt.stop()
         if pause:
             self._ctx.pause()
             self._ctx.delay(0.1)  # pad to avoid pause leaking
         button.color = color_after
+    
+    def delay(self,
+        mins: float,
+        msg: str = "",
+        color: str = 'green',
+        color_after: str = 'blue',
+        home: bool = False,
+        level: int = logging.INFO,
+    ):
+        self.pause(
+            msg="{} for {} minutes{}".format(msg, mins, ". Pausing for skipping delay. Please resume" if self._skip_delay else ""),
+            blink=False,
+            color=color,
+            color_after=color_after,
+            delay_time=0 if self._skip_delay else (60 * mins),
+            home=home,
+            level=level,
+            pause=self._skip_delay,
+        )
     
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx

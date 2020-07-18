@@ -69,6 +69,7 @@ class StationB(Station):
             metadata=metadata,
             num_samples=num_samples,
             samples_per_col=samples_per_col,
+            skip_delay=skip_delay,
             tip_log_filename=tip_log_filename,
             tip_log_folder_path=tip_log_folder_path,
             tip_rack=tip_rack,
@@ -86,22 +87,12 @@ class StationB(Station):
         self._magheight = magheight
         self._magplate_model = magplate_model
         self._park = park
-        self._skip_delay = skip_delay
         self._supernatant_removal_aspiration_rate = supernatant_removal_aspiration_rate
         self._starting_vol = starting_vol
         self._tipracks_slots = tipracks_slots
         
         self._drop_count = 0
         self._side_switch = True
-    
-    def delay(self, mins: float, msg: str):
-        msg = "{} for {} minutes".format(msg, mins)
-        if self._skip_delay:
-            self.logger.info("{}. Pausing for skipping delay. Please resume".format(msg))
-            self._ctx.pause()
-        else:
-            self.logger.info(msg)
-            self._ctx.delay(minutes=mins)
     
     @labware_loader(0, "_tips300")
     def load_tips300(self):
@@ -187,7 +178,6 @@ class StationB(Station):
         self._m300.flow_rate.blow_out = self._bind_blowout_rate
         
     def _tiprack_log_args(self):
-        # first of each is the m20, second the main pipette
         return ('m300',), (self._m300,), (self._tips300,)
     
     def drop(self, pip):
@@ -198,11 +188,20 @@ class StationB(Station):
         self._drop_count += self._samples_per_col
         self.logger.debug("Dropped at the {} side ({}). There are {} tips in the trash bin".format("right" if self._side_switch else "left", drop_loc, self._drop_count))
         if self._drop_count >= self._drop_threshold:
-            self.pause('Pausing. Please empty tips from waste before resuming.', color='red', blink_time=8, level=logging.INFO)
+            self.pause('Pausing. Please empty tips from waste before resuming.', color='red', delay_time=8, level=logging.INFO)
             self._drop_count = 0
     
     def run(self, ctx: ProtocolContext):
         super(StationB, self).run(ctx)
+        #     bind(210, park=PARK)
+        #     wash(500, wash1, 20, park=PARK)
+        #     wash(500, wash2, 20, park=PARK)
+        #     wash(800, etoh, 4, park=PARK)
+        self._magdeck.disengage()
+        self.delay(12, 'Airdrying beads at room temperature')
+        # 
+        #     elute(ELUTION_VOL, park=PARK)
+        self._magdeck.disengage()
 
 
 if __name__ == "__main__":
