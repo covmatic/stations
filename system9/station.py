@@ -5,6 +5,7 @@ from opentrons.protocol_api import ProtocolContext
 from abc import ABCMeta, abstractmethod
 from functools import wraps
 from itertools import chain, repeat
+from opentrons.types import Location
 from typing import Optional, Callable, Iterable, Tuple
 import json
 import math
@@ -136,7 +137,7 @@ class Station(metaclass=ABCMeta):
             with open(self._tip_log_filepath, 'w') as outfile:
                 json.dump(data, outfile)
     
-    def pick_up(self, pip, loc=None):
+    def pick_up(self, pip, loc: Optional[Location] = None):
         if loc is None:
             if self._tip_log['count'][pip] == self._tip_log['max'][pip]:
                 # If empty, wait for refill
@@ -148,10 +149,21 @@ class Station(metaclass=ABCMeta):
         else:
             pip.pick_up_tip(loc)
     
-    def warn(self, msg: str = "", color: str = 'yellow', pause: bool = True, blink_time: float = 16, blink_period: float = 2, level: int = logging.WARNING, color_after: str = 'blue'):
+    def pause(self,
+        msg: str = "",
+        color: str = 'yellow',
+        pause: bool = True,
+        home: bool = True,
+        blink_time: float = 16,
+        blink_period: float = 2,
+        level: int = logging.WARNING,
+        color_after: str = 'blue'
+    ):
         button = Button(self._ctx, color)
         if msg:
             self.logger.log(level, msg)
+        if home:
+            self._ctx.home()
         lt = BlinkingLight(self._ctx, t=blink_period/2)
         lt.start()
         self._ctx.delay(blink_time)
