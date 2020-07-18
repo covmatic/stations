@@ -1,5 +1,6 @@
 from . import __version__
 from .utils import ProtocolContextLoggingHandler, logging
+from .lights import Button, BlinkingLight
 from opentrons.protocol_api import ProtocolContext
 from abc import ABCMeta, abstractmethod
 from functools import wraps
@@ -8,6 +9,7 @@ from typing import Optional, Callable, Iterable, Tuple
 import json
 import math
 import os
+import logging
 
 
 def loader(key):
@@ -145,6 +147,19 @@ class Station(metaclass=ABCMeta):
             self._tip_log['count'][pip] += 1
         else:
             pip.pick_up_tip(loc)
+    
+    def warn(self, msg: str = "", color: str = 'yellow', pause: bool = True, blink_time: float = 16, blink_period: float = 2, level: int = logging.WARNING, color_after: str = 'blue'):
+        button = Button(self._ctx, color)
+        if msg:
+            self.logger.log(level, msg)
+        lt = BlinkingLight(self._ctx, t=blink_period/2)
+        lt.start()
+        self._ctx.delay(blink_time)
+        lt.stop()
+        if pause:
+            self._ctx.pause()
+            self._ctx.delay(0.1)  # pad to avoid pause leaking
+        button.color = color_after
     
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx
