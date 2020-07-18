@@ -2,6 +2,7 @@ from . import __version__
 from .utils import ProtocolContextLoggingHandler, logging
 from .lights import Button, BlinkingLight
 from opentrons.protocol_api import ProtocolContext
+from opentrons.types import Point
 from abc import ABCMeta, abstractmethod
 from functools import wraps, partial
 from itertools import chain, repeat
@@ -38,6 +39,9 @@ class Station(metaclass=ABCMeta):
     _protocol_description = "[BRIEFLY DESCRIBE YOUR PROTOCOL]"
     
     def __init__(self,
+        drop_loc_l: float = 0,
+        drop_loc_r: float = 0,
+        drop_threshold: int = 296,
         jupyter: bool = True,
         logger: Optional[logging.getLoggerClass()] = None,
         metadata: Optional[dict] = None,
@@ -49,6 +53,9 @@ class Station(metaclass=ABCMeta):
         tip_rack: bool = False,
         **kwargs,
     ):
+        self._drop_loc_l = drop_loc_l
+        self._drop_loc_r = drop_loc_r
+        self._drop_threshold = drop_threshold
         self.jupyter = jupyter
         self._logger = logger
         self.metadata = metadata
@@ -59,6 +66,8 @@ class Station(metaclass=ABCMeta):
         self._tip_log_folder_path = tip_log_folder_path
         self._tip_rack = tip_rack
         self._ctx: Optional[ProtocolContext] = None
+        self._drop_count = 0
+        self._side_switch = True
     
     def __getattr__(self, item: str):
         return self.metadata[item]
@@ -150,6 +159,16 @@ class Station(metaclass=ABCMeta):
             self._tip_log['count'][pip] += 1
         else:
             pip.pick_up_tip(loc)
+    
+    def drop(self, pip):
+        # Drop in the Fixed Trash (on 12) at different positions to avoid making a tall heap of tips
+        drop_loc = self._ctx.loaded_labwares[12].wells()[0].top().move(Point(x=self._drop_loc_r if self._side_switch else self._drop_loc_l))
+        self._side_switch = not self._side_switch
+        pip.drop_tip(drop_loc)
+        self._drop_count += pip.channels
+        if self._drop_count >= self._drop_threshold:
+            self.pause('Pausing. Please empty tips from waste before resuming', color='red', delay_time=8, level=logging.INFO)
+            self._drop_count = 0
     
     def pause(self,
         msg: str = "",

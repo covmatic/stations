@@ -19,6 +19,9 @@ class StationA(Station):
         dest_headroom_height: float = 2,
         dest_top_height: float = 5,
         dest_multi_headroom_height: float = 2,
+        drop_loc_l: float = 0,
+        drop_loc_r: float = 0,
+        drop_threshold: int = 296,
         hover_height: float = -2,
         ic_capacity: float = 180,
         ic_lys_headroom: float = 1.1,
@@ -70,6 +73,9 @@ class StationA(Station):
         :param dest_headroom_height: headroom always to keep from the bottom of the destination tube in mm
         :param dest_top_height: top height from the bottom of the destination tube in mm when mixing
         :param dest_multi_headroom_height: headroom always to keep from the bottom of the destination tube (multi) in mm
+        :param drop_loc_l: offset for dropping to the left side (should be positive) in mm
+        :param drop_loc_r: offset for dropping to the right side (should be negative) in mm
+        :param drop_threshold: the amount of dropped tips after which the run is paused for emptying the trash
         :param hover_height: height from the top at which to hover (should be negative) in mm
         :param ic_capacity: capacity of the internal control tube
         :param ic_lys_headroom: headroom for the internal control and lysis tube (multiplier)
@@ -115,6 +121,9 @@ class StationA(Station):
         :param jupyter: Specify whether the protocol is run on Jupyter (or Python) instead of the robot
         """
         super(StationA, self).__init__(
+            drop_loc_l=drop_loc_l,
+            drop_loc_r=drop_loc_r,
+            drop_threshold=drop_threshold,
             jupyter=jupyter,
             logger=logger,
             metadata=metadata,
@@ -285,7 +294,7 @@ class StationA(Station):
             self._p_main.flow_rate.dispense = self._sample_dispense
             
         self._p_main.air_gap(self._air_gap_sample)
-        self._p_main.drop_tip()
+        self.drop(self._p_main)
     
     def is_positive_control_well(self, dest) -> bool:
         return dest == self._dest_plate[self._positive_control_well]
@@ -323,9 +332,9 @@ class StationA(Station):
             if self._lysis_first:
                 self._p_main.dispense(self._air_gap_sample, self._lys_buff.top())
             else:
-                self._p_main.drop_tip()
+                self.drop(self._p_main)
         if self._lysis_first:
-            self._p_main.drop_tip()
+            self.drop(self._p_main)
     
     def transfer_internal_control(self, idx: int, dest):
         strip_ind = idx // self.cols_per_strip
@@ -336,7 +345,7 @@ class StationA(Station):
         self._m20.transfer(self._iec_volume, internal_control, dest.bottom(self._ic_headroom_bottom), new_tip='never')
         self._m20.mix(self._ic_mix_repeats, self._ic_mix_volume, dest.bottom(self._dest_multi_headroom_height))
         self._m20.air_gap(self._air_gap_dest_multi)
-        self._m20.drop_tip()
+        self.drop(self._m20)
     
     def _tiprack_log_args(self):
         # first of each is the m20, second the main pipette

@@ -1,7 +1,6 @@
 from ..station import Station, labware_loader, instrument_loader
 from opentrons.protocol_api import ProtocolContext
 from itertools import repeat
-from opentrons.types import Point
 from typing import Optional, Tuple
 import logging
 
@@ -16,8 +15,8 @@ class StationB(Station):
         bind_dispense_rate: float = 150,
         bind_max_transfer_vol: float = 180,
         default_aspiration_rate: float = 150,
-        drop_loc_l: float = -18,
-        drop_loc_r: float = 30,
+        drop_loc_l: float = 30,
+        drop_loc_r: float = -18,
         drop_threshold: int = 296,
         elute_aspiration_rate: float = 50,
         elution_vol: float = 40,
@@ -43,8 +42,8 @@ class StationB(Station):
         :param bind_dispense_rate: Dispensation flow rate when aspirating bind beads in uL/s
         :param bind_max_transfer_vol: Maximum volume transferred of bind beads
         :param default_aspiration_rate: Default aspiration flow rate in uL/s
-        :param drop_loc_l: offset for dropping to the left side (should be negative) in mm
-        :param drop_loc_r: offset for dropping to the right side (should be positive) in mm
+        :param drop_loc_l: offset for dropping to the left side (should be positive) in mm
+        :param drop_loc_r: offset for dropping to the right side (should be negative) in mm
         :param drop_threshold: the amount of dropped tips after which the run is paused for emptying the trash
         :param elute_aspiration_rate: Aspiration flow rate when aspirating elution buffer in uL/s
         :param elution_vol: The volume of elution buffer to aspirate in uL
@@ -64,6 +63,8 @@ class StationB(Station):
         :param tipracks_slots: Slots where the tipracks are positioned
         """
         super(StationB, self).__init__(
+            drop_loc_l=drop_loc_l,
+            drop_loc_r=drop_loc_r,
             jupyter=jupyter,
             logger=logger,
             metadata=metadata,
@@ -79,8 +80,6 @@ class StationB(Station):
         self._bind_dispense_rate = bind_dispense_rate
         self._bind_max_transfer_vol = bind_max_transfer_vol
         self._default_aspiration_rate = default_aspiration_rate
-        self._drop_loc_l = drop_loc_l
-        self._drop_loc_r = drop_loc_r
         self._drop_threshold = drop_threshold
         self._elute_aspiration_rate = elute_aspiration_rate
         self._elution_vol = elution_vol
@@ -90,9 +89,6 @@ class StationB(Station):
         self._supernatant_removal_aspiration_rate = supernatant_removal_aspiration_rate
         self._starting_vol = starting_vol
         self._tipracks_slots = tipracks_slots
-        
-        self._drop_count = 0
-        self._side_switch = True
     
     @labware_loader(0, "_tips300")
     def load_tips300(self):
@@ -179,17 +175,6 @@ class StationB(Station):
         
     def _tiprack_log_args(self):
         return ('m300',), (self._m300,), (self._tips300,)
-    
-    def drop(self, pip):
-        # Drop in the Fixed Trash (on 12) at different positions to avoid making a tall heap of tips
-        drop_loc = self._ctx.loaded_labwares[12].wells()[0].top().move(Point(x=self._drop_loc_r if self._side_switch else self._drop_loc_l))
-        self._side_switch = not self._side_switch
-        pip.drop_tip(drop_loc)
-        self._drop_count += self._samples_per_col
-        self.logger.debug("Dropped at the {} side ({}). There are {} tips in the trash bin".format("right" if self._side_switch else "left", drop_loc, self._drop_count))
-        if self._drop_count >= self._drop_threshold:
-            self.pause('Pausing. Please empty tips from waste before resuming.', color='red', delay_time=8, level=logging.INFO)
-            self._drop_count = 0
     
     def run(self, ctx: ProtocolContext):
         super(StationB, self).run(ctx)
