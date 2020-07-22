@@ -1,6 +1,10 @@
-from functools import partial
 import json
 import os
+from collections import namedtuple
+
+
+_keys = ["serial", "station", "height"]
+_getter_c = namedtuple("getter", list(map("by_{}".format, _keys)))
 
 
 def __getattr__(name: str):
@@ -9,12 +13,7 @@ def __getattr__(name: str):
         with open(fp, "r") as f:
             j = json.load(f)
         return j
-
-
-def height_by_query(key: str, value: str) -> float:
-    specs = __getattr__("specs")
-    return specs[[s[key] == value for s in specs].index(True)]['height']
-
-
-height_by_serial = partial(height_by_query, "serial")
-height_by_station = partial(height_by_query, "station")
+    
+    if name in _keys:
+        specs = __getattr__("specs")
+        return _getter_c(**{"by_{}".format(k): {s[k]: s[name] for s in specs} for k in _keys})

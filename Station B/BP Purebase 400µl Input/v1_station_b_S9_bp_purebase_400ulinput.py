@@ -27,8 +27,8 @@ BIND_ASPIRATION_RATE = 50
 SUPERNATANT_REMOVAL_ASPIRATION_RATE = 25
 ELUTE_ASPIRATION_RATE = 50
 
-MAGNET_SERIAL = "MDV20P20200509A19" # You can input the serial with the Zebra barcode reader
-magheight = magnets.height_by_serial(MAGNET_SERIAL)
+MAGNET_SERIAL = "MDV20P20200509A19"  # You can input the serial with the Zebra barcode reader
+magheight = magnets.height.by_serial[MAGNET_SERIAL]
 
 # Definitions for deck light flashing
 class CancellationToken:
@@ -222,7 +222,7 @@ resuming.')
         
         # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
         delay(5, 'Waiting minutes before magnetic module activation.', ctx)
-        ctx.comment("Engaging magnetic deck at {:.2f} mm height".format(magheight))
+        ctx.comment("Magnetic deck height: {:.2f} mm".format(magheight))
         magdeck.engage(height=magheight)
         
         #Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
