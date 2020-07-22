@@ -27,8 +27,8 @@ BIND_ASPIRATION_RATE = 50
 SUPERNATANT_REMOVAL_ASPIRATION_RATE = 25
 ELUTE_ASPIRATION_RATE = 50
 
-MAGNET_SERIAL = "MDV20P20200509A19"  # You can input the serial with the Zebra barcode reader
-magheight = magnets.height.by_serial[MAGNET_SERIAL]
+# MAGNET_SERIAL = "MDV20P20200509A19"  # You can input the serial with the Zebra barcode reader
+# magheight = magnets.height.by_serial[MAGNET_SERIAL]
 
 # Definitions for deck light flashing
 class CancellationToken:
@@ -90,6 +90,9 @@ def run(ctx):
     magdeck.disengage()
     magplate = magdeck.load_labware('nest_96_wellplate_2ml_deep')
     # magplate = magdeck.load_labware('biorad_96_wellplate_200ul_pcr')
+    
+    magheight = magnets.height.by_serial.get(magdeck._module._driver.get_device_info()['serial'], 6.5)
+    
     tempdeck = ctx.load_module('Temperature Module Gen2', '1')
     flatplate = tempdeck.load_labware(
                 'opentrons_96_aluminumblock_nest_wellplate_100ul',)
