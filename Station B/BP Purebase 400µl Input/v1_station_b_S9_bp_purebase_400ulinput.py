@@ -1,4 +1,5 @@
 from opentrons.types import Point
+from system9.b import magnets
 import json
 import os
 import math
@@ -25,6 +26,9 @@ DEFAULT_ASPIRATION_RATE	= 150
 BIND_ASPIRATION_RATE = 50
 SUPERNATANT_REMOVAL_ASPIRATION_RATE = 25
 ELUTE_ASPIRATION_RATE = 50
+
+MAGNET_SERIAL = "MDV20P20200509A19"  # You can input the serial with the Zebra barcode reader
+magheight = magnets.height.by_serial[MAGNET_SERIAL]
 
 # Definitions for deck light flashing
 class CancellationToken:
@@ -84,7 +88,6 @@ def run(ctx):
 
     magdeck = ctx.load_module('Magnetic Module Gen2', '4')
     magdeck.disengage()
-    magheight = 6.65     # for GEN2 Magnetic module; was 13.7 for GEN1 module
     magplate = magdeck.load_labware('nest_96_wellplate_2ml_deep')
     # magplate = magdeck.load_labware('biorad_96_wellplate_200ul_pcr')
     tempdeck = ctx.load_module('Temperature Module Gen2', '1')
@@ -219,6 +222,7 @@ resuming.')
         
         # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
         delay(5, 'Waiting minutes before magnetic module activation.', ctx)
+        ctx.comment("Magnetic deck height: {:.2f} mm".format(magheight))
         magdeck.engage(height=magheight)
         
         #Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.

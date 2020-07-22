@@ -1,1 +1,2 @@
 include system9/a/*.json
+include system9/b/*.json
