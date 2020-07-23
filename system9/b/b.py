@@ -51,7 +51,7 @@ class StationB(Station):
         starting_vol: float = 380,
         tip_log_filename: str = 'tip_log.json',
         tip_log_folder_path: str = './data/B',
-        tip_rack: bool = False,
+        tip_track: bool = False,
         tipracks_slots: Tuple[str, ...] = ('3', '6', '8', '9', '10'),
         touch_tip_height: float = -5,
         wash_air_gap: float = 20,
@@ -102,7 +102,7 @@ class StationB(Station):
         :param starting_vol: Sample volume at start (volume coming from Station A) 
         :param tip_log_filename: file name for the tip log JSON dump
         :param tip_log_folder_path: folder for the tip log JSON dump
-        :param tip_rack: If True, try and load previous tiprack log from the JSON file
+        :param tip_track: If True, try and load previous tiprack log from the JSON file
         :param tipracks_slots: Slots where the tipracks are positioned
         :param touch_tip_height: Touch-tip height in mm (should be negative)
         :param wash_air_gap: Air gap for wash in uL
@@ -125,7 +125,7 @@ class StationB(Station):
             skip_delay=skip_delay,
             tip_log_filename=tip_log_filename,
             tip_log_folder_path=tip_log_folder_path,
-            tip_rack=tip_rack,
+            tip_track=tip_track,
         )
         self._bind_air_gap = bind_air_gap
         self._bind_aspiration_rate = bind_aspiration_rate

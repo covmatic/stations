@@ -50,7 +50,7 @@ class Station(metaclass=ABCMeta):
         skip_delay: bool = False,
         tip_log_filename: str = 'tip_log.json',
         tip_log_folder_path: str = './data/',
-        tip_rack: bool = False,
+        tip_track: bool = False,
         **kwargs,
     ):
         self._drop_loc_l = drop_loc_l
@@ -64,7 +64,7 @@ class Station(metaclass=ABCMeta):
         self._skip_delay = skip_delay
         self._tip_log_filename = tip_log_filename
         self._tip_log_folder_path = tip_log_folder_path
-        self._tip_rack = tip_rack
+        self._tip_track = tip_track
         self._ctx: Optional[ProtocolContext] = None
         self._drop_count = 0
         self._side_switch = True
@@ -121,7 +121,7 @@ class Station(metaclass=ABCMeta):
         labels, pipettes, tipracks = self._tiprack_log_args()
         
         self._tip_log = {'count': {}}
-        if self._tip_rack and not self._ctx.is_simulating():
+        if self._tip_track and not self._ctx.is_simulating():
             self.logger.debug("logging tip info in {}".format(self._tip_log_filepath))
             if os.path.isfile(self._tip_log_filepath):
                 with open(self._tip_log_filepath) as json_file:
