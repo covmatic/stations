@@ -1,4 +1,5 @@
 from ..station import Station, labware_loader, instrument_loader
+from ..utils import mix_bottom_top
 from opentrons.protocol_api import ProtocolContext
 from opentrons.types import Point
 from itertools import repeat
@@ -12,10 +13,18 @@ class StationB(Station):
     
     def __init__(
         self,
+        bind_air_gap: float = 20,
         bind_aspiration_rate: float = 50,
         bind_blowout_rate: float = 300,
         bind_dispense_rate: float = 150,
         bind_max_transfer_vol: float = 180,
+        bind_mix_loc_bottom: float = 1,
+        bind_mix_loc_top: float = 5,
+        bind_mix_times: int = 8,
+        bind_mix_vol: float = 180,
+        bind_sample_mix_times: int = 5,
+        bind_sample_mix_vol: float = 20,
+        bind_vol: float = 210,
         default_aspiration_rate: float = 150,
         drop_loc_l: float = 30,
         drop_loc_r: float = -18,
@@ -39,12 +48,21 @@ class StationB(Station):
         tip_log_folder_path: str = './data/B',
         tip_rack: bool = False,
         tipracks_slots: Tuple[str, ...] = ('3', '6', '8', '9', '10'),
+        touch_tip_height: float = -5,
     ):
         """ Build a :py:class:`.StationB`.
+        :param bind_air_gap: Air gap for bind beads in uL
         :param bind_aspiration_rate: Aspiration flow rate when aspirating bind beads in uL/s
         :param bind_blowout_rate: Blowout flow rate when aspirating bind beads in uL/s
         :param bind_dispense_rate: Dispensation flow rate when aspirating bind beads in uL/s
         :param bind_max_transfer_vol: Maximum volume transferred of bind beads
+        :param bind_mix_loc_bottom: Mixing location for bind beads at the bottom in mm
+        :param bind_mix_loc_top: Mixing location for bind beads at the top in mm
+        :param bind_mix_times: Mixing repetitions for bind beads
+        :param bind_mix_vol: Mixing volume for bind beads
+        :param bind_sample_mix_times: Mixing repetitions for bind beads and samples
+        :param bind_sample_mix_vol: Mixing repetitions for bind beads
+        :param bind_vol: Total volume transferred of bind beads
         :param default_aspiration_rate: Default aspiration flow rate in uL/s
         :param drop_loc_l: offset for dropping to the left side (should be positive) in mm
         :param drop_loc_r: offset for dropping to the right side (should be negative) in mm
@@ -67,6 +85,7 @@ class StationB(Station):
         :param tip_log_folder_path: folder for the tip log JSON dump
         :param tip_rack: If True, try and load previous tiprack log from the JSON file
         :param tipracks_slots: Slots where the tipracks are positioned
+        :param touch_tip_height: Touch-tip height in mm (should be negative)
         """
         super(StationB, self).__init__(
             drop_loc_l=drop_loc_l,
@@ -81,10 +100,18 @@ class StationB(Station):
             tip_log_folder_path=tip_log_folder_path,
             tip_rack=tip_rack,
         )
+        self._bind_air_gap = bind_air_gap
         self._bind_aspiration_rate = bind_aspiration_rate
         self._bind_blowout_rate = bind_blowout_rate
         self._bind_dispense_rate = bind_dispense_rate
         self._bind_max_transfer_vol = bind_max_transfer_vol
+        self._bind_mix_loc_bottom = bind_mix_loc_bottom
+        self._bind_mix_loc_top = bind_mix_loc_top
+        self._bind_mix_times = bind_mix_times
+        self._bind_mix_vol = bind_mix_vol
+        self._bind_sample_mix_times = bind_sample_mix_times
+        self._bind_sample_mix_vol = bind_sample_mix_vol
+        self._bind_vol = bind_vol
         self._default_aspiration_rate = default_aspiration_rate
         self._drop_threshold = drop_threshold
         self._elute_aspiration_rate = elute_aspiration_rate
@@ -97,6 +124,7 @@ class StationB(Station):
         self._supernatant_removal_height = supernatant_removal_height
         self._starting_vol = starting_vol
         self._tipracks_slots = tipracks_slots
+        self._touch_tip_height = touch_tip_height
     
     @labware_loader(0, "_tips300")
     def load_tips300(self):
@@ -184,13 +212,13 @@ class StationB(Station):
     def _tiprack_log_args(self):
         return ('m300',), (self._m300,), (self._tips300,)
     
-    def remove_supernatant(self, vol: float, park=False):
+    def remove_supernatant(self, vol: float):
         self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
         num_trans = math.ceil(vol / self._bind_max_transfer_vol)
         vol_per_trans = vol / num_trans
         
         for i, (m, spot) in enumerate(zip(self.mag_samples_m, self._parking_spots)):
-            self.pick_up(self._m300, spot if park else None)
+            self.pick_up(self._m300, spot if self._park else None)
             loc = m.bottom(self._supernatant_removal_height).move(Point(x=(-1 if i % 2 == 0 else 1)*2))
             for _ in range(num_trans):
                 if self._m300.current_volume > 0:
@@ -201,15 +229,57 @@ class StationB(Station):
                 self._m300.air_gap(self._supernatant_removal_air_gap)
             self.drop(self._m300)
         self._m300.flow_rate.aspirate = self._default_aspiration_rate
+        
+    def bind(self):
+        """Add bead binding buffer and mix samples"""
+        for i, (well, spot) in enumerate(zip(self.mag_samples_m, self._parking_spots)):
+            source = self.binding_buffer[i // (len(self.mag_samples_m) // len(self.binding_buffer))]
+            self.pick_up(self._m300)
+            mix_bottom_top(
+                self._m300,
+                self._bind_mix_times,
+                self._bind_mix_vol,
+                source.bottom,
+                self._bind_mix_loc_bottom,
+                self._bind_mix_loc_top
+            )
+            
+            num_trans = math.ceil(self._bind_vol / self._bind_max_transfer_vol)
+            vol_per_trans = self._bind_vol / num_trans
+            
+            for t in range(num_trans):
+                if self._m300.current_volume > 0:
+                    self._m300.dispense(self._m300.current_volume, source.top())  # void air gap if necessary
+                self._m300.transfer(vol_per_trans, source, well.top(), air_gap=self._bind_air_gap, new_tip='never')
+                if t == 0:
+                    self._m300.air_gap(self._bind_air_gap)
+            self._m300.mix(self._bind_sample_mix_times, self._bind_sample_mix_vol, well)
+            
+            self._m300.touch_tip(v_offset=self._touch_tip_height)
+            self._m300.air_gap(self._bind_air_gap)
+            if self._park:
+                self._m300.drop_tip(spot)
+            else:
+                self.drop(self._m300)
+        
+        # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
+        self.delay(5, 'waiting before magnetic module activation')
+        self._magdeck.engage(height=self._magheight)
+        
+        # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
+        self.delay(5, 'incubating on MagDeck')
+
+        # Remove initial supernatant
+        self.remove_supernatant(self._bind_vol + self._starting_vol)
     
     def run(self, ctx: ProtocolContext):
         super(StationB, self).run(ctx)
-        #     bind(210, park=PARK)
+        self.bind()
         #     wash(500, wash1, 20, park=PARK)
         #     wash(500, wash2, 20, park=PARK)
         #     wash(800, etoh, 4, park=PARK)
         self._magdeck.disengage()
-        self.delay(12, 'Airdrying beads at room temperature')
+        self.delay(12, 'airdrying beads at room temperature')
         # 
         #     elute(ELUTION_VOL, park=PARK)
         self._magdeck.disengage()
