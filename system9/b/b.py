@@ -1,7 +1,7 @@
 from ..station import Station, labware_loader, instrument_loader
-from ..utils import mix_bottom_top
+from ..utils import mix_bottom_top, uniform_divide
 from opentrons.protocol_api import ProtocolContext
-from opentrons.types import Point
+from opentrons.types import Point, Location
 from itertools import repeat
 from typing import Optional, Tuple
 import logging
@@ -49,6 +49,15 @@ class StationB(Station):
         tip_rack: bool = False,
         tipracks_slots: Tuple[str, ...] = ('3', '6', '8', '9', '10'),
         touch_tip_height: float = -5,
+        wash_air_gap: float = 20,
+        wash_etoh_times: int = 4,
+        wash_etoh_vol: float = 800,
+        wash_max_transfer_vol: float = 200,
+        wash_mix_vol: float = 150,
+        wash_1_times: int = 20,
+        wash_1_vol: float = 500,
+        wash_2_times: int = 20,
+        wash_2_vol: float = 500,
     ):
         """ Build a :py:class:`.StationB`.
         :param bind_air_gap: Air gap for bind beads in uL
@@ -61,7 +70,7 @@ class StationB(Station):
         :param bind_mix_times: Mixing repetitions for bind beads
         :param bind_mix_vol: Mixing volume for bind beads
         :param bind_sample_mix_times: Mixing repetitions for bind beads and samples
-        :param bind_sample_mix_vol: Mixing repetitions for bind beads
+        :param bind_sample_mix_vol: Mixing repetitions for bind beads in uL
         :param bind_vol: Total volume transferred of bind beads
         :param default_aspiration_rate: Default aspiration flow rate in uL/s
         :param drop_loc_l: offset for dropping to the left side (should be positive) in mm
@@ -86,6 +95,14 @@ class StationB(Station):
         :param tip_rack: If True, try and load previous tiprack log from the JSON file
         :param tipracks_slots: Slots where the tipracks are positioned
         :param touch_tip_height: Touch-tip height in mm (should be negative)
+        :param wash_air_gap: Air gap for wash in uL
+        :param wash_etoh_times: Mix times for ethanol
+        :param wash_etoh_vol: Volume of ethanol in uL
+        :param wash_max_transfer_vol: Maximum volume transferred of wash in uL
+        :param wash_1_times: Mix times for wash 1
+        :param wash_1_vol: Volume of wash 1 buffer in uL
+        :param wash_2_times: Mix times for wash 2
+        :param wash_2_vol: Volume of wash 2 buffer in uL
         """
         super(StationB, self).__init__(
             drop_loc_l=drop_loc_l,
@@ -125,6 +142,15 @@ class StationB(Station):
         self._starting_vol = starting_vol
         self._tipracks_slots = tipracks_slots
         self._touch_tip_height = touch_tip_height
+        self._wash_air_gap = wash_air_gap
+        self._wash_etoh_times = wash_etoh_times
+        self._wash_etoh_vol = wash_etoh_vol
+        self._wash_max_transfer_vol = wash_max_transfer_vol
+        self._wash_mix_vol = wash_mix_vol
+        self._wash_1_times = wash_1_times
+        self._wash_1_vol = wash_1_vol
+        self._wash_2_times = wash_2_times
+        self._wash_2_vol = wash_2_vol
     
     @labware_loader(0, "_tips300")
     def load_tips300(self):
@@ -212,6 +238,12 @@ class StationB(Station):
     def _tiprack_log_args(self):
         return ('m300',), (self._m300,), (self._tips300,)
     
+    def drop(self, pip, loc: Optional[Location] = None):
+        if loc is None or not self._park:
+            super(StationB, self).drop(pip)
+        else:
+            self._m300.drop_tip(loc)
+    
     def remove_supernatant(self, vol: float):
         self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
         num_trans = math.ceil(vol / self._bind_max_transfer_vol)
@@ -244,8 +276,7 @@ class StationB(Station):
                 self._bind_mix_loc_top
             )
             
-            num_trans = math.ceil(self._bind_vol / self._bind_max_transfer_vol)
-            vol_per_trans = self._bind_vol / num_trans
+            num_trans, vol_per_trans = uniform_divide(self._bind_vol, self._bind_max_transfer_vol)
             
             for t in range(num_trans):
                 if self._m300.current_volume > 0:
@@ -257,10 +288,7 @@ class StationB(Station):
             
             self._m300.touch_tip(v_offset=self._touch_tip_height)
             self._m300.air_gap(self._bind_air_gap)
-            if self._park:
-                self._m300.drop_tip(spot)
-            else:
-                self.drop(self._m300)
+            self.drop(self._m300, spot)
         
         # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
         self.delay(5, 'waiting before magnetic module activation')
@@ -272,12 +300,40 @@ class StationB(Station):
         # Remove initial supernatant
         self.remove_supernatant(self._bind_vol + self._starting_vol)
     
+    def wash(self, vol: float, source, mix_reps: int):
+        self.logger.info("washing with {} uL of wash for {} times".format(vol, mix_reps))
+        self._magdeck.disengage()
+        num_trans, vol_per_trans = uniform_divide(vol, self._wash_max_transfer_vol)
+        
+        for i, (m, spot) in enumerate(zip(self.mag_samples_m, self._parking_spots)):
+            self.pick_up(self._m300)
+            side = 1 if i % 2 == 0 else -1
+            loc = m.bottom(0.5).move(Point(x=side*2))
+            src = source[i // (len(self.mag_samples_m) // len(source))]
+            
+            for n in range(num_trans):
+                if self._m300.current_volume > 0:
+                    self._m300.dispense(self._m300.current_volume, src.top())
+                self._m300.transfer(vol_per_trans, src, m.top(), air_gap=20, new_tip='never')
+                if n < num_trans - 1:  # only air_gap if going back to source
+                    self._m300.air_gap(self._wash_air_gap)
+            
+            self._m300.mix(mix_reps, self._wash_mix_vol, loc)
+            self._m300.blow_out(m.top())
+            self._m300.touch_tip(v_offset=self._touch_tip_height)
+            self._m300.air_gap(self._wash_air_gap)
+            self.drop(self._m300, spot)
+        
+        self._magdeck.engage(height=self._magheight)
+        self.delay(5, 'incubating on MagDeck')
+        self.remove_supernatant(vol)
+    
     def run(self, ctx: ProtocolContext):
         super(StationB, self).run(ctx)
         self.bind()
-        #     wash(500, wash1, 20, park=PARK)
-        #     wash(500, wash2, 20, park=PARK)
-        #     wash(800, etoh, 4, park=PARK)
+        self.wash(self._wash_1_vol, self.wash1, self._wash_1_times)
+        self.wash(self._wash_2_vol, self.wash2, self._wash_2_times)
+        self.wash(self._wash_etoh_vol, self._etoh, self._wash_etoh_times)
         self._magdeck.disengage()
         self.delay(12, 'airdrying beads at room temperature')
         # 

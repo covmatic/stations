@@ -1,5 +1,7 @@
 from opentrons.protocol_api import ProtocolContext
 import logging
+import math
+from typing import Tuple
 
 
 class ProtocolContextLoggingHandler(logging.Handler):
@@ -26,3 +28,13 @@ def mix_bottom_top(pip, reps: int, vol: float, pos, bottom: float, top: float):
     for _ in range(reps):
         pip.aspirate(vol, pos(bottom))
         pip.dispense(vol, pos(top))
+
+
+def uniform_divide(total: float, mpp: float) -> Tuple[int, float]:
+    """Return the minimum number of partitions and the quantity per partition that uniformly divide a given quantity
+    :param total: The total quantity to divide
+    :param mpp: Maximum quantity per partition
+    :returns: The minimum number of partitions and the quantity in each partition"""
+    n = int(math.ceil(total / mpp))
+    p = total / n
+    return n, p
