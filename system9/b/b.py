@@ -54,6 +54,12 @@ class StationB(Station):
         tip_track: bool = False,
         tipracks_slots: Tuple[str, ...] = ('3', '6', '8', '9', '10'),
         touch_tip_height: float = -5,
+        wait_time_bind_off: float = 5,
+        wait_time_bind_on: float = 5,
+        wait_time_dry: float = 12,
+        wait_time_elute_off: float = 5,
+        wait_time_elute_on: float = 3,
+        wait_time_wash_on: float = 5,
         wash_air_gap: float = 20,
         wash_etoh_times: int = 4,
         wash_etoh_vol: float = 800,
@@ -105,6 +111,12 @@ class StationB(Station):
         :param tip_track: If True, try and load previous tiprack log from the JSON file
         :param tipracks_slots: Slots where the tipracks are positioned
         :param touch_tip_height: Touch-tip height in mm (should be negative)
+        :param wait_time_bind_off: Wait time for bind beads phase off magnet in minutes
+        :param wait_time_bind_on: Wait time for bind beads phase on magnet in minutes
+        :param wait_time_dry: Wait time for airdrying phase in minutes
+        :param wait_time_elute_off: Wait time for elution phase off magnet in minutes
+        :param wait_time_elute_on: Wait time for elution phase on magnet in minutes
+        :param wait_time_wash_on: Wait time for wash phase on magnet in minutes
         :param wash_air_gap: Air gap for wash in uL
         :param wash_etoh_times: Mix times for ethanol
         :param wash_etoh_vol: Volume of ethanol in uL
@@ -157,6 +169,12 @@ class StationB(Station):
         self._starting_vol = starting_vol
         self._tipracks_slots = tipracks_slots
         self._touch_tip_height = touch_tip_height
+        self._wait_time_bind_off = wait_time_bind_off
+        self._wait_time_bind_on = wait_time_bind_on
+        self._wait_time_dry = wait_time_dry
+        self._wait_time_elute_off = wait_time_elute_off
+        self._wait_time_elute_on = wait_time_elute_on
+        self._wait_time_wash_on = wait_time_wash_on
         self._wash_air_gap = wash_air_gap
         self._wash_etoh_times = wash_etoh_times
         self._wash_etoh_vol = wash_etoh_vol
@@ -306,11 +324,11 @@ class StationB(Station):
             self.drop(self._m300, spot)
         
         # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
-        self.delay(5, 'waiting before magnetic module activation')
+        self.delay(self._wait_time_bind_off, 'waiting before magnetic module activation')
         self._magdeck.engage(height=self._magheight)
         
         # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
-        self.delay(5, 'incubating on MagDeck')
+        self.delay(self._wait_time_bind_on, 'incubating on MagDeck')
 
         # Remove initial supernatant
         self.remove_supernatant(self._bind_vol + self._starting_vol)
@@ -340,7 +358,7 @@ class StationB(Station):
             self.drop(self._m300, spot)
         
         self._magdeck.engage(height=self._magheight)
-        self.delay(5, 'incubating on MagDeck')
+        self.delay(self._wait_time_wash_on, 'incubating on MagDeck')
         self.remove_supernatant(vol)
     
     def elute(self):
@@ -359,9 +377,9 @@ class StationB(Station):
             self._m300.air_gap(self._elute_air_gap)
             self.drop(self._m300, spot)
         
-        self.delay(5, 'incubating off magnet at room temperature')
+        self.delay(self._wait_time_elute_off, 'incubating off magnet at room temperature')
         self._magdeck.engage(height=self._magheight)
-        self.delay(3, 'incubating on magnet at room temperature')
+        self.delay(self._wait_time_elute_on, 'incubating on magnet at room temperature')
         
         for i, (m, e, spot) in enumerate(zip(
             self.mag_samples_m,
@@ -383,7 +401,7 @@ class StationB(Station):
         self.wash(self._wash_2_vol, self.wash2, self._wash_2_times)
         self.wash(self._wash_etoh_vol, self._etoh, self._wash_etoh_times)
         self._magdeck.disengage()
-        self.delay(12, 'airdrying beads at room temperature')
+        self.delay(self._wait_time_dry, 'airdrying beads at room temperature')
         self.elute()
         self._magdeck.disengage()
 
