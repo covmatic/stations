@@ -1,12 +1,9 @@
-from .. import __version__
 from ..station import Station, labware_loader, instrument_loader
 from ..geometry import LysisTube
 from ..utils import mix_bottom_top
 from opentrons.protocol_api import ProtocolContext
-from itertools import chain, islice, repeat
+from itertools import chain, islice
 import math
-import os
-import json
 import logging
 from typing import Optional, Tuple
 
@@ -370,8 +367,7 @@ class StationA(Station):
         for t in (T if self._lysis_first else reversed(T)):
             t()
         
-        self.logger.info('incubate sample plate (slot 4) at 55-57°C for 20 minutes. Return to slot 4 when complete.')
-        self._ctx.pause('Pausing')
+        self.pause("incubate sample plate (slot 4) at 55-57°C for 20 minutes. Return to slot 4 when complete", blink=True)
         
         for i, d in enumerate(self._dests_multi):
             self.transfer_internal_control(i, d)

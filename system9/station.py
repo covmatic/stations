@@ -152,7 +152,7 @@ class Station(metaclass=ABCMeta):
         if loc is None:
             if self._tip_log['count'][pip] == self._tip_log['max'][pip]:
                 # If empty, wait for refill
-                self._ctx.pause('Replace {:.0f} uL tipracks before resuming.'.format(pip.max_volume))
+                self.pause('replace {:.0f} uL tipracks before resuming.'.format(pip.max_volume), blink=True)
                 pip.reset_tipracks()
                 self._tip_log['count'][pip] = 0
             pip.pick_up_tip(self._tip_log['tips'][pip][self._tip_log['count'][pip]])
@@ -167,21 +167,21 @@ class Station(metaclass=ABCMeta):
         pip.drop_tip(drop_loc)
         self._drop_count += pip.channels
         if self._drop_count >= self._drop_threshold:
-            self.pause('Pausing. Please empty tips from waste before resuming', color='red', delay_time=8, level=logging.INFO)
+            self.pause('pausing. Please empty tips from waste before resuming')
             self._drop_count = 0
     
     def pause(self,
         msg: str = "",
         blink: bool = False,
         blink_period: float = 2,
-        color: str = 'yellow',
-        color_after: str = 'blue',
+        color: str = 'red',
         delay_time: float = 16,
         home: bool = True,
-        level: int = logging.WARNING,
+        level: int = logging.INFO,
         pause: bool = True,
     ):
-        button = Button(self._ctx, color)
+        old_color = self._button.color
+        self._button.color = color
         if msg:
             self.logger.log(level, msg)
         if home:
@@ -196,21 +196,19 @@ class Station(metaclass=ABCMeta):
         if pause:
             self._ctx.pause()
             self._ctx.delay(0.1)  # pad to avoid pause leaking
-        button.color = color_after
+        self._button.color = old_color
     
     def delay(self,
         mins: float,
         msg: str = "",
-        color: str = 'green',
-        color_after: str = 'blue',
-        home: bool = False,
+        color: str = 'yellow',
+        home: bool = True,
         level: int = logging.INFO,
     ):
         self.pause(
             msg="{} for {} minutes{}".format(msg, mins, ". Pausing for skipping delay. Please resume" if self._skip_delay else ""),
             blink=False,
             color=color,
-            color_after=color_after,
             delay_time=0 if self._skip_delay else (60 * mins),
             home=home,
             level=level,
@@ -219,6 +217,7 @@ class Station(metaclass=ABCMeta):
     
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx
+        self._button = Button(self._ctx, 'white')
         self.logger.info(self._protocol_description)
         self.logger.info("using system9 version {}".format(__version__))
         self.load_labware()
