@@ -11,15 +11,6 @@ import logging
 from typing import Optional, Tuple
 
 
-_metadata = {
-    'protocolName': 'Version 1 S9 Station A BP Purebase',
-    'author': 'Nick <protocols@opentrons.com>',
-    'refactoring': 'Marco <marcotiraboschi@hotmail.it>',
-    'source': 'Custom Protocol Request',
-    'apiLevel': '2.3'
-}
-
-
 class StationA(Station):    
     def __init__(
         self,
@@ -28,6 +19,9 @@ class StationA(Station):
         dest_headroom_height: float = 2,
         dest_top_height: float = 5,
         dest_multi_headroom_height: float = 2,
+        drop_loc_l: float = 0,
+        drop_loc_r: float = 0,
+        drop_threshold: int = 296,
         hover_height: float = -2,
         ic_capacity: float = 180,
         ic_lys_headroom: float = 1.1,
@@ -36,6 +30,7 @@ class StationA(Station):
         ic_mix_volume: float = 20,
         iec_volume: float = 19,
         internal_control_idx_th: int = 48,
+        jupyter: bool = True,
         logger: Optional[logging.getLoggerClass()] = None,
         lysis_cone_height: float = 16,
         lysis_first: bool = False,
@@ -49,7 +44,7 @@ class StationA(Station):
         main_tiprack: str = 'opentrons_96_tiprack_300ul',
         main_tiprack_label: str = '200ul filter tiprack',
         max_speeds_a: float = 20,
-        metadata: dict = _metadata,
+        metadata: dict = None,
         mix_repeats: int = 3,
         mix_volume: float = 150,
         num_samples: int = 96,
@@ -70,7 +65,6 @@ class StationA(Station):
         tip_log_folder_path: str = './data/A',
         tip_rack: bool = False,
         tipracks_slots: Tuple[str, ...] = ('8', '9', '11'),
-        jupyter: bool = True,
     ):
         """ Build a :py:class:`.StationA`.
 
@@ -79,6 +73,9 @@ class StationA(Station):
         :param dest_headroom_height: headroom always to keep from the bottom of the destination tube in mm
         :param dest_top_height: top height from the bottom of the destination tube in mm when mixing
         :param dest_multi_headroom_height: headroom always to keep from the bottom of the destination tube (multi) in mm
+        :param drop_loc_l: offset for dropping to the left side (should be positive) in mm
+        :param drop_loc_r: offset for dropping to the right side (should be negative) in mm
+        :param drop_threshold: the amount of dropped tips after which the run is paused for emptying the trash
         :param hover_height: height from the top at which to hover (should be negative) in mm
         :param ic_capacity: capacity of the internal control tube
         :param ic_lys_headroom: headroom for the internal control and lysis tube (multiplier)
@@ -120,57 +117,62 @@ class StationA(Station):
         :param tip_log_filename: file name for the tip log JSON dump
         :param tip_log_folder_path: folder for the tip log JSON dump
         :param tip_rack: If True, try and load previous tiprack log from the JSON file
+        :param tipracks_slots: Slots where the tipracks are positioned
         :param jupyter: Specify whether the protocol is run on Jupyter (or Python) instead of the robot
         """
+        super(StationA, self).__init__(
+            drop_loc_l=drop_loc_l,
+            drop_loc_r=drop_loc_r,
+            drop_threshold=drop_threshold,
+            jupyter=jupyter,
+            logger=logger,
+            metadata=metadata,
+            num_samples=num_samples,
+            samples_per_col=samples_per_col,
+            tip_log_filename=tip_log_filename,
+            tip_log_folder_path=tip_log_folder_path,
+            tip_rack=tip_rack,
+        )
+        self._air_gap_dest_multi = air_gap_dest_multi
+        self._air_gap_sample = air_gap_sample
+        self._dest_headroom_height = dest_headroom_height
+        self._dest_multi_headroom_height = dest_multi_headroom_height
         self._dest_top_height = dest_top_height
-        self._source_top_height = source_top_height
-        self._positive_control_well = positive_control_well
-        self._ic_headroom_bottom = ic_headroom_bottom
+        self._hover_height = hover_height
         self._ic_capacity = ic_capacity
+        self._ic_headroom_bottom = ic_headroom_bottom
         self._ic_lys_headroom = ic_lys_headroom
-        self._main_pipette = main_pipette
-        self._main_tiprack = main_tiprack
-        self._main_tiprack_label = main_tiprack_label
-        self._source_racks_definition_filepath = source_racks_definition_filepath
-        self._tempdeck_temp = tempdeck_temp
-        self._num_samples = num_samples
-        self._samples_per_col = samples_per_col
-        self._sample_volume = sample_volume
-        self._lysis_volume = lysis_volume
+        self._ic_mix_repeats = ic_mix_repeats
+        self._ic_mix_volume = ic_mix_volume
         self._iec_volume = iec_volume
-        self._tip_rack = tip_rack
-        self._sample_aspirate = sample_aspirate
-        self._sample_dispense = sample_dispense
-        self._sample_blow_out = sample_blow_out
-        self._lysis_rate_aspirate = lysis_rate_aspirate
-        self._lysis_rate_dispense = lysis_rate_dispense
+        self._internal_control_idx_th = internal_control_idx_th
         self._lysis_cone_height = lysis_cone_height
         self._lysis_first = lysis_first
         self._lysis_headroom_height = lysis_headroom_height
-        self._air_gap_sample = air_gap_sample
-        self._source_headroom_height = source_headroom_height
-        self._source_position_top = source_position_top
-        self._internal_control_idx_th = internal_control_idx_th
-        self._dest_headroom_height = dest_headroom_height
-        self._dest_multi_headroom_height = dest_multi_headroom_height
-        self._air_gap_dest_multi = air_gap_dest_multi
-        self._hover_height = hover_height
+        self._lysis_rate_aspirate = lysis_rate_aspirate
+        self._lysis_rate_dispense = lysis_rate_dispense
+        self._lysis_volume = lysis_volume
+        self._lys_mix_repeats = lys_mix_repeats
+        self._lys_mix_volume = lys_mix_volume
+        self._main_pipette = main_pipette
+        self._main_tiprack = main_tiprack
+        self._main_tiprack_label = main_tiprack_label
         self._max_speeds_a = max_speeds_a
         self._mix_repeats = mix_repeats
         self._mix_volume = mix_volume
-        self._lys_mix_repeats = lys_mix_repeats
-        self._lys_mix_volume = lys_mix_volume
-        self._ic_mix_repeats = ic_mix_repeats
-        self._ic_mix_volume = ic_mix_volume
+        self._positive_control_well = positive_control_well
+        self._sample_aspirate = sample_aspirate
+        self._sample_blow_out = sample_blow_out
+        self._sample_dispense = sample_dispense
+        self._sample_volume = sample_volume
+        self._source_headroom_height = source_headroom_height
+        self._source_position_top = source_position_top
         self._source_racks = source_racks
+        self._source_racks_definition_filepath = source_racks_definition_filepath
         self._source_racks_slots = source_racks_slots
+        self._source_top_height = source_top_height
+        self._tempdeck_temp = tempdeck_temp
         self._tipracks_slots = tipracks_slots
-        self._tip_log_folder_path = tip_log_folder_path
-        self._tip_log_filename = tip_log_filename
-        self.metadata = metadata
-        self._logger = logger
-        self._ctx = None
-        self.jupyter = jupyter
     
     @labware_loader(0, "_tempdeck", "_internal_control_strips")
     def load_tempdeck(self):
@@ -231,10 +233,6 @@ class StationA(Station):
         self.logger.debug("main pipette: {}".format(self._p_main))
     
     @property
-    def num_cols(self) -> int:
-        return math.ceil(self._num_samples/self._samples_per_col)
-    
-    @property
     def num_ic_strips(self) -> int:
         return math.ceil(self._iec_volume * self.num_cols * self._ic_lys_headroom / self._ic_capacity)
     
@@ -252,50 +250,12 @@ class StationA(Station):
         self._dests_multi = self._dest_plate.rows()[0][:self.num_cols]
         self.logger.debug("positive control in {} of destination rack".format(self._positive_control_well))
     
-    @property
-    def _tip_log_filepath(self) -> str:
-        return os.path.join(self._tip_log_folder_path, self._tip_log_filename)
-    
-    def _tiprack_log_args(self):
-        # first of each is the m20, second the main pipette
-        return ('m20', self._main_pipette), (self._m20, self._p_main), (self._tipracks20, self._tipracks_main)
-    
-    def setup_tip_log(self):
-        labels, pipettes, tipracks = self._tiprack_log_args()
-        
-        self._tip_log = {'count': {}}
-        if self._tip_rack and not self._ctx.is_simulating():
-            self.logger.debug("logging tip info in {}".format(self._tip_log_filepath))
-            if os.path.isfile(self._tip_log_filepath):
-                with open(self._tip_log_filepath) as json_file:
-                    data: dict = json.load(json_file)
-                    for p, l in zip(pipettes, labels):
-                        self._tip_log['count'][p] = data.get(l, 0)
-        else:
-            self.logger.debug("not using tip log file")
-            self._tip_log['count'] = dict(zip(pipettes, repeat(0)))
-        
-        self._tip_log['tips'] = {
-            pipettes[0]: list(chain.from_iterable(rack.rows()[0] for rack in tipracks[0])),
-            pipettes[1]: list(chain.from_iterable(rack.wells() for rack in tipracks[1])),
-        }
-        self._tip_log['max'] = {p: len(l) for p, l in self._tip_log['tips'].items()}
-    
     def setup_lys_tube(self):
         self._lysis_tube = LysisTube(self._lys_buff.diameter / 2, self._lysis_cone_height)
         self._lysis_tube.height = self._lysis_headroom_height
         self._lysis_tube.fill(self.initlial_volume_lys)
         self.logger.info("number of samples: {}. Lysis buffer expected volume: {} uL".format(self._num_samples, math.ceil(self._lysis_tube.volume)))
         self.logger.debug("lysis buffer expected height: {:.2f} mm".format(self._lysis_tube.height))
-    
-    def pick_up(self, pip):
-        if self._tip_log['count'][pip] == self._tip_log['max'][pip]:
-            # If empty, wait for refill
-            self._ctx.pause('Replace {:.0f} uL tipracks before resuming.'.format(pip.max_volume))
-            pip.reset_tipracks()
-            self._tip_log['count'][pip] = 0
-        pip.pick_up_tip(self._tip_log['tips'][pip][self._tip_log['count'][pip]])
-        self._tip_log['count'][pip] += 1
     
     def transfer_sample(self, source, dest):
         self.logger.debug("transferring from {} to {}".format(source, dest))
@@ -334,7 +294,7 @@ class StationA(Station):
             self._p_main.flow_rate.dispense = self._sample_dispense
             
         self._p_main.air_gap(self._air_gap_sample)
-        self._p_main.drop_tip()
+        self.drop(self._p_main)
     
     def is_positive_control_well(self, dest) -> bool:
         return dest == self._dest_plate[self._positive_control_well]
@@ -372,9 +332,9 @@ class StationA(Station):
             if self._lysis_first:
                 self._p_main.dispense(self._air_gap_sample, self._lys_buff.top())
             else:
-                self._p_main.drop_tip()
+                self.drop(self._p_main)
         if self._lysis_first:
-            self._p_main.drop_tip()
+            self.drop(self._p_main)
     
     def transfer_internal_control(self, idx: int, dest):
         strip_ind = idx // self.cols_per_strip
@@ -385,26 +345,15 @@ class StationA(Station):
         self._m20.transfer(self._iec_volume, internal_control, dest.bottom(self._ic_headroom_bottom), new_tip='never')
         self._m20.mix(self._ic_mix_repeats, self._ic_mix_volume, dest.bottom(self._dest_multi_headroom_height))
         self._m20.air_gap(self._air_gap_dest_multi)
-        self._m20.drop_tip()
+        self.drop(self._m20)
     
-    def track_tip(self):
-        labels, pipettes, tipracks = self._tiprack_log_args()
-        if not self._ctx.is_simulating():
-            self.logger.debug("dumping logging tip info in {}".format(self._tip_log_filepath))
-            if not os.path.isdir(self._tip_log_folder_path):
-                os.mkdir(self._tip_log_folder_path)
-            data = dict(zip(labels, map(self._tip_log['count'].__getitem__, pipettes)))
-            with open(self._tip_log_filepath, 'w') as outfile:
-                json.dump(data, outfile)
+    def _tiprack_log_args(self):
+        # first of each is the m20, second the main pipette
+        return ('m20', self._main_pipette), (self._m20, self._p_main), (self._tipracks20, self._tipracks_main)
     
     def run(self, ctx: ProtocolContext):
-        self._ctx = ctx
-        self.logger.info(self._protocol_description)
-        self.logger.info("using system9 version {}".format(__version__))
-        self.load_labware()
-        self.load_instruments()
+        super(StationA, self).run(ctx)
         self.setup_samples()
-        self.setup_tip_log()
         self.setup_lys_tube()
         
         def t_lys():
