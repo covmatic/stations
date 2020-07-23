@@ -25,11 +25,16 @@ class StationB(Station):
         bind_sample_mix_times: int = 5,
         bind_sample_mix_vol: float = 20,
         bind_vol: float = 210,
+        bottom_headroom_height: float = 0.5,
         default_aspiration_rate: float = 150,
         drop_loc_l: float = 30,
         drop_loc_r: float = -18,
         drop_threshold: int = 296,
+        elute_air_gap: float = 20,
         elute_aspiration_rate: float = 50,
+        elute_mix_times: int = 10,
+        elute_mix_vol: float = 30,
+        elution_height: float = 5,
         elution_vol: float = 40,
         jupyter: bool = True,
         logger: Optional[logging.getLoggerClass()] = None,
@@ -72,11 +77,16 @@ class StationB(Station):
         :param bind_sample_mix_times: Mixing repetitions for bind beads and samples
         :param bind_sample_mix_vol: Mixing repetitions for bind beads in uL
         :param bind_vol: Total volume transferred of bind beads
+        :param bottom_headroom_height: Height to keep from the bottom
         :param default_aspiration_rate: Default aspiration flow rate in uL/s
         :param drop_loc_l: offset for dropping to the left side (should be positive) in mm
         :param drop_loc_r: offset for dropping to the right side (should be negative) in mm
         :param drop_threshold: the amount of dropped tips after which the run is paused for emptying the trash
+        :param elute_air_gap: Air gap when aspirating elution buffer in uL
         :param elute_aspiration_rate: Aspiration flow rate when aspirating elution buffer in uL/s
+        :param elute_mix_times: Mix times for elution
+        :param elute_mix_vol: Mix volume for elution
+        :param elution_height: Height at which to sample after elution in mm
         :param elution_vol: The volume of elution buffer to aspirate in uL
         :param logger: logger object. If not specified, the default logger is used that logs through the ProtocolContext comment method
         :param magheight: Height of the magnet, in mm
@@ -129,9 +139,14 @@ class StationB(Station):
         self._bind_sample_mix_times = bind_sample_mix_times
         self._bind_sample_mix_vol = bind_sample_mix_vol
         self._bind_vol = bind_vol
+        self._bottom_headroom_height = bottom_headroom_height
         self._default_aspiration_rate = default_aspiration_rate
         self._drop_threshold = drop_threshold
+        self._elute_air_gap = elute_air_gap
         self._elute_aspiration_rate = elute_aspiration_rate
+        self._elute_mix_times = elute_mix_times
+        self._elute_mix_vol = elute_mix_vol
+        self._elution_height = elution_height
         self._elution_vol = elution_vol
         self._magheight = magheight
         self._magplate_model = magplate_model
@@ -308,7 +323,7 @@ class StationB(Station):
         for i, (m, spot) in enumerate(zip(self.mag_samples_m, self._parking_spots)):
             self.pick_up(self._m300)
             side = 1 if i % 2 == 0 else -1
-            loc = m.bottom(0.5).move(Point(x=side*2))
+            loc = m.bottom(self._bottom_headroom_height).move(Point(x=side*2))
             src = source[i // (len(self.mag_samples_m) // len(source))]
             
             for n in range(num_trans):
@@ -328,6 +343,39 @@ class StationB(Station):
         self.delay(5, 'incubating on MagDeck')
         self.remove_supernatant(vol)
     
+    def elute(self):
+        """Resuspend beads in elution"""
+        self._m300.flow_rate.aspirate = self._elute_aspiration_rate
+        for i, (m, spot) in enumerate(zip(self.mag_samples_m, self._parking_spots)):
+            self.pick_up(self._m300)
+            side = 1 if i % 2 == 0 else -1
+            loc = m.bottom(self._bottom_headroom_height).move(Point(x=side*2))
+            self._m300.aspirate(self._elution_vol, self.water)
+            self._m300.move_to(m.center())
+            self._m300.dispense(self._elution_vol, loc)
+            self._m300.mix(self._elute_mix_times, self._elute_mix_vol, loc)
+            # self._m300.blow_out(m.bottom(5))		# trying not to make bubbles
+            self._m300.touch_tip(v_offset=self._touch_tip_height)
+            self._m300.air_gap(self._elute_air_gap)
+            self.drop(self._m300, spot)
+        
+        self.delay(5, 'incubating off magnet at room temperature')
+        self._magdeck.engage(height=self._magheight)
+        self.delay(3, 'incubating on magnet at room temperature')
+        
+        for i, (m, e, spot) in enumerate(zip(
+            self.mag_samples_m,
+            self.elution_samples_m,
+            self._parking_spots,
+        )):
+            self.pick_up(self._m300, spot if self._park else None)
+            side = -1 if i % 2 == 0 else 1
+            loc = m.bottom(self._bottom_headroom_height).move(Point(x=side*2))
+            self._m300.transfer(self._elution_vol, loc, e.bottom(self._elution_height), air_gap=self._elute_air_gap, new_tip='never')
+            # m300.blow_out(e.top(-2))
+            self._m300.air_gap(self._elute_air_gap)
+            self.drop(self._m300)
+    
     def run(self, ctx: ProtocolContext):
         super(StationB, self).run(ctx)
         self.bind()
@@ -336,8 +384,7 @@ class StationB(Station):
         self.wash(self._wash_etoh_vol, self._etoh, self._wash_etoh_times)
         self._magdeck.disengage()
         self.delay(12, 'airdrying beads at room temperature')
-        # 
-        #     elute(ELUTION_VOL, park=PARK)
+        self.elute()
         self._magdeck.disengage()
 
 
