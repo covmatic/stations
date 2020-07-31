@@ -8,6 +8,12 @@ The protocol files that you can upload to your OT-2s will be kept here.
 
 In order to avoid errors running local protocol simulations add the ./custom_defaults/*.json files to your ~/.opentrons folder.
 
+# Utilities
+
+In the `utilities` directory you can find helpful protocols for the setup of the robots.
+
+ - `update.py` update (or install) the `covid19-system9` package on the robot
+
 # Usage
 
 In the `protocols` directory you can find examples for using the `covid19-system9` protocols.
