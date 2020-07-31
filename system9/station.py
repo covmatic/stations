@@ -244,10 +244,6 @@ class Station(metaclass=ABCMeta):
         self.setup_tip_log()
         self._button.color = 'white'
     
-    def __del__(self):
-        self._ctx.home()
-        self.track_tip()
-    
     def simulate(self):
         from opentrons import simulate
         self.run(simulate.get_protocol_api(self.metadata["apiLevel"]))

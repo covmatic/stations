@@ -147,8 +147,13 @@ class StationC(Station):
     def mm_strip(self):
         return self._mm_strips.columns()[0]
     
+    @property
+    def remaining_cols(self) -> int: 
+        return int(math.ceil(min(self._remaining_samples, self._samples_per_cycle) / self._m20.channels))
+    
     def fill_mm_strips(self):
-        vol_per_strip_well = min(self._remaining_samples, self._samples_per_cycle) * self.mm_dict['volume'] * self._mastermix_vol_headroom / self._m20.channels
+        vol_per_strip_well = self.remaining_cols * self.mm_dict['volume'] * self._mastermix_vol_headroom
+        
         self.pick_up(self._p300)        
         for well in self.mm_strip:
             self.logger.debug("filling mastermix at {}".format(well))
@@ -158,10 +163,11 @@ class StationC(Station):
     def transfer_mm(self):
         mm_vol = self.mm_dict['volume']
         self.pick_up(self._m20)
-        self._m20.transfer(mm_vol, self.mm_strip[0].bottom(self._bottom_headroom_height), self.sample_dests, new_tip='never')
+        self._m20.transfer(mm_vol, self.mm_strip[0].bottom(self._bottom_headroom_height), self.sample_dests[:self.remaining_cols], new_tip='never')
         self._m20.drop_tip()
     
     def transfer_sample(self, vol: float, source, dest):
+        self.logger.debug("transferring {:.0f} uL from {} to {}".format(vol, source, dest))
         self.pick_up(self._m20, tiprack="_tips20_no_a" if source.display_name.split(" ")[0] == self._positive_control_well else None)
         self._m20.transfer(vol, source.bottom(2), dest.bottom(2), new_tip='never')
         self._m20.mix(1, 10, dest.bottom(2))
@@ -181,6 +187,7 @@ class StationC(Station):
     def run(self, ctx: ProtocolContext):
         super(StationC, self).run(ctx)
         self.logger.info("set up for {} samples in {} cycle{}".format(self._num_samples, self.num_cycles, "" if self.num_cycles == 1 else "s"))
+        
         for i in range(self.num_cycles):
             self.logger.info("cycle {}/{}".format(i + 1, self.num_cycles))
             self.run_cycle()
@@ -189,6 +196,9 @@ class StationC(Station):
                     "end of cycle {}/{}. Please, load a new plate from station B. Resume when it is ready".format(i + 1, self.num_cycles),
                     blink=True, color="green",
                 )
+        
+        self.track_tip()
+        self._ctx.home()
 
 
 if __name__ == "__main__":

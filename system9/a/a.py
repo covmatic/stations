@@ -376,4 +376,6 @@ class StationA(Station):
         
         self.transfer_internal_controls()
         
+        self.track_tip()
+        self._ctx.home()
         self.logger.info('move deepwell plate (slot 1) to Station B for RNA extraction.')

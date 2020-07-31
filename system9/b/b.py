@@ -430,6 +430,8 @@ class StationB(Station):
         self.delay(self._wait_time_dry, 'airdrying beads at room temperature')
         self.elute()
         self._magdeck.disengage()
+        self.track_tip()
+        self._ctx.home()
 
 
 if __name__ == "__main__":
