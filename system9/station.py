@@ -35,6 +35,14 @@ labware_loader = loader("_labware_load")
 instrument_loader = loader("_instr_load")
 
 
+def wells(rack):
+    return rack.wells()
+
+
+def first_row(rack):
+    return rack.rows()[0]
+
+
 class Station(metaclass=ABCMeta):
     _protocol_description = "[BRIEFLY DESCRIBE YOUR PROTOCOL]"
     
@@ -104,6 +112,17 @@ class Station(metaclass=ABCMeta):
     
     def load_instruments(self):
         self.load_it(self.instrument_loaders())
+        
+    def equipment(self, it) -> dict:
+        return {k: getattr(self, k) for _, v in it for k in v}
+    
+    @property
+    def labware(self) -> dict:
+        return self.equipment(self.labware_loaders())
+    
+    @property
+    def instruments(self) -> dict:
+        return self.equipment(self.instrument_loaders())
     
     @property
     def num_cols(self) -> int:
@@ -114,49 +133,49 @@ class Station(metaclass=ABCMeta):
         return os.path.join(self._tip_log_folder_path, self._tip_log_filename)
     
     @abstractmethod
-    def _tiprack_log_args(self) -> Tuple[Iterable, Iterable, Iterable]:
+    def _tipracks(self) -> dict:
+        """Mapping from tipracks attribute names to associated pipette (attribute names)"""
         pass
     
     def setup_tip_log(self):
-        labels, pipettes, tipracks = self._tiprack_log_args()
-        
-        self._tip_log = {'count': {}}
-        if self._tip_track and not self._ctx.is_simulating():
-            self.logger.debug("logging tip info in {}".format(self._tip_log_filepath))
+        data = {}
+        if self._tip_track:# and not self._ctx.is_simulating():
+            self.logger.info("logging tip info in {}".format(self._tip_log_filepath))
             if os.path.isfile(self._tip_log_filepath):
                 with open(self._tip_log_filepath) as json_file:
                     data: dict = json.load(json_file)
-                    for p, l in zip(pipettes, labels):
-                        self._tip_log['count'][p] = data.get(l, 0)
         else:
             self.logger.debug("not using tip log file")
-            self._tip_log['count'] = dict(zip(pipettes, repeat(0)))
         
-        self._tip_log['tips'] = {
-            p: list(chain.from_iterable(rack.wells() if i else rack.rows()[0] for rack in t))
-            for i, (p, t) in enumerate(zip(pipettes, tipracks))
+        self._tip_log = {
+            'count': {t: data.get(t, 0) for t in self._tipracks().keys()},
+            'tips': {t: list(chain.from_iterable(map(first_row if getattr(self, p).channels > 1 else wells, getattr(self, t)))) for t, p in self._tipracks().items()},
         }
-        self._tip_log['max'] = {p: len(l) for p, l in self._tip_log['tips'].items()}
+        self._tip_log['max'] = {t: len(p) for t, p in self._tip_log['tips'].items()}
     
     def track_tip(self):
-        labels, pipettes, tipracks = self._tiprack_log_args()
-        if not self._ctx.is_simulating():
-            self.logger.debug("dumping logging tip info in {}".format(self._tip_log_filepath))
-            if not os.path.isdir(self._tip_log_folder_path):
-                os.mkdir(self._tip_log_folder_path)
-            data = dict(zip(labels, map(self._tip_log['count'].__getitem__, pipettes)))
+        if self._tip_track:# and not self._ctx.is_simulating():
+            self.logger.info("dumping logging tip info in {}".format(self._tip_log_filepath))
+            os.makedirs(self._tip_log_folder_path, exist_ok=True)
             with open(self._tip_log_filepath, 'w') as outfile:
-                json.dump(data, outfile)
+                json.dump(self._tip_log['count'], outfile)
     
-    def pick_up(self, pip, loc: Optional[Location] = None):
+    def pick_up(self, pip, loc: Optional[Location] = None, tiprack: Optional[str] = None):
         if loc is None:
-            if self._tip_log['count'][pip] == self._tip_log['max'][pip]:
+            if tiprack is None:
+                for t in self._tipracks().keys():
+                    if getattr(self, t) == pip.tip_racks:
+                        tiprack = t
+                        break
+            if tiprack is None:
+                raise RuntimeError("no tiprack associated to pipette")
+            
+            if self._tip_log['count'][tiprack] == self._tip_log['max'][tiprack]:
                 # If empty, wait for refill
-                self.pause('replace {:.0f} uL tipracks before resuming.'.format(pip.max_volume), blink=True)
-                pip.reset_tipracks()
-                self._tip_log['count'][pip] = 0
-            pip.pick_up_tip(self._tip_log['tips'][pip][self._tip_log['count'][pip]])
-            self._tip_log['count'][pip] += 1
+                self.pause('before resuming, please replace {}'.format(", ".join(map(str, getattr(self, tiprack)))), blink=True)
+                self._tip_log['count'][tiprack] = 0
+            pip.pick_up_tip(self._tip_log['tips'][tiprack][self._tip_log['count'][tiprack]])
+            self._tip_log['count'][tiprack] += 1
         else:
             pip.pick_up_tip(loc)
     
@@ -224,6 +243,9 @@ class Station(metaclass=ABCMeta):
         self.load_instruments()
         self.setup_tip_log()
         self._button.color = 'white'
+    
+    def __del__(self):
+        self.track_tip()
     
     def simulate(self):
         from opentrons import simulate

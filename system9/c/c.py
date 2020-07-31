@@ -92,15 +92,22 @@ class StationC(Station):
         self._m20 = self._ctx.load_instrument('p20_multi_gen2', 'right', tip_racks=self._tips20)
     
     @instrument_loader(0, "_p300")
-    def load_mp300(self):
+    def load_p300(self):
         self._p300 = self._ctx.load_instrument('p300_single_gen2', 'left', tip_racks=self._tips300)
     
     def setup_samples(self):
         self._sources = self._source_plate.rows()[0][:self.num_cols]
         self._sample_dests = self._pcr_plate.rows()[0][:self.num_cols]
-
-    def _tiprack_log_args(self):
-        return (), (), ()
+    
+    def _tipracks(self) -> dict:
+        return {
+            "_tips300": "_p300",
+            "_tips20": "_m20",
+            "_tips20_no_a": "_m20",
+        }
+    
+    def pick_up_no_a(self):
+        self.pick_up(self._m20, tiprack="_tips20_no_a")
     
     def run(self, ctx: ProtocolContext):
         super(StationC, self).run(ctx)
