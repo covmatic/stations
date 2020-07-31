@@ -86,7 +86,15 @@ class StationC(Station):
     @labware_loader(7, "_tube_block")
     def load_tube_block(self):
         self._tube_block = self._ctx.load_labware('opentrons_24_aluminumblock_nest_1.5ml_snapcap', '5', '2ml screw tube aluminum block for mastermix + controls')
-        
+    
+    @instrument_loader(0, "_m20")
+    def load_m20(self):
+        self._m20 = self._ctx.load_instrument('p20_multi_gen2', 'right', tip_racks=self._tips20)
+    
+    @instrument_loader(0, "_p300")
+    def load_mp300(self):
+        self._p300 = self._ctx.load_instrument('p300_single_gen2', 'left', tip_racks=self._tips300)
+
     def _tiprack_log_args(self):
         return (), (), ()
     
