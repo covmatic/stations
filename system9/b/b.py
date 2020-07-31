@@ -313,7 +313,7 @@ class StationB(Station):
         self._m300.flow_rate.aspirate = self._bind_aspiration_rate
         
         for i, (well, spot) in enumerate(zip(self.mag_samples_m, self._parking_spots)):
-            source = self.binding_buffer[i // (len(self.mag_samples_m) // len(self.binding_buffer))]
+            source = self.binding_buffer[i // ((len(self.mag_samples_m) // len(self.binding_buffer)) or 1)]
             self.pick_up(self._m300)
             mix_bottom_top(
                 self._m300,
@@ -357,7 +357,7 @@ class StationB(Station):
         
         for i, (m, spot) in enumerate(zip(self.mag_samples_m, self._parking_spots)):
             self.pick_up(self._m300)
-            src = source[i // (len(self.mag_samples_m) // len(source))]
+            src = source[i // ((len(self.mag_samples_m) // len(source)) or 1)]
             
             for n in range(num_trans):
                 if self._m300.current_volume > 0:
