@@ -280,9 +280,9 @@ class StationB(Station):
         self._m300.flow_rate.aspirate = self._bind_aspiration_rate
         self._m300.flow_rate.dispense = self._bind_dispense_rate
         self._m300.flow_rate.blow_out = self._bind_blowout_rate
-        
-    def _tiprack_log_args(self):
-        return ('m300',), (self._m300,), (self._tips300,)
+    
+    def _tipracks(self) -> dict:
+        return {"_tips300": "_m300",}
     
     def drop(self, pip, loc: Optional[Location] = None):
         if loc is None or not self._park:
@@ -430,6 +430,8 @@ class StationB(Station):
         self.delay(self._wait_time_dry, 'airdrying beads at room temperature')
         self.elute()
         self._magdeck.disengage()
+        self.track_tip()
+        self._ctx.home()
 
 
 if __name__ == "__main__":

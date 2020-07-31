@@ -200,7 +200,7 @@ class StationA(Station):
             'nest_96_wellplate_2ml_deep', '1', '96-deepwell sample plate'
         )
     
-    @labware_loader(3, "_lys_buf")
+    @labware_loader(3, "_lys_buff")
     def load_lys_buf(self):
         self._lys_buff = self._ctx.load_labware(
             'opentrons_6_tuberack_falcon_50ml_conical', '4',
@@ -304,10 +304,16 @@ class StationA(Station):
         return filter(lambda t: not self.is_positive_control_well(t[1]), zip(sources, dests))
     
     def transfer_samples(self):
+        self._p_main.flow_rate.aspirate = self._sample_aspirate
+        self._p_main.flow_rate.dispense = self._sample_dispense
+        
         for s, d in self.non_control_positions():
             self.transfer_sample(s, d)
     
     def transfer_lys(self):
+        self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
+        self._p_main.flow_rate.dispense = self._lysis_rate_dispense
+        
         if self._lysis_first:
             self.pick_up(self._p_main)
         mix = {} if self._lysis_first else {'mix_after': (self._lys_mix_repeats, self._lys_mix_volume)}
@@ -334,6 +340,9 @@ class StationA(Station):
             self.drop(self._p_main)
     
     def transfer_internal_control(self, idx: int, dest):
+        self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
+        self._p_main.flow_rate.dispense = self._lysis_rate_dispense
+        
         strip_ind = idx // self.cols_per_strip
         self.logger.debug("transferring internal control strip {}/{} to {}".format(strip_ind + 1, self.num_ic_strips, dest))
         internal_control = self._internal_control_strips[strip_ind]
@@ -344,33 +353,29 @@ class StationA(Station):
         self._m20.air_gap(self._air_gap_dest_multi)
         self.drop(self._m20)
     
-    def _tiprack_log_args(self):
-        # first of each is the m20, second the main pipette
-        return ('m20', self._main_pipette), (self._m20, self._p_main), (self._tipracks20, self._tipracks_main)
+    def transfer_internal_controls(self):
+        for i, d in enumerate(self._dests_multi):
+            self.transfer_internal_control(i, d)
+    
+    def _tipracks(self) -> dict:
+        return {
+            "_tipracks_main": "_p_main",
+            "_tipracks20": "_m20",
+        }
     
     def run(self, ctx: ProtocolContext):
         super(StationA, self).run(ctx)
         self.setup_samples()
         self.setup_lys_tube()
         
-        def t_lys():
-            self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
-            self._p_main.flow_rate.dispense = self._lysis_rate_dispense
-            self.transfer_lys()
-        
-        def t_smp():
-            self._p_main.flow_rate.aspirate = self._sample_aspirate
-            self._p_main.flow_rate.dispense = self._sample_dispense
-            self.transfer_samples()
-        
-        T = (t_lys, t_smp)
+        T = (self.transfer_lys, self.transfer_samples)
         for t in (T if self._lysis_first else reversed(T)):
             t()
         
         self.pause("incubate sample plate (slot 4) at 55-57°C for 20 minutes. Return to slot 4 when complete", blink=True)
         
-        for i, d in enumerate(self._dests_multi):
-            self.transfer_internal_control(i, d)
+        self.transfer_internal_controls()
         
-        self.logger.info('move deepwell plate (slot 1) to Station B for RNA extraction.')
         self.track_tip()
+        self._ctx.home()
+        self.logger.info('move deepwell plate (slot 1) to Station B for RNA extraction.')
