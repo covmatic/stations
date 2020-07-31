@@ -29,6 +29,7 @@ class Button:
     
     def __init__(self, ctx: ProtocolContext, color: str = 'blue'):
         self._ctx = ctx
+        self._default_color = color
         self.color = color
 
     @classmethod
@@ -48,3 +49,6 @@ class Button:
     def color(self, color: str):
         self._state = self.encode(color)
         self._ctx._hw_manager.hardware._backend.gpio_chardev.set_button_light(**self._state)
+    
+    def __del__(self):
+        self.color = self._default_color

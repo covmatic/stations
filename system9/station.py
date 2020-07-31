@@ -217,12 +217,13 @@ class Station(metaclass=ABCMeta):
     
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx
-        self._button = Button(self._ctx, 'white')
+        self._button = Button(self._ctx, 'blue')
         self.logger.info(self._protocol_description)
         self.logger.info("using system9 version {}".format(__version__))
         self.load_labware()
         self.load_instruments()
         self.setup_tip_log()
+        self._button.color = 'white'
     
     def simulate(self):
         from opentrons import simulate
