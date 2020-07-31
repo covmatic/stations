@@ -245,6 +245,7 @@ class Station(metaclass=ABCMeta):
         self._button.color = 'white'
     
     def __del__(self):
+        self._ctx.home()
         self.track_tip()
     
     def simulate(self):
