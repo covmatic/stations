@@ -1,5 +1,6 @@
 from ..station import Station, labware_loader, instrument_loader
 from opentrons.protocol_api import ProtocolContext
+import math
 import logging
 from typing import Optional, Tuple
 
@@ -17,6 +18,7 @@ class StationC(Station):
         metadata: Optional[dict] = None,
         num_samples: int = 96,
         samples_per_col: int = 8,
+        samples_per_cycle: int = 96,
         skip_delay: bool = False,
         tipracks_slots: Tuple[str, ...] = ('2', '3', '6', '7', '9'),
         tip_log_filename: str = 'tip_log.json',
@@ -31,6 +33,7 @@ class StationC(Station):
         :param metadata: protocol metadata
         :param num_samples: The number of samples that will be loaded on the station B
         :param samples_per_col: The number of samples in a column of the destination plate
+        :param samples_per_cycle: The number of samples processable in one cycle
         :param skip_delay: If True, pause instead of delay.
         :param tip_log_filename: file name for the tip log JSON dump
         :param tip_log_folder_path: folder for the tip log JSON dump
@@ -50,7 +53,12 @@ class StationC(Station):
             tip_log_folder_path=tip_log_folder_path,
             tip_track=tip_track,
         )
+        self._samples_per_cycle = samples_per_cycle
         self._tipracks_slots = tipracks_slots
+    
+    @property
+    def num_cycles(self) -> int:
+        return int(math.ceil(self._num_samples / self._samples_per_cycle))
     
     @labware_loader(0, "_source_plate")
     def load_tips300(self):
@@ -95,9 +103,13 @@ class StationC(Station):
     def load_p300(self):
         self._p300 = self._ctx.load_instrument('p300_single_gen2', 'left', tip_racks=self._tips300)
     
-    def setup_samples(self):
-        self._sources = self._source_plate.rows()[0][:self.num_cols]
-        self._sample_dests = self._pcr_plate.rows()[0][:self.num_cols]
+    @property
+    def sources(self):
+        return self._source_plate.rows()[0][:self.num_cols]
+    
+    @property
+    def sample_dests(self):
+        return self._pcr_plate.rows()[0][:self.num_cols]
     
     def _tipracks(self) -> dict:
         return {
@@ -108,10 +120,24 @@ class StationC(Station):
     
     def pick_up_no_a(self):
         self.pick_up(self._m20, tiprack="_tips20_no_a")
+        
+    @property
+    def mm_tube(self):
+        return self._tube_block.wells()[0]
+    
+    @property
+    def mm_dict(self):
+        return {
+            'volume': 12,
+            'components': {tube: vol for tube, vol in zip(self._tube_block.columns()[1], [10, 2])}
+        }
+    
+    @property
+    def mm_strip(self):
+        return self._mm_strips.columns()[0]
     
     def run(self, ctx: ProtocolContext):
         super(StationC, self).run(ctx)
-        self.setup_samples()
 
 
 if __name__ == "__main__":
