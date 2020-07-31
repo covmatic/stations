@@ -94,12 +94,17 @@ class StationC(Station):
     @instrument_loader(0, "_p300")
     def load_mp300(self):
         self._p300 = self._ctx.load_instrument('p300_single_gen2', 'left', tip_racks=self._tips300)
+    
+    def setup_samples(self):
+        self._sources = self._source_plate.rows()[0][:self.num_cols]
+        self._sample_dests = self._pcr_plate.rows()[0][:self.num_cols]
 
     def _tiprack_log_args(self):
         return (), (), ()
     
     def run(self, ctx: ProtocolContext):
         super(StationC, self).run(ctx)
+        self.setup_samples()
 
 
 if __name__ == "__main__":
