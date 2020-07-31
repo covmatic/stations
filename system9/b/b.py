@@ -1,5 +1,5 @@
 from ..station import Station, labware_loader, instrument_loader
-from ..utils import mix_bottom_top, uniform_divide
+from ..utils import mix_bottom_top, uniform_divide, mix_walk
 from opentrons.protocol_api import ProtocolContext
 from opentrons.types import Point, Location
 from itertools import repeat
@@ -64,7 +64,11 @@ class StationB(Station):
         wash_etoh_times: int = 4,
         wash_etoh_vol: float = 800,
         wash_max_transfer_vol: float = 200,
+        wash_mix_aspiration_rate: float = 400,
+        wash_mix_dispense_rate: float = 400,
+        wash_mix_speed: float = 20,
         wash_mix_vol: float = 150,
+        wash_mix_walk: bool = False,
         wash_1_times: int = 20,
         wash_1_vol: float = 500,
         wash_2_times: int = 20,
@@ -121,6 +125,11 @@ class StationB(Station):
         :param wash_etoh_times: Mix times for ethanol
         :param wash_etoh_vol: Volume of ethanol in uL
         :param wash_max_transfer_vol: Maximum volume transferred of wash in uL
+        :param wash_mix_aspiration_rate: Aspiration flow rate when mixing wash buffer in uL/s
+        :param wash_mix_dispense_rate: Dispensation flow rate when mixing wash buffer in uL/s
+        :param wash_mix_speed: Movement speed of the pipette while mixing in mm/s
+        :param wash_mix_vol: Mix volume for wash
+        :param wash_mix_walk: Whether to move or not when mixing the wash buffer
         :param wash_1_times: Mix times for wash 1
         :param wash_1_vol: Volume of wash 1 buffer in uL
         :param wash_2_times: Mix times for wash 2
@@ -179,7 +188,11 @@ class StationB(Station):
         self._wash_etoh_times = wash_etoh_times
         self._wash_etoh_vol = wash_etoh_vol
         self._wash_max_transfer_vol = wash_max_transfer_vol
+        self._wash_mix_aspiration_rate = wash_mix_aspiration_rate
+        self._wash_mix_dispense_rate = wash_mix_dispense_rate
+        self._wash_mix_speed = wash_mix_speed
         self._wash_mix_vol = wash_mix_vol
+        self._wash_mix_walk = wash_mix_walk
         self._wash_1_times = wash_1_times
         self._wash_1_vol = wash_1_vol
         self._wash_2_times = wash_2_times
@@ -297,8 +310,10 @@ class StationB(Station):
         
     def bind(self):
         """Add bead binding buffer and mix samples"""
+        self._m300.flow_rate.aspirate = self._bind_aspiration_rate
+        
         for i, (well, spot) in enumerate(zip(self.mag_samples_m, self._parking_spots)):
-            source = self.binding_buffer[i // (len(self.mag_samples_m) // len(self.binding_buffer))]
+            source = self.binding_buffer[i // ((len(self.mag_samples_m) // len(self.binding_buffer)) or 1)]
             self.pick_up(self._m300)
             mix_bottom_top(
                 self._m300,
@@ -335,14 +350,14 @@ class StationB(Station):
     
     def wash(self, vol: float, source, mix_reps: int):
         self.logger.info("washing with {} uL of wash for {} times".format(vol, mix_reps))
+        self._m300.flow_rate.aspirate = self._default_aspiration_rate
+        dispense_rate = self._m300.flow_rate.dispense
         self._magdeck.disengage()
         num_trans, vol_per_trans = uniform_divide(vol, self._wash_max_transfer_vol)
         
         for i, (m, spot) in enumerate(zip(self.mag_samples_m, self._parking_spots)):
             self.pick_up(self._m300)
-            side = 1 if i % 2 == 0 else -1
-            loc = m.bottom(self._bottom_headroom_height).move(Point(x=side*2))
-            src = source[i // (len(self.mag_samples_m) // len(source))]
+            src = source[i // ((len(self.mag_samples_m) // len(source)) or 1)]
             
             for n in range(num_trans):
                 if self._m300.current_volume > 0:
@@ -351,8 +366,19 @@ class StationB(Station):
                 if n < num_trans - 1:  # only air_gap if going back to source
                     self._m300.air_gap(self._wash_air_gap)
             
-            self._m300.mix(mix_reps, self._wash_mix_vol, loc)
-            self._m300.blow_out(m.top())
+            # Mix
+            self._m300.flow_rate.aspirate = self._wash_mix_aspiration_rate
+            self._m300.flow_rate.dispense = self._wash_mix_dispense_rate
+            if self._wash_mix_walk:
+                a_locs = [m.bottom(self._bottom_headroom_height).move(Point(x=2*(-1 if i % 2 else +1), y=2*(2*j/(mix_reps - 1) - 1))) for j in range(mix_reps)]
+                mix_walk(self._m300, mix_reps, self._wash_mix_vol, a_locs, speed=self._wash_mix_speed, logger=self.logger)
+            else:
+                loc = m.bottom(self._bottom_headroom_height).move(Point(x=2*(-1 if i % 2 else +1)))
+                self._m300.mix(mix_reps, self._wash_mix_vol, loc)
+            self._m300.flow_rate.aspirate = self._default_aspiration_rate
+            self._m300.flow_rate.dispense = dispense_rate
+            
+            # self._m300.blow_out(m.top())
             self._m300.touch_tip(v_offset=self._touch_tip_height)
             self._m300.air_gap(self._wash_air_gap)
             self.drop(self._m300, spot)
