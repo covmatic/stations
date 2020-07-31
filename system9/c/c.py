@@ -15,6 +15,7 @@ class StationC(Station):
         drop_threshold: int = 296,
         jupyter: bool = True,
         logger: Optional[logging.getLoggerClass()] = None,
+        mastermix_vol_headroom: float = 1.1,
         metadata: Optional[dict] = None,
         num_samples: int = 96,
         samples_per_col: int = 8,
@@ -30,6 +31,7 @@ class StationC(Station):
         :param drop_loc_r: offset for dropping to the right side (should be negative) in mm
         :param drop_threshold: the amount of dropped tips after which the run is paused for emptying the trash
         :param logger: logger object. If not specified, the default logger is used that logs through the ProtocolContext comment method
+        :param mastermix_vol_headroom: Headroom for mastermix volume as a multiplier
         :param metadata: protocol metadata
         :param num_samples: The number of samples that will be loaded on the station B
         :param samples_per_col: The number of samples in a column of the destination plate
@@ -53,8 +55,11 @@ class StationC(Station):
             tip_log_folder_path=tip_log_folder_path,
             tip_track=tip_track,
         )
+        self._mastermix_vol_headroom = mastermix_vol_headroom
         self._samples_per_cycle = samples_per_cycle
         self._tipracks_slots = tipracks_slots
+        
+        self._remaining_samples = 0
     
     @property
     def num_cycles(self) -> int:
@@ -136,8 +141,23 @@ class StationC(Station):
     def mm_strip(self):
         return self._mm_strips.columns()[0]
     
+    def fill_mm_strips(self):
+        vol_per_strip_well = min(self._remaining_samples, self._samples_per_cycle) * self.mm_dict['volume'] * self._mastermix_vol_headroom / self._m20.channels
+        self.pick_up(self._p300)        
+        for well in self.mm_strip:
+            self.logger.debug("filling mastermix at {}".format(well))
+            self._p300.transfer(vol_per_strip_well, self.mm_tube, well, new_tip='never')
+        self._p300.drop_tip()
+    
+    def run_cycle(self):
+        self.fill_mm_strips()
+    
     def run(self, ctx: ProtocolContext):
         super(StationC, self).run(ctx)
+        self.logger.info("set up for {} samples in {} cycle{}".format(self._num_samples, self.num_cycles, "" if self.num_cycles == 1 else "s"))
+        for i in range(self.num_cycles):
+            self.logger.info("cycle {}/{}".format(i + 1, self.num_cycles))
+            self.run_cycle()
 
 
 if __name__ == "__main__":
