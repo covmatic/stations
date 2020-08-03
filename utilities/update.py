@@ -1,5 +1,4 @@
 from opentrons import robot
-from importlib import reload
 import os
 
 update_in_simulation = False
@@ -14,5 +13,5 @@ else:
 
 if not robot.is_simulating() or update_in_simulation:
     os.system("{} -m pip install --upgrade{} covid19-system9".format(os.sys.executable, " -i https://test.pypi.org/simple/" if test else ""))
-    import system9
-    reload(system9)
+
+robot.comment("restart your OT-2 to apply the changes")
