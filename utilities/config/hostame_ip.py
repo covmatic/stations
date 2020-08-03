@@ -182,7 +182,7 @@ if __name__ == "__main__":
     parser.add_argument('-A', '--ip-address', dest="ip", metavar='addr', type=str, default=None, help='the desired IP Address for the robot')
     parser.add_argument('-G', '--gateway', metavar='ip', type=str, default=None, help='the Gateway address')
     parser.add_argument('-D', '--dns', metavar='ip', type=str, nargs="*", default=[], help='the DNS addresses')
-    parser.add_argument('-T', '--ntp', metavar='ip', type=str, nargs="*", default=[], help='the NTP server addresses')
+    parser.add_argument('-T', '--ntp', metavar='ip', type=str, default=None, help='the NTP server address')
     parser.add_argument('-O', '--output-filepath', dest="filepath", metavar='addr', type=str, default=None, help='the output file path')
     parser.add_argument('-E', '--exec-simul', action="store_true", help='let the protocol be executed during simulation')
     parser.add_argument('-q', '--quiet', action="store_true", help='quiet mode')
