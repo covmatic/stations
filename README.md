@@ -18,7 +18,7 @@ In the `utilities` directory you can find helpful protocols for the setup of the
 
 In the `utilities/config` directory you can find python scripts for generating setup protocols.
 
- - `hostame_ip.py` set the robot name, the hostname and a static ip for the robot
+ - `hostame_ip.py` set the robot name, the hostname, the DNS, the NTP server and a static ip for the robot
 
 # Usage
 
