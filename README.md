@@ -14,6 +14,12 @@ In the `utilities` directory you can find helpful protocols for the setup of the
 
  - `update.py` update (or install) the `covid19-system9` package on the robot
 
+## Config
+
+In the `utilities/config` directory you can find python scripts for generating setup protocols.
+
+ - `hostame_ip.py` set the robot name, the hostname and a static ip for the robot
+
 # Usage
 
 In the `protocols` directory you can find examples for using the `covid19-system9` protocols.
