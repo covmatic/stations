@@ -1,4 +1,5 @@
 from . import __version__
+from .request import StationRESTServerThread
 from .utils import ProtocolContextLoggingHandler, logging
 from .lights import Button, BlinkingLight
 from opentrons.protocol_api import ProtocolContext
@@ -240,6 +241,8 @@ class Station(metaclass=ABCMeta):
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx
         self._button = Button(self._ctx, 'blue')
+        self._request = StationRESTServerThread(ctx)
+        self._request.start()
         self.logger.info(self._protocol_description)
         self.logger.info("using system9 version {}".format(__version__))
         self.load_labware()
@@ -251,6 +254,7 @@ class Station(metaclass=ABCMeta):
         
         self._button.color = 'blue'
         self.track_tip()
+        self._request.join(60)
         self._ctx.home()
     
     def simulate(self):
