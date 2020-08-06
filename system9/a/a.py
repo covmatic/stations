@@ -363,8 +363,7 @@ class StationA(Station):
             "_tipracks20": "_m20",
         }
     
-    def run(self, ctx: ProtocolContext):
-        super(StationA, self).run(ctx)
+    def body(self):
         self.setup_samples()
         self.setup_lys_tube()
         
@@ -373,9 +372,5 @@ class StationA(Station):
             t()
         
         self.pause("incubate sample plate (slot 4) at 55-57°C for 20 minutes. Return to slot 4 when complete", blink=True)
-        
         self.transfer_internal_controls()
-        
-        self.track_tip()
-        self._ctx.home()
         self.logger.info('move deepwell plate (slot 1) to Station B for RNA extraction.')

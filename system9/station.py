@@ -233,6 +233,9 @@ class Station(metaclass=ABCMeta):
             level=level,
             pause=self._skip_delay,
         )
+        
+    def body(self):
+        pass
     
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx
@@ -243,6 +246,12 @@ class Station(metaclass=ABCMeta):
         self.load_instruments()
         self.setup_tip_log()
         self._button.color = 'white'
+        
+        self.body()
+        
+        self._button.color = 'blue'
+        self.track_tip()
+        self._ctx.home()
     
     def simulate(self):
         from opentrons import simulate

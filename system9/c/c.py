@@ -200,8 +200,7 @@ class StationC(Station):
             if self._remaining_samples <= 0:
                 break
     
-    def run(self, ctx: ProtocolContext):
-        super(StationC, self).run(ctx)
+    def body(self):
         self.logger.info("set up for {} samples in {} cycle{}".format(self._num_samples, self.num_cycles, "" if self.num_cycles == 1 else "s"))
         
         for i in range(self.num_cycles):
@@ -212,9 +211,6 @@ class StationC(Station):
                     "end of cycle {}/{}. Please, load a new plate from station B. Resume when it is ready".format(i + 1, self.num_cycles),
                     blink=True, color="green",
                 )
-        
-        self.track_tip()
-        self._ctx.home()
 
 
 if __name__ == "__main__":
