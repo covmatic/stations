@@ -39,18 +39,18 @@ def run(ctx):
     num_cols = math.ceil(NUM_SAMPLES/8)
     tips300 = [
         ctx.load_labware('opentrons_96_tiprack_300ul', slot, '200µl filtertiprack')
-        for slot in ['5', '6', '7', '8', '9', '10']
+        for slot in ['3', '5', '6', '8', '9', '10']
     ]
     m300 = ctx.load_instrument('p300_multi_gen2', 'left', tip_racks=tips300)
     
     # Magnetic module
-    magdeck = ctx.load_module('Magnetic Module Gen2', '4')
+    magdeck = ctx.load_module('Magnetic Module Gen2', '7')
     magdeck.disengage()
     magheight = magnets.height.by_serial.get(magdeck._module._driver.get_device_info()['serial'], 6.65)
     magplate = magdeck.load_labware('nest_96_wellplate_2ml_deep')
     
     # Temperature module
-    tempdeck = ctx.load_module('Temperature Module Gen2', '3')
+    tempdeck = ctx.load_module('Temperature Module Gen2', '4')
     tempplate = tempdeck.load_labware('nest_96_wellplate_2ml_deep')
     
     # PCR plate
