@@ -39,7 +39,7 @@ def run(ctx):
     num_cols = math.ceil(NUM_SAMPLES/8)
     tips300 = [
         ctx.load_labware('opentrons_96_tiprack_300ul', slot, '200µl filtertiprack')
-        for slot in [ '5', '6', '7', '8', '9', '10']
+        for slot in ['5', '6', '7', '8', '9', '10']
     ]
     m300 = ctx.load_instrument('p300_multi_gen2', 'left', tip_racks=tips300)
     
@@ -59,9 +59,9 @@ def run(ctx):
     # Liquids
     waste = ctx.load_labware('nest_1_reservoir_195ml', '11', 'Liquid Waste').wells()[0].top()
     res12 = ctx.load_labware('nest_12_reservoir_15ml', '1', 'Trough with Reagents')
-    washA = res12.wells()[:5]
-    washB = res12.wells()[5:10]
-    elution = res12.wells()[11]
+    washA = res12.wells()[:6]
+    washB = res12.wells()[-6:]
+    elution = res12.wells()[11]  # positions overlap, but the reservoir is changed before elution
     
     # Positions
     mag_samples_m = magplate.rows()[0][:num_cols]
@@ -175,7 +175,7 @@ resuming.')
 
     def elute(vol):
         magdeck.disengage()
-        ctx.pause("Move deepwell plate from magnetic module on 4 to temperature module on 3\nInsert elution buffer at 80°C in column 12 of reservoir on 1")
+        ctx.pause("Move deepwell plate from magnetic module on 4 to temperature module on 3\nSwitch the reservoir on 1 for a new reservoir with elution buffer at 80°C in column 12")
         
         # Add elution
         m300.flow_rate.aspirate = ELUTE_ASPIRATION_RATE
