@@ -77,6 +77,11 @@ def run(ctx: protocol_api.ProtocolContext):
     # pipette
     m20 = ctx.load_instrument('p20_multi_gen2', 'right', tip_racks=tips20)
     p300 = ctx.load_instrument('p300_single_gen2', 'left', tip_racks=tips300)
+    
+    m20.flow_rate.aspirate = 3.8
+    m20.flow_rate.dispense = 3.8
+    p300.flow_rate.aspirate = 23
+    p300.flow_rate.dispense = 23
 
     # setup up sample sources and destinations
     num_cols = math.ceil(NUM_SAMPLES/8)
