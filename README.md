@@ -46,3 +46,34 @@ logging.getLogger(StationAP300.__name__).setLevel(logging.INFO)
 ```
 
 By default, the level is set to `DEBUG`.
+
+## Magnet Settings
+Magnet settings are read from a JSON file in the package. To override the file path, you can set the environment variable `OT_MAGNET_JSON` to your custom path (a path on the OT's Raspberry). If the file is `/home/altern_magnet.json`, you would write
+```
+export OT_MAGNET_JSON=/home/altern_magnet.json
+```
+To delete the variable you would write
+```
+unset OT_MAGNET_JSON
+```
+The JSON file should be an array of objects, each of which has the fields `serial`, `station` and `height`. E.g.
+```
+[
+  {
+	"serial": "X",
+	"station": "B1",
+	"height": 6.20
+  },
+  {
+	"serial": "Y",
+	"station": "B2",
+	"height": 6.20
+  }
+]
+```
+
+To inspect a field of a magnet, use the following pattern `magnets.<field>.by_<key>["keyvalue"]`. E.g. to get the height of the magnet whose serial is `X` you would write
+```
+from system9.b import magnets
+h = magnets.height.by_serial["X"]
+```

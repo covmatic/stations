@@ -1,9 +1,13 @@
 from opentrons.types import Point
+from system9.b import magnets
+from opentrons.types import Point, Location
 import json
 import os
 import math
 import threading
 from time import sleep
+from itertools import cycle, islice, repeat, chain
+from typing import Iterable, Union, Optional
 
 metadata = {
     'protocolName': 'Version 1 S9 Station B BP Purebase (400µl sample input)',
@@ -11,13 +15,13 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 16  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
+NUM_SAMPLES = 8  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
 STARTING_VOL = 380
 ELUTION_VOL = 40
 TIP_TRACK = False
 PARK = True
 
-SKIP_DELAY = False
+SKIP_DELAY = True
 
 BIND_MAX_TRANSFER_VOL = 180		# Maximum volume transferred of bind beads
 
@@ -25,6 +29,11 @@ DEFAULT_ASPIRATION_RATE	= 150
 BIND_ASPIRATION_RATE = 50
 SUPERNATANT_REMOVAL_ASPIRATION_RATE = 25
 ELUTE_ASPIRATION_RATE = 50
+
+# MAGNET_SERIAL = "MDV20P20200509A19"  # You can input the serial with the Zebra barcode reader
+# magheight = magnets.height.by_serial[MAGNET_SERIAL]
+MIX_ASPIRATION_RATE = 400
+MIX_DISPENSE_RATE = 400
 
 # Definitions for deck light flashing
 class CancellationToken:
@@ -84,9 +93,11 @@ def run(ctx):
 
     magdeck = ctx.load_module('Magnetic Module Gen2', '4')
     magdeck.disengage()
-    magheight = 6.65     # for GEN2 Magnetic module; was 13.7 for GEN1 module
     magplate = magdeck.load_labware('nest_96_wellplate_2ml_deep')
     # magplate = magdeck.load_labware('biorad_96_wellplate_200ul_pcr')
+    
+    magheight = magnets.height.by_serial.get(magdeck._module._driver.get_device_info()['serial'], 6.5)
+    
     tempdeck = ctx.load_module('Temperature Module Gen2', '1')
     flatplate = tempdeck.load_labware(
                 'opentrons_96_aluminumblock_nest_wellplate_100ul',)
@@ -107,7 +118,7 @@ def run(ctx):
     magdeck.disengage()  # just in case
     tempdeck.set_temperature(4)
 
-    m300.flow_rate.aspirate = BIND_ASPIRATION_RATE
+    m300.flow_rate.aspirate = DEFAULT_ASPIRATION_RATE
     m300.flow_rate.dispense = 150
     m300.flow_rate.blow_out = 300
 
@@ -147,7 +158,26 @@ resuming.')
     switch = True
     drop_count = 0
     drop_threshold = 296 # number of tips trash will accommodate before prompting user to empty
-
+    
+    def mix(pip, num, vol, aspirate_locs: Union[Location, Iterable], dispense_locs: Optional[Union[Location, Iterable]] = None, speed: Optional[float] = None):
+        if isinstance(aspirate_locs, Location):
+            aspirate_locs = [aspirate_locs]
+        if dispense_locs is None:
+            dispense_locs = aspirate_locs
+        
+        old_speed = pip.default_speed
+        
+        for b, a, d in islice(zip(chain([True], repeat(False)), cycle(aspirate_locs), cycle(dispense_locs)), num):
+            ctx.comment("Mixing at '{}' and '{}'".format(a, d))
+            if b and speed is not None:
+                pip.move_to(a)
+                pip.default_speed = speed
+                ctx.comment("Set speed to {}".format(pip.default_speed))
+            pip.aspirate(vol, a)
+            pip.dispense(vol, d)
+        
+        pip.default_speed = old_speed
+        
     def drop(pip):
         nonlocal switch
         nonlocal drop_count
@@ -192,6 +222,8 @@ resuming.')
         m300.flow_rate.aspirate = DEFAULT_ASPIRATION_RATE
 
     def bind(vol, park=True):
+        m300.flow_rate.aspirate = BIND_ASPIRATION_RATE
+        
         # add bead binding buffer and mix samples
         for i, (well, spot) in enumerate(zip(mag_samples_m, parking_spots)):
             source = binding_buffer[i//(12//len(binding_buffer))]
@@ -219,6 +251,7 @@ resuming.')
         
         # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
         delay(5, 'Waiting minutes before magnetic module activation.', ctx)
+        ctx.comment("Magnetic deck height: {:.2f} mm".format(magheight))
         magdeck.engage(height=magheight)
         
         #Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
@@ -226,16 +259,21 @@ resuming.')
 
         # remove initial supernatant
         remove_supernatant(vol+STARTING_VOL, park=park)
-
+    
+    def mix_positions(idx: int, base_loc: Location, mix_reps: int, max_d: float = 2, side: float = 2):
+        return [base_loc.move(Point(x=side*(-1 if idx%2 else +1), y=max_d*(2*j/(mix_reps - 1) - 1))) for j in range(mix_reps)]
+            
     def wash(wash_vol, source, mix_reps, park=True):
+        m300.flow_rate.aspirate = DEFAULT_ASPIRATION_RATE
         magdeck.disengage()
 
         num_trans = math.ceil(wash_vol/200)
         vol_per_trans = wash_vol/num_trans
         for i, (m, spot) in enumerate(zip(mag_samples_m, parking_spots)):
             pick_up(m300)
-            side = 1 if i % 2 == 0 else -1
-            loc = m.bottom(0.5).move(Point(x=side*2))
+            #side = 1 if i % 2 == 0 else -1
+            asp_locs = mix_positions(i, m.bottom(0.5), mix_reps) #(m.bottom(0.5).move(Point(x=side*2,  y=j*2)) for j in offsets) # map(m.bottom, [0.5, 1, 2])
+
             src = source[i//(12//len(source))]
             for n in range(num_trans):
                 if m300.current_volume > 0:
@@ -244,7 +282,11 @@ resuming.')
                               new_tip='never')
                 if n < num_trans - 1:  # only air_gap if going back to source
                     m300.air_gap(20)
-            m300.mix(mix_reps, 150, loc)
+                    
+            m300.flow_rate.aspirate = MIX_ASPIRATION_RATE
+            m300.flow_rate.dispense = MIX_DISPENSE_RATE
+            mix(m300, mix_reps, 150, asp_locs, speed=20)
+            
             #m300.blow_out(m.top())
             m300.touch_tip(v_offset=-5)
             m300.air_gap(20)

@@ -58,12 +58,5 @@ class StationAP1000(StationA):
         self._p_main.drop_tip()
 
 
-station_a = StationAP1000(num_samples=48)
-metadata = station_a.metadata
-run = station_a.run
-
-
 if __name__ == "__main__":
-    from opentrons import simulate  
-    station_a.jupyter = True
-    run(simulate.get_protocol_api(metadata["apiLevel"]))
+    StationAP1000(num_samples=48, metadata={'apiLevel': '2.3'}).simulate()
