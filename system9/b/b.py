@@ -426,8 +426,7 @@ class StationB(Station):
             self._m300.air_gap(self._elute_air_gap)
             self.drop(self._m300)
     
-    def run(self, ctx: ProtocolContext):
-        super(StationB, self).run(ctx)
+    def body(self):
         self.bind()
         self.wash(self._wash_1_vol, self.wash1, self._wash_1_times)
         self.wash(self._wash_2_vol, self.wash2, self._wash_2_times)
@@ -436,8 +435,6 @@ class StationB(Station):
         self.delay(self._wait_time_dry, 'airdrying beads at room temperature')
         self.elute()
         self._magdeck.disengage()
-        self.track_tip()
-        self._ctx.home()
 
 
 if __name__ == "__main__":
