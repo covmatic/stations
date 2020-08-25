@@ -6,6 +6,21 @@ import time
 import os
 
 
+DEFAULT_REST_KWARGS = dict(
+    favicon_url="https://opentrons.com/icons/icon-48x48.png",
+    config={
+        "global": {
+            "server.socket_host": "0.0.0.0",
+            "server.socket_port": 8080
+        },
+        "/favicon.ico": {
+            "tools.staticfile.on": True,
+            "tools.staticfile.filename": "/tmp/ot2-favicon.png",
+        },
+    }
+)
+
+
 class ContextAPI(type):
     @staticmethod
     def context_api(method: str) -> Callable:
@@ -29,10 +44,11 @@ class KillerThread(Thread):
 class StationRESTServer(metaclass=ContextAPI):
     _actions = ["pause", "resume"]
     
-    def __init__(self, ctx: ProtocolContext, config: Optional[dict] = None):
+    def __init__(self, ctx: ProtocolContext, config: Optional[dict] = None, favicon_url: Optional[str] = None):
         super(StationRESTServer, self).__init__()
         self._ctx = ctx
         self._config = config
+        self._icon_url = favicon_url
     
     @cherrypy.expose
     def kill(self, delay: str = '1'):
@@ -45,6 +61,8 @@ class StationRESTServer(metaclass=ContextAPI):
 
 class StationRESTServerThread(StationRESTServer, Thread):
     def run(self):
+        if self._icon_url and self._config and "tools.staticfile.filename" in self._config.get("/favicon.ico", {}):
+            os.system("wget {} -O {}".format(self._icon_url, self._config["/favicon.ico"]["tools.staticfile.filename"]))
         cherrypy.quickstart(self, config=self._config)
     
     def join(self, timeout=None):
