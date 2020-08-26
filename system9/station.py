@@ -51,6 +51,7 @@ class Station(metaclass=ABCMeta):
         drop_loc_l: float = 0,
         drop_loc_r: float = 0,
         drop_threshold: int = 296,
+        dummy_lights: bool = False,
         jupyter: bool = True,
         logger: Optional[logging.getLoggerClass()] = None,
         metadata: Optional[dict] = None,
@@ -66,6 +67,7 @@ class Station(metaclass=ABCMeta):
         self._drop_loc_l = drop_loc_l
         self._drop_loc_r = drop_loc_r
         self._drop_threshold = drop_threshold
+        self._dummy_lights = dummy_lights
         self.jupyter = jupyter
         self._logger = logger
         self.metadata = metadata
@@ -209,7 +211,7 @@ class Station(metaclass=ABCMeta):
         if home:
             self._ctx.home()
         if blink:
-            lt = BlinkingLight(self._ctx, t=blink_period/2)
+            lt = (BlinkingLight.dummy if self._dummy_lights else BlinkingLight)(self._ctx, t=blink_period/2)
             lt.start()
         if delay_time > 0:
             self._ctx.delay(delay_time)
@@ -242,7 +244,7 @@ class Station(metaclass=ABCMeta):
     
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx
-        self._button = Button(self._ctx, 'blue')
+        self._button = (Button.dummy if self._dummy_lights else Button)(self._ctx, 'blue')
         self._request = StationRESTServerThread(ctx, **self._rest_server_kwargs)
         self._request.start()
         self.logger.info(self._protocol_description)

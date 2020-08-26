@@ -62,6 +62,7 @@ class StationA(Station):
         tip_log_folder_path: str = './data/A',
         tip_track: bool = False,
         tipracks_slots: Tuple[str, ...] = ('8', '9', '11'),
+        **kwargs
     ):
         """ Build a :py:class:`.StationA`.
 
@@ -129,6 +130,7 @@ class StationA(Station):
             tip_log_filename=tip_log_filename,
             tip_log_folder_path=tip_log_folder_path,
             tip_track=tip_track,
+            **kwargs
         )
         self._air_gap_dest_multi = air_gap_dest_multi
         self._air_gap_sample = air_gap_sample

@@ -35,6 +35,7 @@ class StationC(Station):
         tip_log_filename: str = 'tip_log.json',
         tip_log_folder_path: str = './data/C',
         tip_track: bool = False,
+        **kwargs
     ):
         """ Build a :py:class:`.StationC`.
         :param bottom_headroom_height: Height to keep from the bottom
@@ -74,6 +75,7 @@ class StationC(Station):
             tip_log_filename=tip_log_filename,
             tip_log_folder_path=tip_log_folder_path,
             tip_track=tip_track,
+            **kwargs
         )
         self._bottom_headroom_height = bottom_headroom_height
         self._mastermix_vol = mastermix_vol

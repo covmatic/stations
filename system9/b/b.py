@@ -75,6 +75,7 @@ class StationB(Station):
         wash_1_vol: float = 500,
         wash_2_times: int = 20,
         wash_2_vol: float = 500,
+        **kwargs
     ):
         """ Build a :py:class:`.StationB`.
         :param bind_air_gap: Air gap for bind beads in uL
@@ -150,6 +151,7 @@ class StationB(Station):
             tip_log_filename=tip_log_filename,
             tip_log_folder_path=tip_log_folder_path,
             tip_track=tip_track,
+            **kwargs
         )
         self._bind_air_gap = bind_air_gap
         self._bind_aspiration_rate = bind_aspiration_rate
