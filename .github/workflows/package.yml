@@ -1,0 +1,25 @@
+name: package
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+    branches:
+      - master
+      - develop
+
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    container: python:3
+    strategy:
+      matrix:
+        target: [station_a_p300, station_b, station_c]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install
+      run: python setup.py install
+    - name: Simulate the protocol
+      run: opentrons_simulate protocols/${{ matrix.target }}.py
