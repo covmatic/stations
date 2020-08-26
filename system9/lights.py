@@ -1,9 +1,22 @@
 from opentrons.protocol_api import ProtocolContext
 from threading import Thread
+from functools import wraps
 import time
 
 
-class BlinkingLight(Thread):
+class Dummyable(type):
+    class Dummy: pass
+    
+    def __new__(mcs, classname: str, supers: tuple, classdict: dict):
+        cls = super(Dummyable, mcs).__new__(mcs, classname, supers, classdict)
+        if mcs.Dummy not in cls.__mro__:
+            def emptyfun(*args, **kwargs): pass
+            dummydict = {k: v if k[:2] == "__" else (wraps(v)(emptyfun) if callable(v) else None) for k, v in map(lambda k: (k, getattr(cls, k, None)), dir(cls))}
+            cls.dummy = type("Dummy{}".format(classname), (mcs.Dummy, cls), dummydict)
+        return cls
+
+
+class BlinkingLight(Thread, metaclass=Dummyable):
     def __init__(self, ctx: ProtocolContext, t: float = 1):
         super(BlinkingLight, self).__init__()
         self._on = False
@@ -23,7 +36,7 @@ class BlinkingLight(Thread):
         self._ctx._hw_manager.hardware.set_lights(rails=state)
 
 
-class Button:
+class Button(metaclass=Dummyable):
     _base_cols = ['red', 'green', 'blue']
     _all_cols = ['black', 'blue', 'green', 'cyan', 'red', 'magenta', 'yellow', 'white']
     

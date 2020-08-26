@@ -1,13 +1,14 @@
 from . import __version__
-from .utils import ProtocolContextLoggingHandler, logging
+from .request import StationRESTServerThread, DEFAULT_REST_KWARGS
+from .utils import ProtocolContextLoggingHandler
 from .lights import Button, BlinkingLight
 from opentrons.protocol_api import ProtocolContext
 from opentrons.types import Point
 from abc import ABCMeta, abstractmethod
-from functools import wraps, partial
-from itertools import chain, repeat
+from functools import wraps
+from itertools import chain
 from opentrons.types import Location
-from typing import Optional, Callable, Iterable, Tuple
+from typing import Optional, Callable
 import json
 import math
 import os
@@ -50,10 +51,12 @@ class Station(metaclass=ABCMeta):
         drop_loc_l: float = 0,
         drop_loc_r: float = 0,
         drop_threshold: int = 296,
+        dummy_lights: bool = False,
         jupyter: bool = True,
         logger: Optional[logging.getLoggerClass()] = None,
         metadata: Optional[dict] = None,
         num_samples: int = 96,
+        rest_server_kwargs: dict = DEFAULT_REST_KWARGS,
         samples_per_col: int = 8,
         skip_delay: bool = False,
         tip_log_filename: str = 'tip_log.json',
@@ -64,10 +67,12 @@ class Station(metaclass=ABCMeta):
         self._drop_loc_l = drop_loc_l
         self._drop_loc_r = drop_loc_r
         self._drop_threshold = drop_threshold
+        self._dummy_lights = dummy_lights
         self.jupyter = jupyter
         self._logger = logger
         self.metadata = metadata
         self._num_samples = num_samples
+        self._rest_server_kwargs = rest_server_kwargs
         self._samples_per_col = samples_per_col
         self._skip_delay = skip_delay
         self._tip_log_filename = tip_log_filename
@@ -206,7 +211,7 @@ class Station(metaclass=ABCMeta):
         if home:
             self._ctx.home()
         if blink:
-            lt = BlinkingLight(self._ctx, t=blink_period/2)
+            lt = (BlinkingLight.dummy if self._dummy_lights else BlinkingLight)(self._ctx, t=blink_period/2)
             lt.start()
         if delay_time > 0:
             self._ctx.delay(delay_time)
@@ -233,16 +238,28 @@ class Station(metaclass=ABCMeta):
             level=level,
             pause=self._skip_delay,
         )
+        
+    def body(self):
+        pass
     
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx
-        self._button = Button(self._ctx, 'blue')
+        self._button = (Button.dummy if self._dummy_lights else Button)(self._ctx, 'blue')
+        self._request = StationRESTServerThread(ctx, **self._rest_server_kwargs)
+        self._request.start()
         self.logger.info(self._protocol_description)
         self.logger.info("using system9 version {}".format(__version__))
         self.load_labware()
         self.load_instruments()
         self.setup_tip_log()
         self._button.color = 'white'
+        
+        self.body()
+        
+        self._button.color = 'blue'
+        self.track_tip()
+        self._request.join(60)
+        self._ctx.home()
     
     def simulate(self):
         from opentrons import simulate

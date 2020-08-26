@@ -62,6 +62,7 @@ class StationA(Station):
         tip_log_folder_path: str = './data/A',
         tip_track: bool = False,
         tipracks_slots: Tuple[str, ...] = ('8', '9', '11'),
+        **kwargs
     ):
         """ Build a :py:class:`.StationA`.
 
@@ -129,6 +130,7 @@ class StationA(Station):
             tip_log_filename=tip_log_filename,
             tip_log_folder_path=tip_log_folder_path,
             tip_track=tip_track,
+            **kwargs
         )
         self._air_gap_dest_multi = air_gap_dest_multi
         self._air_gap_sample = air_gap_sample
@@ -363,8 +365,7 @@ class StationA(Station):
             "_tipracks20": "_m20",
         }
     
-    def run(self, ctx: ProtocolContext):
-        super(StationA, self).run(ctx)
+    def body(self):
         self.setup_samples()
         self.setup_lys_tube()
         
@@ -373,9 +374,5 @@ class StationA(Station):
             t()
         
         self.pause("incubate sample plate (slot 4) at 55-57°C for 20 minutes. Return to slot 4 when complete", blink=True)
-        
         self.transfer_internal_controls()
-        
-        self.track_tip()
-        self._ctx.home()
         self.logger.info('move deepwell plate (slot 1) to Station B for RNA extraction.')

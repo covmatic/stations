@@ -28,5 +28,35 @@
 	"serial": "MDV20P20200512A05",
 	"station": "B6",
 	"height": 6.55
+  },
+  {
+	"serial": "MDV20P20200707A03",
+	"station": "B7",
+	"height": 6.9
+  },
+  {
+	"serial": "MDV20P20200630A02",
+	"station": "B8",
+	"height": 6.9
+  },
+  {
+	"serial": "MDV20P20200618A06",
+	"station": "B9",
+	"height": 6.75
+  },
+  {
+	"serial": "MDV20P20200706A05",
+	"station": "B10",
+	"height": 7.10
+  },
+  {
+	"serial": "MDV20P20200616A01",
+	"station": "B11",
+	"height": 6.75
+  },
+  {
+	"serial": "MDV20P20200702A07",
+	"station": "B12",
+	"height": 6.65
   }
 ]

@@ -1,5 +1,6 @@
 from ..station import Station, labware_loader, instrument_loader
 from ..utils import mix_bottom_top, uniform_divide, mix_walk
+from . import magnets
 from opentrons.protocol_api import ProtocolContext
 from opentrons.types import Point, Location
 from itertools import repeat
@@ -39,6 +40,7 @@ class StationB(Station):
         jupyter: bool = True,
         logger: Optional[logging.getLoggerClass()] = None,
         magheight: float = 6.65,
+        magheight_load: bool = True,
         magplate_model: str = 'nest_96_wellplate_2ml_deep',
         metadata: Optional[dict] = None,
         num_samples: int = 96,
@@ -73,6 +75,7 @@ class StationB(Station):
         wash_1_vol: float = 500,
         wash_2_times: int = 20,
         wash_2_vol: float = 500,
+        **kwargs
     ):
         """ Build a :py:class:`.StationB`.
         :param bind_air_gap: Air gap for bind beads in uL
@@ -100,6 +103,7 @@ class StationB(Station):
         :param elution_vol: The volume of elution buffer to aspirate in uL
         :param logger: logger object. If not specified, the default logger is used that logs through the ProtocolContext comment method
         :param magheight: Height of the magnet, in mm
+        :param magheight_load: Load magheight from JSON, by serial (if no serial number is found, fall back onto magheight parameter)
         :param magplate_model: Magnetic plate model
         :param metadata: protocol metadata
         :param num_samples: The number of samples that will be loaded on the station B
@@ -147,6 +151,7 @@ class StationB(Station):
             tip_log_filename=tip_log_filename,
             tip_log_folder_path=tip_log_folder_path,
             tip_track=tip_track,
+            **kwargs
         )
         self._bind_air_gap = bind_air_gap
         self._bind_aspiration_rate = bind_aspiration_rate
@@ -170,6 +175,7 @@ class StationB(Station):
         self._elution_height = elution_height
         self._elution_vol = elution_vol
         self._magheight = magheight
+        self._magheight_load = magheight_load
         self._magplate_model = magplate_model
         self._park = park
         self._supernatant_removal_air_gap = supernatant_removal_air_gap
@@ -223,6 +229,8 @@ class StationB(Station):
     def load_magdeck(self):
         self._magdeck = self._ctx.load_module('Magnetic Module Gen2', '4')
         self._magdeck.disengage()
+        if (self._magheight_load):
+            self._magheight = magnets.height.by_serial.get(self._magdeck._module._driver.get_device_info()['serial'], self._magheight)
     
     @labware_loader(3, "_magplate")
     def load_magplate(self):
@@ -420,8 +428,7 @@ class StationB(Station):
             self._m300.air_gap(self._elute_air_gap)
             self.drop(self._m300)
     
-    def run(self, ctx: ProtocolContext):
-        super(StationB, self).run(ctx)
+    def body(self):
         self.bind()
         self.wash(self._wash_1_vol, self.wash1, self._wash_1_times)
         self.wash(self._wash_2_vol, self.wash2, self._wash_2_times)
@@ -430,8 +437,6 @@ class StationB(Station):
         self.delay(self._wait_time_dry, 'airdrying beads at room temperature')
         self.elute()
         self._magdeck.disengage()
-        self.track_tip()
-        self._ctx.home()
 
 
 if __name__ == "__main__":
