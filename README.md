@@ -1,3 +1,5 @@
+[![Build status](https://github.com/OpenSourceCovidTesting/covid19-system-9_PRIVATE/workflows/package/badge.svg?branch=master)](https://github.com/OpenSourceCovidTesting/covid19-system-9_PRIVATE/actions?query=workflow%3Apackage)
+
 # Introduction
 
 Indexed on [Test PyPi](https://test.pypi.org/project/covid19-system9)
