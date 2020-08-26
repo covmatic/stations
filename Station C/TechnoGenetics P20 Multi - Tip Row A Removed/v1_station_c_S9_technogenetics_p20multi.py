@@ -36,14 +36,12 @@ class BlinkingLight(Thread):
 
 # metadata
 metadata = {
-    'protocolName': 'Version 1 S9 Station C Technogenetics P20 Multi',
-    'author': 'Nick Pootza<protocols@opentrons.com>',
-    'source': 'Custom Protocol Request',
+    'protocolName': 'Version 1 S9 Station C TechnoGenetics P20 Multi',
     'apiLevel': '2.3'
 }
 
 
-NUM_SAMPLES = 45  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
+NUM_SAMPLES = 16  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
 TIP_TRACK = False
 MM_PER_SAMPLE = 20
 SAMPLE_VOL = 20
@@ -71,7 +69,7 @@ def run(ctx: protocol_api.ProtocolContext):
     mm_strips = ctx.load_labware(
         'opentrons_96_aluminumblock_generic_pcr_strip_200ul', '8',
         'mastermix strips')
-    #tempdeck.set_temperature(4)
+    # tempdeck.set_temperature(4)
     tube_block = ctx.load_labware(
         'opentrons_24_aluminumblock_nest_1.5ml_snapcap', '5',
         '2ml screw tube aluminum block for mastermix + controls')
@@ -79,6 +77,11 @@ def run(ctx: protocol_api.ProtocolContext):
     # pipette
     m20 = ctx.load_instrument('p20_multi_gen2', 'right', tip_racks=tips20)
     p300 = ctx.load_instrument('p300_single_gen2', 'left', tip_racks=tips300)
+    
+    m20.flow_rate.aspirate = 3.8
+    m20.flow_rate.dispense = 3.8
+    p300.flow_rate.aspirate = 23
+    p300.flow_rate.dispense = 23
 
     # setup up sample sources and destinations
     num_cols = math.ceil(NUM_SAMPLES/8)
@@ -145,12 +148,6 @@ before resuming.')
     
     mm_strip = mm_strips.columns()[0]
     remaining_samples = NUM_SAMPLES
-
-    # for _ in range(5):
-    #    test_light = BlinkingLight(ctx)
-    #    test_light.start()
-    #    ctx.delay(30)
-    #    test_light.stop()
     
     #### START REPEATED SECTION
     while remaining_samples > 0:
