@@ -254,11 +254,12 @@ class Station(metaclass=ABCMeta):
         self.setup_tip_log()
         self._button.color = 'white'
         
-        self.body()
-        
-        self._button.color = 'blue'
-        self.track_tip()
-        self._request.join(60)
+        try:
+            self.body()
+        finally:
+            self._request.join(2, 0.5)
+            self.track_tip()
+            self._button.color = 'blue'
         self._ctx.home()
     
     def simulate(self):
