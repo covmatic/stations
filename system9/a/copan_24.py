@@ -1,9 +1,10 @@
 import json
 import os
-from functools import partial
 from collections import OrderedDict
 from itertools import product, chain
 from typing import List, Tuple
+from opentrons_shared_data.labware.dev_types import LabwareDefinition
+from opentrons.protocol_api import ProtocolContext
 
 
 class json_property(property):
@@ -140,14 +141,35 @@ class Copan24Specs:
             key=lambda a: int(getattr(type(self), a, 0))
         ))
     
+    def labware_definition(self) -> LabwareDefinition:
+        return LabwareDefinition(self.toJSON())
+    
     def __str__(self) -> str:
         return json.dumps(self.toJSON(), indent=4).replace(r"\u00b5", "\u00b5")
-        
 
-if __name__ == "__main__":
-    s = str(Copan24Specs())
-    if len(os.sys.argv) > 1:
-        with open(os.sys.argv[1], "w") as f:
-            f.write(s)
-    else:
-        print(s)
+
+def run(ctx: ProtocolContext):
+    """Test protocol"""
+    ctx.comment("Test the custom Copan x24 rack")
+    
+    rack = ctx.load_labware_from_definition(Copan24Specs().labware_definition(), '2', 'custom tuberack')
+    tipracks1000 = [ctx.load_labware('opentrons_96_filtertiprack_1000ul', '1', '1000µl filter tiprack')]
+    p1000 = ctx.load_instrument('p1000_single_gen2', 'right', tip_racks=tipracks1000)
+    
+    p1000.pick_up_tip()
+    for w in rack.wells():
+        ctx.pause("moving to top of {}".format(w))
+        p1000.move_to(w.top())
+        ctx.pause("moving to bottom of {} (1 mm high)".format(w))
+        p1000.move_to(w.bottom(1))
+        p1000.aspirate(5)
+        p1000.dispense(5)
+    p1000.drop_tip()
+
+
+metadata = {"apiLevel": "2.3"}
+
+
+if __name__ == "__main__" and len(os.sys.argv) > 1:
+    with open(os.sys.argv[1], "w") as f:
+        f.write(str(Copan24Specs()))
