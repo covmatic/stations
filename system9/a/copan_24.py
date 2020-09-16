@@ -1,5 +1,12 @@
+"""Labware definition for the custom Copan 24x rack.
+This file can be
+ - imported: e.g. `from copan_24 import Copan24Specs`.
+    Labware definition can be accessed with the method Copan24Specs.labware_definition
+ - executed with opentrons_simulate or opetrons_execute: e.g. `opentrons_simulate system9/a/copan_24.py`
+    This file acts as a test protocol for the custom labware.
+ - executed with python:  e.g. `python -m system9.a.copan_24`.
+    This script generates the json file for the custom labware"""
 import json
-import os
 from collections import OrderedDict
 from itertools import product, chain
 from typing import List, Tuple
@@ -7,16 +14,19 @@ from opentrons_shared_data.labware.dev_types import LabwareDefinition
 from opentrons.protocol_api import ProtocolContext
 
 
-class json_property(property):
+class JsonProperty(property):
     _count = 0
     
     def __init__(self, fget=None, fset=None, fdel=None, doc=None, ord=0):
-        super(json_property, self).__init__(fget=fget, fset=fset, fdel=fdel, doc=doc)
+        super(JsonProperty, self).__init__(fget=fget, fset=fset, fdel=fdel, doc=doc)
         self._idx = type(self)._count
         type(self)._count += 1
     
     def __int__(self) -> int:
         return self._idx
+
+
+json_property = JsonProperty
 
 
 class Copan24Specs:
@@ -170,6 +180,10 @@ def run(ctx: ProtocolContext):
 metadata = {"apiLevel": "2.3"}
 
 
-if __name__ == "__main__" and len(os.sys.argv) > 1:
-    with open(os.sys.argv[1], "w") as f:
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('file', metavar='F', type=str, help='The file path where to save the custom labware JSON')
+    args = parser.parse_args()
+    with open(args.file, "w") as f:
         f.write(str(Copan24Specs()))
