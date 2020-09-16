@@ -13,6 +13,7 @@ class StationA(Station):
         self,
         air_gap_dest_multi: float = 5,
         air_gap_sample: float = 20,
+        chilled_tubeblock_content: str = "internal control (strip 1)",
         dest_headroom_height: float = 2,
         dest_top_height: float = 5,
         dest_multi_headroom_height: float = 2,
@@ -68,6 +69,7 @@ class StationA(Station):
 
         :param air_gap_dest_multi: air gap for destination tube (multi) in uL
         :param air_gap_sample: air gap for sample transfer in uL
+        :param chilled_tubeblock_content: content of the chilled tubeblock (used to make the label)
         :param dest_headroom_height: headroom always to keep from the bottom of the destination tube in mm
         :param dest_top_height: top height from the bottom of the destination tube in mm when mixing
         :param dest_multi_headroom_height: headroom always to keep from the bottom of the destination tube (multi) in mm
@@ -134,6 +136,7 @@ class StationA(Station):
         )
         self._air_gap_dest_multi = air_gap_dest_multi
         self._air_gap_sample = air_gap_sample
+        self._chilled_tubeblock_content = chilled_tubeblock_content
         self._dest_headroom_height = dest_headroom_height
         self._dest_multi_headroom_height = dest_multi_headroom_height
         self._dest_top_height = dest_top_height
@@ -173,13 +176,13 @@ class StationA(Station):
         self._tempdeck_temp = tempdeck_temp
         self._tipracks_slots = tipracks_slots
     
-    @labware_loader(0, "_tempdeck", "_internal_control_strips")
+    @labware_loader(0, "_tempdeck", "_strips_block")
     def load_tempdeck(self):
         self._tempdeck = self._ctx.load_module('Temperature Module Gen2', '10')
         self._tempdeck.set_temperature(self._tempdeck_temp)
-        self._internal_control_strips = self._tempdeck.load_labware(
+        self._strips_block = self._tempdeck.load_labware(
             'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
-            'chilled tubeblock for internal control (strip 1)'
+            'chilled tubeblock for {}'.format(self._chilled_tubeblock_content)
         ).rows()[0][:self.num_ic_strips]
         self.logger.info("using {} internal control strips with {} uL each".format(self.num_ic_strips, self.cols_per_strip * self._iec_volume * self._ic_lys_headroom))
     
@@ -206,7 +209,7 @@ class StationA(Station):
     def load_lys_buf(self):
         self._lys_buff = self._ctx.load_labware(
             'opentrons_6_tuberack_falcon_50ml_conical', '4',
-            '50ml tuberack for lysis buffer + PK (tube A1)'
+            '50ml tuberack for lysis buffer'
         ).wells()[0]
     
     @labware_loader(4, "_tipracks_main")
@@ -347,7 +350,7 @@ class StationA(Station):
         
         strip_ind = idx // self.cols_per_strip
         self.logger.debug("transferring internal control strip {}/{} to {}".format(strip_ind + 1, self.num_ic_strips, dest))
-        internal_control = self._internal_control_strips[strip_ind]
+        internal_control = self._strips_block[strip_ind]
         self.pick_up(self._m20)
         # no air gap to use 1 transfer only avoiding drop during multiple transfers
         self._m20.transfer(self._iec_volume, internal_control, dest.bottom(self._ic_headroom_bottom), new_tip='never')
