@@ -1,7 +1,7 @@
 from . import __version__
 from .request import StationRESTServerThread, DEFAULT_REST_KWARGS
 from .utils import ProtocolContextLoggingHandler
-from .lights import Button, BlinkingLight
+from .lights import Button, BlinkingLightHTTP
 from opentrons.protocol_api import ProtocolContext
 from opentrons.types import Point
 from abc import ABCMeta, abstractmethod
@@ -210,12 +210,12 @@ class Station(metaclass=ABCMeta):
             self.logger.log(level, msg)
         if home:
             self._ctx.home()
-        if blink:
-            lt = (BlinkingLight.dummy if self._dummy_lights else BlinkingLight)(self._ctx, t=blink_period/2)
+        if blink and not self._ctx.is_simulating:
+            lt = BlinkingLightHTTP(self._ctx, t=blink_period/2)
             lt.start()
         if delay_time > 0:
             self._ctx.delay(delay_time)
-        if blink:
+        if blink and not self._ctx.is_simulating:
             lt.stop()
         if pause:
             self._ctx.pause()

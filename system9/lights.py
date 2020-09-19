@@ -1,6 +1,7 @@
 from opentrons.protocol_api import ProtocolContext
 from threading import Thread
 from functools import wraps
+import requests
 import time
 
 
@@ -20,6 +21,8 @@ class BlinkingLight(Thread, metaclass=Dummyable):
     def __init__(self, ctx: ProtocolContext, t: float = 1):
         super(BlinkingLight, self).__init__()
         self._on = False
+        self._state = True
+        self._state_initial = None
         self._ctx = ctx
         self._t = t
     
@@ -27,13 +30,30 @@ class BlinkingLight(Thread, metaclass=Dummyable):
         self._on = False
         self.join()
     
+    def initial_state(self) -> bool:
+        return self._ctx._hw_manager.hardware.get_lights()
+    
+    def set_light(self, s: bool):
+        self._ctx._hw_manager.hardware.set_lights(rails=s)
+    
     def run(self):
         self._on = True
-        state = self._ctx._hw_manager.hardware.get_lights()
+        self._state_initial = self.initial_state()
         while self._on:
-            self._ctx._hw_manager.hardware.set_lights(rails=not self._ctx._hw_manager.hardware.get_lights())
+            self._state = not self._state
+            self.set_light(self._state)
             time.sleep(self._t)
-        self._ctx._hw_manager.hardware.set_lights(rails=state)
+        self.set_light(self._state)
+
+
+class BlinkingLightHTTP(BlinkingLight):
+    _URL = "http://127.0.0.1:31950/robot/lights"
+    
+    def initial_state(self) -> bool:
+        return requests.get(self._URL).json().get('on', False)
+    
+    def set_light(self, s: bool):
+        requests.post(self._URL, json={'on': s})
 
 
 class Button(metaclass=Dummyable):
