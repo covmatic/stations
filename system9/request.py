@@ -11,7 +11,8 @@ DEFAULT_REST_KWARGS = dict(
     config={
         "global": {
             "server.socket_host": "0.0.0.0",
-            "server.socket_port": 8080
+            "server.socket_port": 8080,
+            "engine.autoreload.on": False,
         },
         "/favicon.ico": {
             "tools.staticfile.on": True,
@@ -65,6 +66,8 @@ class StationRESTServerThread(StationRESTServer, Thread):
             os.system("wget {} -O {}".format(self._icon_url, self._config["/favicon.ico"]["tools.staticfile.filename"]))
         cherrypy.quickstart(self, config=self._config)
     
-    def join(self, timeout=None):
+    def join(self, timeout=None, after: float = 0):
+        if after:
+            time.sleep(after)
         self.stop()
-        super(StationRESTServerThread, self).join()
+        super(StationRESTServerThread, self).join(timeout=timeout)

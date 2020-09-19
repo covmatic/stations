@@ -2,7 +2,8 @@ from .a import StationA
 import math
 
 
-class StationAReload(StationA):
+# Mixin allows for finer control over the mro
+class StationAReloadMixin:
     @property
     def max_samples_per_set(self) -> int:
         return len(self._sources)
@@ -28,3 +29,8 @@ class StationAReload(StationA):
             if set_idx:
                 self.logger.info("Please refill {} samples".format(min(self.remaining_samples, self.max_samples_per_set)))
                 self._ctx.pause()
+
+
+# Subclass is more straightforward
+class StationAReload(StationAReloadMixin, StationA):
+    pass

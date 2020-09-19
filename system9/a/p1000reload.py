@@ -1,5 +1,5 @@
-from .a_reload import StationAReload
 from .p1000 import StationAP1000
+from .reload import StationAReload
 
 
 class StationAP1000Reload(StationAReload, StationAP1000):

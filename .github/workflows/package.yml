@@ -16,7 +16,7 @@ jobs:
     container: python:3
     strategy:
       matrix:
-        target: [station_a_p300, station_b, station_c]
+        target: [station_a_p300, station_b, station_c, station_a_technogenetics]
     steps:
     - uses: actions/checkout@v2
     - name: Install

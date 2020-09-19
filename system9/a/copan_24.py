@@ -1,21 +1,32 @@
+"""Labware definition for the custom Copan 24x rack.
+This file can be
+ - imported: e.g. `from copan_24 import Copan24Specs`.
+    Labware definition can be accessed with the method Copan24Specs.labware_definition
+ - executed with opentrons_simulate or opetrons_execute: e.g. `opentrons_simulate system9/a/copan_24.py`
+    This file acts as a test protocol for the custom labware.
+ - executed with python:  e.g. `python -m system9.a.copan_24`.
+    This script generates the json file for the custom labware"""
 import json
-import os
-from functools import partial
 from collections import OrderedDict
 from itertools import product, chain
 from typing import List, Tuple
+from opentrons_shared_data.labware.dev_types import LabwareDefinition
+from opentrons.protocol_api import ProtocolContext
 
 
-class json_property(property):
+class JsonProperty(property):
     _count = 0
     
     def __init__(self, fget=None, fset=None, fdel=None, doc=None, ord=0):
-        super(json_property, self).__init__(fget=fget, fset=fset, fdel=fdel, doc=doc)
+        super(JsonProperty, self).__init__(fget=fget, fset=fset, fdel=fdel, doc=doc)
         self._idx = type(self)._count
         type(self)._count += 1
     
     def __int__(self) -> int:
         return self._idx
+
+
+json_property = JsonProperty
 
 
 class Copan24Specs:
@@ -140,14 +151,39 @@ class Copan24Specs:
             key=lambda a: int(getattr(type(self), a, 0))
         ))
     
+    def labware_definition(self) -> LabwareDefinition:
+        return LabwareDefinition(self.toJSON())
+    
     def __str__(self) -> str:
         return json.dumps(self.toJSON(), indent=4).replace(r"\u00b5", "\u00b5")
-        
+
+
+def run(ctx: ProtocolContext):
+    """Test protocol"""
+    ctx.comment("Test the custom Copan x24 rack")
+    
+    rack = ctx.load_labware_from_definition(Copan24Specs().labware_definition(), '2', 'custom tuberack')
+    tipracks1000 = [ctx.load_labware('opentrons_96_filtertiprack_1000ul', '1', '1000µl filter tiprack')]
+    p1000 = ctx.load_instrument('p1000_single_gen2', 'right', tip_racks=tipracks1000)
+    
+    p1000.pick_up_tip()
+    for w in rack.wells():
+        ctx.pause("moving to top of {}".format(w))
+        p1000.move_to(w.top())
+        ctx.pause("moving to bottom of {} (1 mm high)".format(w))
+        p1000.move_to(w.bottom(1))
+        p1000.aspirate(5)
+        p1000.dispense(5)
+    p1000.drop_tip()
+
+
+metadata = {"apiLevel": "2.3"}
+
 
 if __name__ == "__main__":
-    s = str(Copan24Specs())
-    if len(os.sys.argv) > 1:
-        with open(os.sys.argv[1], "w") as f:
-            f.write(s)
-    else:
-        print(s)
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('file', metavar='F', type=str, help='The file path where to save the custom labware JSON')
+    args = parser.parse_args()
+    with open(args.file, "w") as f:
+        f.write(str(Copan24Specs()))
