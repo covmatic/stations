@@ -43,7 +43,7 @@ class BlinkingLight(Thread, metaclass=Dummyable):
             self._state = not self._state
             self.set_light(self._state)
             time.sleep(self._t)
-        self.set_light(self._state)
+        self.set_light(self._state_initial)
 
 
 class BlinkingLightHTTP(BlinkingLight):

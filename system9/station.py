@@ -1,7 +1,7 @@
 from . import __version__
 from .request import StationRESTServerThread, DEFAULT_REST_KWARGS
 from .utils import ProtocolContextLoggingHandler
-from .lights import Button, BlinkingLightHTTP
+from .lights import Button, BlinkingLightHTTP, BlinkingLight
 from opentrons.protocol_api import ProtocolContext
 from opentrons.types import Point
 from abc import ABCMeta, abstractmethod
@@ -197,9 +197,9 @@ class Station(metaclass=ABCMeta):
     def pause(self,
         msg: str = "",
         blink: bool = False,
-        blink_period: float = 2,
+        blink_period: float = 1,
         color: str = 'red',
-        delay_time: float = 16,
+        delay_time: float = 0,
         home: bool = True,
         level: int = logging.INFO,
         pause: bool = True,
@@ -210,16 +210,16 @@ class Station(metaclass=ABCMeta):
             self.logger.log(level, msg)
         if home:
             self._ctx.home()
-        if blink and not self._ctx.is_simulating:
-            lt = BlinkingLightHTTP(self._ctx, t=blink_period/2)
+        if blink and not self._ctx.is_simulating():
+            lt = (BlinkingLightHTTP if self._dummy_lights else BlinkingLight)(self._ctx, t=blink_period/2)
             lt.start()
         if delay_time > 0:
             self._ctx.delay(delay_time)
-        if blink and not self._ctx.is_simulating:
-            lt.stop()
         if pause:
             self._ctx.pause()
             self._ctx.delay(0.1)  # pad to avoid pause leaking
+        if blink and not self._ctx.is_simulating():
+            lt.stop()
         self._button.color = old_color
     
     def delay(self,
