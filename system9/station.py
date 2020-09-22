@@ -245,8 +245,9 @@ class Station(metaclass=ABCMeta):
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx
         self._button = (Button.dummy if self._dummy_lights else Button)(self._ctx, 'blue')
-        self._request = StationRESTServerThread(ctx, **self._rest_server_kwargs)
-        self._request.start()
+        if not self._ctx.is_simulating():
+            self._request = StationRESTServerThread(ctx, **self._rest_server_kwargs)
+            self._request.start()
         self.logger.info(self._protocol_description)
         self.logger.info("using system9 version {}".format(__version__))
         self.load_labware()
@@ -257,7 +258,8 @@ class Station(metaclass=ABCMeta):
         try:
             self.body()
         finally:
-            self._request.join(2, 0.5)
+            if not self._ctx.is_simulating():
+                self._request.join(2, 0.5)
             self.track_tip()
             self._button.color = 'blue'
         self._ctx.home()
