@@ -81,7 +81,7 @@ class StationATechnogenetics(StationAP1000):
         self.transfer_samples()
         self.transfer_lys()
         
-        self.pause("move deepwell plate to the incubator for 20 minutes at 55°C", blink=True)
+        self.pause("move deepwell plate to the incubator for 20 minutes at 55°C")
         
         self.transfer_beads()
         self.logger.info('move deepwell plate to Station B for RNA extraction.')

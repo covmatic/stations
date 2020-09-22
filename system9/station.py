@@ -177,7 +177,7 @@ class Station(metaclass=ABCMeta):
             
             if self._tip_log['count'][tiprack] == self._tip_log['max'][tiprack]:
                 # If empty, wait for refill
-                self.pause('before resuming, please replace {}'.format(", ".join(map(str, getattr(self, tiprack)))), blink=True)
+                self.pause('before resuming, please replace {}'.format(", ".join(map(str, getattr(self, tiprack)))))
                 self._tip_log['count'][tiprack] = 0
             pip.pick_up_tip(self._tip_log['tips'][tiprack][self._tip_log['count'][tiprack]])
             self._tip_log['count'][tiprack] += 1
@@ -196,7 +196,7 @@ class Station(metaclass=ABCMeta):
     
     def pause(self,
         msg: str = "",
-        blink: bool = False,
+        blink: bool = True,
         blink_period: float = 1,
         color: str = 'red',
         delay_time: float = 0,
