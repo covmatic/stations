@@ -2,3 +2,4 @@ opentrons
 cherrypy
 typing-extensions
 twine
+requests

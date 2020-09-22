@@ -36,6 +36,8 @@ setuptools.setup(
     install_requires=[
         'opentrons',
         'cherrypy',
+        'requests',
+        'typing-extensions'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
