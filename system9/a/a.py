@@ -376,6 +376,6 @@ class StationA(Station):
         for t in (T if self._lysis_first else reversed(T)):
             t()
         
-        self.pause("incubate sample plate (slot 4) at 55-57°C for 20 minutes. Return to slot 4 when complete", blink=True)
+        self.pause("incubate sample plate (slot 4) at 55-57°C for 20 minutes. Return to slot 4 when complete")
         self.transfer_internal_controls()
         self.logger.info('move deepwell plate (slot 1) to Station B for RNA extraction.')

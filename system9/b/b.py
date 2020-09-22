@@ -33,6 +33,7 @@ class StationB(Station):
         drop_threshold: int = 296,
         elute_air_gap: float = 20,
         elute_aspiration_rate: float = 50,
+        elute_incubate: bool = True,
         elute_mix_times: int = 10,
         elute_mix_vol: float = 30,
         elution_height: float = 5,
@@ -44,7 +45,6 @@ class StationB(Station):
         magplate_model: str = 'nest_96_wellplate_2ml_deep',
         metadata: Optional[dict] = None,
         num_samples: int = 96,
-        park: bool = True,
         samples_per_col: int = 8,
         skip_delay: bool = False,
         supernatant_removal_air_gap: float = 20,
@@ -54,7 +54,7 @@ class StationB(Station):
         tip_log_filename: str = 'tip_log.json',
         tip_log_folder_path: str = './data/B',
         tip_track: bool = False,
-        tipracks_slots: Tuple[str, ...] = ('3', '6', '8', '9', '10'),
+        tipracks_slots: Tuple[str, ...] = ('3', '6', '7', '8', '9', '10'),
         touch_tip_height: float = -5,
         wait_time_bind_off: float = 5,
         wait_time_bind_on: float = 5,
@@ -97,6 +97,7 @@ class StationB(Station):
         :param drop_threshold: the amount of dropped tips after which the run is paused for emptying the trash
         :param elute_air_gap: Air gap when aspirating elution buffer in uL
         :param elute_aspiration_rate: Aspiration flow rate when aspirating elution buffer in uL/s
+        :param elute_incubate: Whether or not to wait for incubation between elution mix and transfer (if True, magdeck will also activate)
         :param elute_mix_times: Mix times for elution
         :param elute_mix_vol: Mix volume for elution
         :param elution_height: Height at which to sample after elution in mm
@@ -107,7 +108,6 @@ class StationB(Station):
         :param magplate_model: Magnetic plate model
         :param metadata: protocol metadata
         :param num_samples: The number of samples that will be loaded on the station B
-        :param park: Whether to park or not
         :param samples_per_col: The number of samples in a column of the destination plate
         :param skip_delay: If True, pause instead of delay.
         :param supernatant_removal_air_gap: Air gap when removing the supernatant in uL
@@ -170,6 +170,7 @@ class StationB(Station):
         self._drop_threshold = drop_threshold
         self._elute_air_gap = elute_air_gap
         self._elute_aspiration_rate = elute_aspiration_rate
+        self._elute_incubate = elute_incubate
         self._elute_mix_times = elute_mix_times
         self._elute_mix_vol = elute_mix_vol
         self._elution_height = elution_height
@@ -177,7 +178,6 @@ class StationB(Station):
         self._magheight = magheight
         self._magheight_load = magheight_load
         self._magplate_model = magplate_model
-        self._park = park
         self._supernatant_removal_air_gap = supernatant_removal_air_gap
         self._supernatant_removal_aspiration_rate = supernatant_removal_aspiration_rate
         self._supernatant_removal_height = supernatant_removal_height
@@ -210,20 +210,6 @@ class StationB(Station):
             self._ctx.load_labware('opentrons_96_tiprack_300ul', slot, '200ul filtertiprack')
             for slot in self._tipracks_slots
         ]
-    
-    @labware_loader(1, "_parking_spots")
-    def load_parking_spots(self):
-        parkingrack = self._ctx.load_labware(
-            'opentrons_96_tiprack_300ul',
-            '7',
-            'empty tiprack for parking' if self._park else '200ul filtertiprack'
-        )
-        if self._park:
-            self._parking_spots = parkingrack.rows()[0][:self.num_cols]
-        else:
-            self._tips300.append(parkingrack)
-            self._parking_spots = list(repeat(None, self.num_cols))
-        self.logger.debug("parking spots: {}".format(self._parking_spots))
     
     @labware_loader(2, "_magdeck")
     def load_magdeck(self):
@@ -280,6 +266,7 @@ class StationB(Station):
     
     @property
     def water(self):
+        """Elution reagent"""
         return self._res12.wells()[11]
     
     @instrument_loader(0, "_m300")
@@ -292,19 +279,13 @@ class StationB(Station):
     def _tipracks(self) -> dict:
         return {"_tips300": "_m300",}
     
-    def drop(self, pip, loc: Optional[Location] = None):
-        if loc is None or not self._park:
-            super(StationB, self).drop(pip)
-        else:
-            self._m300.drop_tip(loc)
-    
     def remove_supernatant(self, vol: float):
         self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
         num_trans = math.ceil(vol / self._bind_max_transfer_vol)
         vol_per_trans = vol / num_trans
         
-        for i, (m, spot) in enumerate(zip(self.mag_samples_m, self._parking_spots)):
-            self.pick_up(self._m300, spot if self._park else None)
+        for i, m in enumerate(self.mag_samples_m):
+            self.pick_up(self._m300)
             loc = m.bottom(self._supernatant_removal_height).move(Point(x=(-1 if i % 2 == 0 else 1)*2))
             for _ in range(num_trans):
                 if self._m300.current_volume > 0:
@@ -320,7 +301,7 @@ class StationB(Station):
         """Add bead binding buffer and mix samples"""
         self._m300.flow_rate.aspirate = self._bind_aspiration_rate
         
-        for i, (well, spot) in enumerate(zip(self.mag_samples_m, self._parking_spots)):
+        for i, well in enumerate(self.mag_samples_m):
             source = self.binding_buffer[i // ((len(self.mag_samples_m) // len(self.binding_buffer)) or 1)]
             self.pick_up(self._m300)
             mix_bottom_top(
@@ -344,7 +325,7 @@ class StationB(Station):
             
             self._m300.touch_tip(v_offset=self._touch_tip_height)
             self._m300.air_gap(self._bind_air_gap)
-            self.drop(self._m300, spot)
+            self.drop(self._m300)
         
         # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
         self.delay(self._wait_time_bind_off, 'waiting before magnetic module activation')
@@ -363,7 +344,7 @@ class StationB(Station):
         self._magdeck.disengage()
         num_trans, vol_per_trans = uniform_divide(vol, self._wash_max_transfer_vol)
         
-        for i, (m, spot) in enumerate(zip(self.mag_samples_m, self._parking_spots)):
+        for i, m in enumerate(self.mag_samples_m):
             self.pick_up(self._m300)
             src = source[i // ((len(self.mag_samples_m) // len(source)) or 1)]
             
@@ -389,7 +370,7 @@ class StationB(Station):
             # self._m300.blow_out(m.top())
             self._m300.touch_tip(v_offset=self._touch_tip_height)
             self._m300.air_gap(self._wash_air_gap)
-            self.drop(self._m300, spot)
+            self.drop(self._m300)
         
         self._magdeck.engage(height=self._magheight)
         self.delay(self._wait_time_wash_on, 'incubating on MagDeck')
@@ -398,7 +379,7 @@ class StationB(Station):
     def elute(self):
         """Resuspend beads in elution"""
         self._m300.flow_rate.aspirate = self._elute_aspiration_rate
-        for i, (m, spot) in enumerate(zip(self.mag_samples_m, self._parking_spots)):
+        for i, m in enumerate(self.mag_samples_m):
             self.pick_up(self._m300)
             side = 1 if i % 2 == 0 else -1
             loc = m.bottom(self._bottom_headroom_height).move(Point(x=side*2))
@@ -409,18 +390,18 @@ class StationB(Station):
             # self._m300.blow_out(m.bottom(5))		# trying not to make bubbles
             self._m300.touch_tip(v_offset=self._touch_tip_height)
             self._m300.air_gap(self._elute_air_gap)
-            self.drop(self._m300, spot)
+            self.drop(self._m300)
         
-        self.delay(self._wait_time_elute_off, 'incubating off magnet at room temperature')
-        self._magdeck.engage(height=self._magheight)
-        self.delay(self._wait_time_elute_on, 'incubating on magnet at room temperature')
+        if self._elute_incubate:
+            self.delay(self._wait_time_elute_off, 'incubating off magnet at room temperature')
+            self._magdeck.engage(height=self._magheight)
+            self.delay(self._wait_time_elute_on, 'incubating on magnet at room temperature')
         
-        for i, (m, e, spot) in enumerate(zip(
+        for i, (m, e) in enumerate(zip(
             self.mag_samples_m,
-            self.elution_samples_m,
-            self._parking_spots,
+            self.elution_samples_m
         )):
-            self.pick_up(self._m300, spot if self._park else None)
+            self.pick_up(self._m300)
             side = -1 if i % 2 == 0 else 1
             loc = m.bottom(self._bottom_headroom_height).move(Point(x=side*2))
             self._m300.transfer(self._elution_vol, loc, e.bottom(self._elution_height), air_gap=self._elute_air_gap, new_tip='never')

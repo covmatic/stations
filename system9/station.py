@@ -51,7 +51,7 @@ class Station(metaclass=ABCMeta):
         drop_loc_l: float = 0,
         drop_loc_r: float = 0,
         drop_threshold: int = 296,
-        dummy_lights: bool = False,
+        dummy_lights: bool = True,
         jupyter: bool = True,
         logger: Optional[logging.getLoggerClass()] = None,
         metadata: Optional[dict] = None,
@@ -177,7 +177,7 @@ class Station(metaclass=ABCMeta):
             
             if self._tip_log['count'][tiprack] == self._tip_log['max'][tiprack]:
                 # If empty, wait for refill
-                self.pause('before resuming, please replace {}'.format(", ".join(map(str, getattr(self, tiprack)))), blink=True)
+                self.pause('before resuming, please replace {}'.format(", ".join(map(str, getattr(self, tiprack)))))
                 self._tip_log['count'][tiprack] = 0
             pip.pick_up_tip(self._tip_log['tips'][tiprack][self._tip_log['count'][tiprack]])
             self._tip_log['count'][tiprack] += 1
@@ -196,7 +196,7 @@ class Station(metaclass=ABCMeta):
     
     def pause(self,
         msg: str = "",
-        blink: bool = False,
+        blink: bool = True,
         blink_period: float = 1,
         color: str = 'red',
         delay_time: float = 0,
@@ -245,8 +245,9 @@ class Station(metaclass=ABCMeta):
     def run(self, ctx: ProtocolContext):
         self._ctx = ctx
         self._button = (Button.dummy if self._dummy_lights else Button)(self._ctx, 'blue')
-        self._request = StationRESTServerThread(ctx, **self._rest_server_kwargs)
-        self._request.start()
+        if not self._ctx.is_simulating():
+            self._request = StationRESTServerThread(ctx, **self._rest_server_kwargs)
+            self._request.start()
         self.logger.info(self._protocol_description)
         self.logger.info("using system9 version {}".format(__version__))
         self.load_labware()
@@ -257,7 +258,8 @@ class Station(metaclass=ABCMeta):
         try:
             self.body()
         finally:
-            self._request.join(2, 0.5)
+            if not self._ctx.is_simulating():
+                self._request.join(2, 0.5)
             self.track_tip()
             self._button.color = 'blue'
         self._ctx.home()
