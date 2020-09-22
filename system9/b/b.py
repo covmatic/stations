@@ -266,6 +266,7 @@ class StationB(Station):
     
     @property
     def water(self):
+        """Elution reagent"""
         return self._res12.wells()[11]
     
     @instrument_loader(0, "_m300")
