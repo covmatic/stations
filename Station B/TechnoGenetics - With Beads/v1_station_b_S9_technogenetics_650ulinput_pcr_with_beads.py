@@ -3,6 +3,11 @@ from system9.b import magnets
 import json
 import os
 import math
+from typing import Optional
+
+from opentrons.protocol_api import ProtocolContext
+from threading import Thread
+import time
 
 metadata = {
     'protocolName': 'Version 1 S9 Station B Technogenetics (630µl sample input)',
@@ -10,9 +15,10 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 8  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
+NUM_SAMPLES = 11  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
 STARTING_VOL = 650
-ELUTION_VOL = 40
+ELUTION_VOL = 50
+WASH_VOL = 680
 TIP_TRACK = False
 PARK = False
 
@@ -21,9 +27,34 @@ SKIP_DELAY = False
 DEFAULT_ASPIRATION_RATE	= 150
 SUPERNATANT_REMOVAL_ASPIRATION_RATE = 25
 ELUTE_ASPIRATION_RATE = 50
+LAST_RATE_ASPIRATE = 30
+LAST_RATE_DISPENSE = 30
 
 MAG_OFFSET = -0.35
 
+class BlinkingLight(Thread):
+    def __init__(self, ctx: ProtocolContext, t: float = 1):
+        super(BlinkingLight, self).__init__()
+        self._on = False
+        self._state = True
+        self._ctx = ctx
+        self._t = t
+    
+    def stop(self):
+        self._on = False
+        self.join()
+
+    def switch(self, x: Optional[bool] = None):
+        self._state = not self._state if x is None else x
+        self._ctx._hw_manager.hardware.set_lights(rails=self._state)
+            
+    def run(self):
+        self._on = True
+        state = self._ctx._hw_manager.hardware.get_lights()
+        while self._on:
+            self.switch()
+            time.sleep(self._t)
+        self.switch(state)
 
 def delay(minutesToDelay, message, context):
     message += ' for ' + str(minutesToDelay) + ' minutes.'
@@ -34,26 +65,27 @@ def delay(minutesToDelay, message, context):
 
 
 def run(ctx):
-    ctx.comment("Station B Technogenetics protocol for {} samples".format(NUM_SAMPLES))
+    ctx.comment("Protocollo Techonogenetics Stazione B per {} campioni".format(NUM_SAMPLES))
+    ctx.comment("Mettere la deepwell nel modulo magnetico")
     
     # --- Definitions ---------------------------------------------------------
     # Tips and pipettes
     num_cols = math.ceil(NUM_SAMPLES/8)
     tips300 = [
         ctx.load_labware('opentrons_96_tiprack_300ul', slot, '200µl filtertiprack')
-        for slot in [ '3', '7', '8', '9', '10']
+        for slot in ['3', '6', '8', '9', '10']
     ]
     m300 = ctx.load_instrument('p300_multi_gen2', 'left', tip_racks=tips300)
+    
+    # Temperature module
+    tempdeck = ctx.load_module('Temperature Module Gen2', '7')
+    tempplate = tempdeck.load_labware('nest_96_wellplate_2ml_deep')
     
     # Magnetic module
     magdeck = ctx.load_module('Magnetic Module Gen2', '4')
     magdeck.disengage()
     magheight = MAG_OFFSET + magnets.height.by_serial.get(magdeck._module._driver.get_device_info()['serial'], 6.65)
     magplate = magdeck.load_labware('nest_96_wellplate_2ml_deep')
-    
-    # Temperature module
-    # tempdeck = ctx.load_module('Temperature Module Gen2', '6')
-    # tempplate = tempdeck.load_labware('nest_96_wellplate_2ml_deep')
     
     # PCR plate
     pcr_plate = ctx.load_labware('opentrons_96_aluminumblock_nest_wellplate_100ul', '1', 'chilled elution plate on block for Station C')
@@ -62,21 +94,20 @@ def run(ctx):
     waste = ctx.load_labware('nest_1_reservoir_195ml', '11', 'Liquid Waste').wells()[0].top()
     res12 = ctx.load_labware('nest_12_reservoir_15ml', '5', 'Trough with WashReagents')
     elut12 = ctx.load_labware('nest_12_reservoir_15ml', '2', 'Trough with Elution')
-    washA = res12.wells()[:5]
-    washB = res12.wells()[6:11]
-    elution = elut12.wells()[11]
+    washA = res12.wells()[:6]
+    washB = res12.wells()[-6:]
+    elution = elut12.wells()[-1]
     
     # Positions
     mag_samples_m = magplate.rows()[0][:num_cols]
-    # temp_samples_m = tempplate.rows()[0][:num_cols]
     pcr_samples_m = pcr_plate.rows()[0][:num_cols]
+    temp_samples_m = tempplate.rows()[0][:num_cols]
     # -------------------------------------------------------------------------
     
     # --- Setup ---------------------------------------------------------------
-    magdeck.disengage()  # just in case
-    # tempdeck.set_temperature(80)
     m300.flow_rate.dispense = 150
     m300.flow_rate.blow_out = 300
+    tempdeck.set_temperature(55)
     # -------------------------------------------------------------------------
     
     # --- Functions -----------------------------------------------------------
@@ -132,10 +163,11 @@ resuming.')
             ctx.home()  # home before continuing with protocol
             drop_count = 0
     
-    def mix(vol):
-        for i, m in enumerate(mag_samples_m):
+    def mix(repetition, vol, slot):
+        for i, m in enumerate(slot):
             pick_up(m300)
-            m300.mix(10, 280, m.bottom(0.3))
+            m300.mix(repetition, vol, m.bottom(0.3))
+            m300.air_gap(20)
             drop(m300)
         
     def remove_supernatant(vol):
@@ -151,6 +183,22 @@ resuming.')
                     m300.dispense(m300.current_volume, m.top())  # void air gap if necessary
                 m300.move_to(m.center())
                 m300.transfer(vol_per_trans, loc, waste, new_tip='never',
+                              air_gap=20)
+                m300.air_gap(20)
+            drop(m300)
+        m300.flow_rate.aspirate = DEFAULT_ASPIRATION_RATE
+        
+    def remove_wash(vol):
+        m300.flow_rate.aspirate = SUPERNATANT_REMOVAL_ASPIRATION_RATE
+        num_trans = math.ceil(vol/200)
+        vol_per_trans = vol/num_trans
+        for i, m in enumerate(mag_samples_m):
+            pick_up(m300)
+            for _ in range(num_trans):
+                if m300.current_volume > 0:
+                    m300.dispense(m300.current_volume, m.top())  # void air gap if necessary
+                m300.move_to(m.center())
+                m300.transfer(vol_per_trans, m.bottom(0.2), waste, new_tip='never',
                               air_gap=20)
                 m300.air_gap(20)
             drop(m300)
@@ -179,43 +227,87 @@ resuming.')
         magdeck.engage(height=magheight)
         delay(5, 'Incubating on MagDeck', ctx)
         remove_supernatant(wash_vol)
-
+        
+    wash_tot_vol = NUM_SAMPLES * WASH_VOL *1.1
+    ctx.comment("Volume Wash A: {} mL".format(wash_tot_vol/1000))
+    ctx.comment("Volume Wash B: {} mL".format(wash_tot_vol/1000))
+    
     def elute(vol):
         magdeck.disengage()
-        ctx.pause("Check the drying of deepwell plate.")
         
         # resuspend beads in elution
         m300.flow_rate.aspirate = ELUTE_ASPIRATION_RATE
-        for i, m in enumerate(mag_samples_m):
+        for i, m in enumerate(temp_samples_m):
             pick_up(m300)
-            side = 1 if i % 2 == 0 else -1
-            loc = m.bottom(0.5).move(Point(x=side*2))
             m300.aspirate(vol, elution)
             m300.move_to(m.center())
-            m300.dispense(vol, loc)
-            m300.mix(10, 30, loc)
+            m300.dispense(vol, m.bottom(0.7))
+            side = 1 if i % 2 == 0 else -1
+            loc = m.bottom(0.3).move(Point(x=side*2))
+            m300.mix(15, 30, loc)
             m300.touch_tip(v_offset=-5)
             m300.air_gap(20)
             drop(m300)
-        
-        for i, (m, e) in enumerate(zip(mag_samples_m, pcr_samples_m)):
-            pick_up(m300)
-            m300.transfer(vol, m.bottom(0.5), e.bottom(5), air_gap=20, new_tip='never')
-            m300.air_gap(20)
-            drop(m300)
+            
+    elution_tot_vol = NUM_SAMPLES * ELUTION_VOL * 1.1
+    ctx.comment("Volume Elution Solution: {} mL".format(elution_tot_vol/1000))
     # -------------------------------------------------------------------------
     
     # --- RUN -----------------------------------------------------------------
-    mix(mag_samples_m)
-    delay(20, 'Waiting before magnetic module activation', ctx)
+    mix(10, 180, mag_samples_m)
+    delay(20, 'Incubazione delle biglie a RT', ctx)
     magdeck.engage(height=magheight)
-    delay(9, 'Incubating on magnet at room temperature', ctx)
+    delay(5, 'Incubazione a RT con modulo magnetico attivo', ctx)
     
     remove_supernatant(STARTING_VOL)
-    wash(680, washA, 20)
-    wash(680, washB, 20)
+    wash(WASH_VOL, washA, 20)
+    wash(WASH_VOL, washB, 20)
+    
+    blight = BlinkingLight(ctx=ctx)
+    blight.start()
+    ctx.delay(30)
+    ctx.pause("Spinnare la deepwell per 20 sec a RT.\nAl termine rimettere la deepwell nel modulo magnetico.")
+    blight.stop()
+    
+    magdeck.engage(height=magheight)
+    delay(3, 'Incubazione a RT con modulo magnetico attivo', ctx)
+    remove_wash(50)
+    magdeck.disengage()
+    
+    blight = BlinkingLight(ctx=ctx)
+    blight.start()
+    ctx.delay(30)
+    ctx.pause("Spostare la deepwell sul modulo di temperatura a 55°C senza premere Resume. \nIncubare per almeno 40 min, impostare timer. \nAd asciugatura completa, premere Resume. \nN.B. PREPARARE LA PCR PLATE NELLA STAZIONE C.")
+    blight.stop()
+    
     elute(ELUTION_VOL)
     
+    blight = BlinkingLight(ctx=ctx)
+    blight.start()
+    ctx.delay(30)
+    ctx.pause("Sigillare la deepwell con un adesivo. \nMettere la deepwell nel thermomixer: 700 rpm 55°C per almeno 5 min. \nA biglie risospese, posizionare la deepwell sul modulo MAGNETICO e cliccare Resume.")
+    blight.stop()
+    
+    magdeck.engage(height=magheight)
+    delay(5, 'Incubazione a RT con modulo magnetico attivo', ctx)
+    
+    blight = BlinkingLight(ctx=ctx)
+    blight.start()
+    ctx.delay(30)
+    ctx.pause("Mettere la PCR plate nello slot 1, sulla piastra di alluminio.")
+    blight.stop()
+
+    m300.flow_rate.aspirate = LAST_RATE_ASPIRATE
+    m300.flow_rate.dispense = LAST_RATE_DISPENSE
+    for i, (m, e) in enumerate(zip(mag_samples_m, pcr_samples_m)):
+            pick_up(m300)
+            side = -1 if i % 2 == 0 else 1
+            loc = m.bottom(0.3).move(Point(x=side*2))
+            m300.transfer(20, loc, e.bottom(5), air_gap=20, new_tip='never')
+            m300.mix(5, 20, e.bottom(1.5))
+            m300.air_gap(20)
+            drop(m300)
+    
     magdeck.disengage()
-    ctx.comment("Move chilled elution plate on block (slot 1) to Station C")
+    ctx.comment("Spostare la PCR plate nella RT-PCR.")
     # -------------------------------------------------------------------------
