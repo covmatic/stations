@@ -3,6 +3,7 @@ import json
 import os
 import math
 from typing import Optional
+from itertools import repeat, chain
 
 from opentrons.protocol_api import ProtocolContext
 from threading import Thread
@@ -36,19 +37,27 @@ class BlinkingLight(Thread):
 
 # metadata
 metadata = {
-    'protocolName': 'Version 1 S9 Station C TechnoGenetics P20 Multi',
+    'protocolName': 'Version 1 S9 Station C Technogenetics P20 Multi',
+    'author': 'Nick Pootza<protocols@opentrons.com>',
+    'source': 'Custom Protocol Request',
     'apiLevel': '2.3'
 }
 
 
-NUM_SAMPLES = 16  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
+NUM_SAMPLES = 96  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
+NUM_SEDUTE = 1
 TIP_TRACK = False
 MM_PER_SAMPLE = 20
 SAMPLE_VOL = 20
 
+liquid_headroom = 1.2
+mm_tube_capacity = 1450
+mm_strips_capacity = 180
 
 def run(ctx: protocol_api.ProtocolContext):
     global MM_TYPE
+
+    ctx.comment("Protocollo Technogenetics Stazione C per {} campioni.".format(NUM_SAMPLES))
 
     # check source (elution) labware type
     source_plate = ctx.load_labware(
@@ -69,7 +78,7 @@ def run(ctx: protocol_api.ProtocolContext):
     mm_strips = ctx.load_labware(
         'opentrons_96_aluminumblock_generic_pcr_strip_200ul', '8',
         'mastermix strips')
-    # tempdeck.set_temperature(4)
+    #tempdeck.set_temperature(4)
     tube_block = ctx.load_labware(
         'opentrons_24_aluminumblock_nest_1.5ml_snapcap', '5',
         '2ml screw tube aluminum block for mastermix + controls')
@@ -77,11 +86,6 @@ def run(ctx: protocol_api.ProtocolContext):
     # pipette
     m20 = ctx.load_instrument('p20_multi_gen2', 'right', tip_racks=tips20)
     p300 = ctx.load_instrument('p300_single_gen2', 'left', tip_racks=tips300)
-    
-    m20.flow_rate.aspirate = 3.8
-    m20.flow_rate.dispense = 3.8
-    p300.flow_rate.aspirate = 23
-    p300.flow_rate.dispense = 23
 
     # setup up sample sources and destinations
     num_cols = math.ceil(NUM_SAMPLES/8)
@@ -144,47 +148,65 @@ before resuming.')
         # print("Picked up {} with {} [#{}]".format(tip_log['tips']['tips20_no_a'][tip_log['count']['tips20_no_a']-1], 'tips20_no_a', tip_log['count']['tips20_no_a']))
 
     """ mastermix component maps """
-    mm_tube = tube_block.wells()[0]
+    # setup tube mastermix
+    num_mm_tubes = math.ceil( MM_PER_SAMPLE * NUM_SAMPLES * liquid_headroom / mm_tube_capacity)
+    samples_per_mm_tube = []
+    for i in range(num_mm_tubes):
+        remaining_samples = NUM_SAMPLES - sum(samples_per_mm_tube)
+        samples_per_mm_tube.append(min(8 * math.ceil(remaining_samples / (8 * (num_mm_tubes - i))), remaining_samples))
+    mm_per_tube = [MM_PER_SAMPLE * liquid_headroom * ns for ns in samples_per_mm_tube]
     
-    mm_strip = mm_strips.columns()[0]
-    remaining_samples = NUM_SAMPLES
+    mm_tube = tube_block.wells()[:num_mm_tubes]
+    ctx.comment("Mastermix: caricare {} tubes con almeno [{}] uL ciascuno".format(num_mm_tubes, ", ".join(map(str, map(round, mm_per_tube)))))
+    
+    #setup strips mastermix
+    mm_strip = mm_strips.columns()[:num_mm_tubes]
+    
+    mm_indices = list(chain.from_iterable(repeat(i, ns) for i, ns in enumerate(samples_per_mm_tube)))
+    
+    remaining_samples = NUM_SAMPLES * NUM_SEDUTE
+
+    # for _ in range(5):
+    #    test_light = BlinkingLight(ctx)
+    #    test_light.start()
+    #    ctx.delay(30)
+    #    test_light.stop()
     
     #### START REPEATED SECTION
     while remaining_samples > 0:
-        vol_per_strip_well = min(remaining_samples, 96)/8*MM_PER_SAMPLE*1.1
-        
         # transfer mastermix to strips
         pick_up(p300)
-        for well in mm_strip:
-            p300.transfer(vol_per_strip_well, mm_tube, well, new_tip='never')
+        for mt, ms, v8 in zip(mm_tube, mm_strip, mm_per_tube):
+            p300.transfer(v8 / 8, mt, ms, new_tip='never')
         p300.drop_tip()
     
         # transfer mastermix to plate
         pick_up(m20)
-        m20.transfer(MM_PER_SAMPLE, mm_strip[0].bottom(0.5), sample_dests,
-                     new_tip='never')
+        for m_idx, s in zip(mm_indices[::8], sample_dests):
+            m20.transfer(18, mm_strip[m_idx][0].bottom(0.5), s, new_tip='never')
         m20.drop_tip()
+        ctx.pause("Sigillare la PCR plate con un adesivo. \nRiporre la PCR plate a +4°C.")
     
         # transfer samples to corresponding locations
-        for i, (s, d) in enumerate(zip(sources, sample_dests)):
+        #for i, (s, d) in enumerate(zip(sources, sample_dests)):
             # print(i, end=" ")
-            if i == 9:
-                pick_up_no_a()
-            else:
-                pick_up(m20)
-            m20.transfer(SAMPLE_VOL, s.bottom(2), d.bottom(2), new_tip='never')
-            m20.mix(1, 10, d.bottom(2))
-            m20.blow_out(d.top(-2))
-            m20.aspirate(5, d.top(2))  # suck in any remaining droplets on way to trash
-            m20.drop_tip()
-            remaining_samples -= 8
+          #  if i == 9:
+           #     pick_up_no_a()
+            #else:
+             #   pick_up(m20)
+            #m20.transfer(SAMPLE_VOL, s.bottom(2), d.bottom(2), new_tip='never')
+            #m20.mix(1, 10, d.bottom(2))
+            #m20.blow_out(d.top(-2))
+            #m20.aspirate(5, d.top(2))  # suck in any remaining droplets on way to trash
+            #m20.drop_tip()
+        remaining_samples -= 8
         
         if remaining_samples > 0:
             blight = BlinkingLight(ctx=ctx)
             blight.start()
             ctx.home()
             # print("Please, load a new plate from station B. Resume when it is ready")
-            ctx.pause("Please, load a new plate from station B. Resume when it is ready")
+            ctx.pause("Please, load a new plate from station B. Also, refill mastermix. Resume when it is ready")
             blight.stop()
     #### END REPEATED SECTION
     
