@@ -47,12 +47,18 @@ metadata = {
 NUM_SAMPLES = 11  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
 NUM_SEDUTE = 1
 TIP_TRACK = False
-MM_PER_SAMPLE = 20
-SAMPLE_VOL = 20
 
 liquid_headroom = 1.2
 mm_tube_capacity = 1450
 mm_strips_capacity = 180
+
+mm_mix = {
+    "a": 6,
+    "b": 8,
+    "c": 6,
+}
+MM_PER_SAMPLE = sum(mm_mix.values())
+
 
 def run(ctx: protocol_api.ProtocolContext):
     global MM_TYPE
@@ -157,7 +163,18 @@ before resuming.')
     mm_per_tube = [MM_PER_SAMPLE * liquid_headroom * ns for ns in samples_per_mm_tube]
     
     mm_tube = tube_block.wells()[:num_mm_tubes]
-    ctx.comment("Mastermix: caricare {} tubes con almeno [{}] uL ciascuno".format(num_mm_tubes, ", ".join(map(str, map(round, mm_per_tube)))))
+    # ctx.comment("Mastermix: caricare {} tubes con almeno [{}] uL ciascuno".format(num_mm_tubes, ", ".join(map(str, map(round, mm_per_tube)))))
+    ndigs = math.ceil(math.log10(math.floor(max(mm_per_tube) + 1)))
+    fmt = lambda n: ("{:>" + str(ndigs + 3) + "}").format("{:.2f}".format(n)) 
+    msg = "Mastermix: caricare {} tube{} con almeno".format(num_mm_tubes, "" if num_mm_tubes == 1 else "s")
+    for i, (mt, mm, ns) in enumerate(zip(mm_tube, mm_per_tube, samples_per_mm_tube)):
+        msg += (
+            "\n  {} --> {} uL".format(str(mt).split(" ")[0], fmt(mm)) +
+            "".join("\n    {} -> {} uL".format(k, fmt(ns * v * liquid_headroom)) for k, v in mm_mix.items())
+        )
+    for r in msg.split("\n"):
+        while "  " in r: r = r.replace("  ", "\u2007 ")
+        ctx.comment(r)
     
     #setup strips mastermix
     mm_strip = mm_strips.columns()[:num_mm_tubes]
