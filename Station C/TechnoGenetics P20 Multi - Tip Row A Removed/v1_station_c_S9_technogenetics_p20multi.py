@@ -44,7 +44,7 @@ metadata = {
 }
 
 
-NUM_SAMPLES = 96  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
+NUM_SAMPLES = 11  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
 NUM_SEDUTE = 1
 TIP_TRACK = False
 MM_PER_SAMPLE = 20
@@ -163,8 +163,6 @@ before resuming.')
     mm_strip = mm_strips.columns()[:num_mm_tubes]
     
     mm_indices = list(chain.from_iterable(repeat(i, ns) for i, ns in enumerate(samples_per_mm_tube)))
-    
-    remaining_samples = NUM_SAMPLES * NUM_SEDUTE
 
     # for _ in range(5):
     #    test_light = BlinkingLight(ctx)
@@ -173,11 +171,13 @@ before resuming.')
     #    test_light.stop()
     
     #### START REPEATED SECTION
-    while remaining_samples > 0:
+    for i in range(NUM_SEDUTE):
+        ctx.comment("Seduta {}/{}".format(i + 1, NUM_SEDUTE))
         # transfer mastermix to strips
         pick_up(p300)
-        for mt, ms, v8 in zip(mm_tube, mm_strip, mm_per_tube):
-            p300.transfer(v8 / 8, mt, ms, new_tip='never')
+        for mt, ms, ns in zip(mm_tube, mm_strip, samples_per_mm_tube):
+            for strip_i, strip_w in enumerate(ms):
+                p300.transfer((ns // 8 + (1 if strip_i < ns % 8 else 0)) * MM_PER_SAMPLE * liquid_headroom, mt, strip_w, new_tip='never')
         p300.drop_tip()
     
         # transfer mastermix to plate
@@ -186,22 +186,8 @@ before resuming.')
             m20.transfer(18, mm_strip[m_idx][0].bottom(0.5), s, new_tip='never')
         m20.drop_tip()
         ctx.pause("Sigillare la PCR plate con un adesivo. \nRiporre la PCR plate a +4°C.")
-    
-        # transfer samples to corresponding locations
-        #for i, (s, d) in enumerate(zip(sources, sample_dests)):
-            # print(i, end=" ")
-          #  if i == 9:
-           #     pick_up_no_a()
-            #else:
-             #   pick_up(m20)
-            #m20.transfer(SAMPLE_VOL, s.bottom(2), d.bottom(2), new_tip='never')
-            #m20.mix(1, 10, d.bottom(2))
-            #m20.blow_out(d.top(-2))
-            #m20.aspirate(5, d.top(2))  # suck in any remaining droplets on way to trash
-            #m20.drop_tip()
-        remaining_samples -= 8
         
-        if remaining_samples > 0:
+        if i < NUM_SEDUTE - 1:
             blight = BlinkingLight(ctx=ctx)
             blight.start()
             ctx.home()
