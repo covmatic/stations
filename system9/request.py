@@ -2,6 +2,8 @@ from opentrons.protocol_api import ProtocolContext
 from typing import Callable, Optional
 from threading import Thread
 import cherrypy
+import datetime
+import json
 import time
 import os
 
@@ -22,16 +24,6 @@ DEFAULT_REST_KWARGS = dict(
 )
 
 
-class ContextAPI(type):
-    @staticmethod
-    def context_api(method: str) -> Callable:
-        return cherrypy.expose(lambda self: getattr(self._ctx, method)())
-    
-    def __new__(mcs, classname: str, supers: tuple, classdict: dict):
-        classdict.update(zip(*(lambda a: (a, map(mcs.context_api, a)))(classdict.pop("_actions", []))))
-        return super(ContextAPI, mcs).__new__(mcs, classname, supers, classdict)
-
-
 class KillerThread(Thread):
     def __init__(self, delay: float = 1):
         super(KillerThread, self).__init__()
@@ -42,14 +34,34 @@ class KillerThread(Thread):
         os.kill(os.getpid(), 9)  # 9 -> SIGKILL
 
 
-class StationRESTServer(metaclass=ContextAPI):
-    _actions = ["pause", "resume"]
-    
-    def __init__(self, ctx: ProtocolContext, config: Optional[dict] = None, favicon_url: Optional[str] = None):
+class StationRESTServer:
+    def __init__(self, ctx: ProtocolContext, station: Optional['Station'] = None, config: Optional[dict] = None, favicon_url: Optional[str] = None):
         super(StationRESTServer, self).__init__()
         self._ctx = ctx
+        self._station = station
         self._config = config
         self._icon_url = favicon_url
+        self._status = None
+    
+    @cherrypy.expose
+    def log(self) -> str:
+        status = getattr(self._station, "status", None)
+        return json.dumps({
+            "status": status if status == "finished" or self._status is None else self._status,
+            "stage": getattr(self._station, "stage", None),
+            "time": datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S:%f"),
+            "temp": getattr(getattr(self._station, "_tempdeck", None), "temperature", None)
+        }, indent=2)
+    
+    @cherrypy.expose
+    def pause(self):
+        self._status = "pause"
+        self._ctx.pause()
+    
+    @cherrypy.expose
+    def resume(self):
+        self._status = None
+        self._ctx.resume()
     
     @cherrypy.expose
     def kill(self, delay: str = '1'):

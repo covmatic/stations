@@ -53,6 +53,7 @@ class Station(metaclass=ABCMeta):
         drop_threshold: int = 296,
         dummy_lights: bool = True,
         jupyter: bool = True,
+        log_filepath: str = '/var/lib/jupyter/notebooks/outputs/completion_log.json',
         logger: Optional[logging.getLoggerClass()] = None,
         metadata: Optional[dict] = None,
         num_samples: int = 96,
@@ -69,6 +70,7 @@ class Station(metaclass=ABCMeta):
         self._drop_threshold = drop_threshold
         self._dummy_lights = dummy_lights
         self.jupyter = jupyter
+        self._log_filepath = log_filepath
         self._logger = logger
         self.metadata = metadata
         self._num_samples = num_samples
@@ -81,9 +83,6 @@ class Station(metaclass=ABCMeta):
         self._ctx: Optional[ProtocolContext] = None
         self._drop_count = 0
         self._side_switch = True
-    
-    def __getattr__(self, item: str):
-        return self.metadata[item]
     
     @property
     def logger(self) -> logging.getLoggerClass():
@@ -204,6 +203,7 @@ class Station(metaclass=ABCMeta):
         level: int = logging.INFO,
         pause: bool = True,
     ):
+        self.status = "pause"
         old_color = self._button.color
         self._button.color = color
         if msg:
@@ -221,6 +221,7 @@ class Station(metaclass=ABCMeta):
         if blink and not self._ctx.is_simulating():
             lt.stop()
         self._button.color = old_color
+        self.status = "running"
     
     def delay(self,
         mins: float,
@@ -243,10 +244,11 @@ class Station(metaclass=ABCMeta):
         pass
     
     def run(self, ctx: ProtocolContext):
+        self.status = "running"
         self._ctx = ctx
         self._button = (Button.dummy if self._dummy_lights else Button)(self._ctx, 'blue')
         if not self._ctx.is_simulating():
-            self._request = StationRESTServerThread(ctx, **self._rest_server_kwargs)
+            self._request = StationRESTServerThread(ctx, station=self, **self._rest_server_kwargs)
             self._request.start()
         self.logger.info(self._protocol_description)
         self.logger.info("using system9 version {}".format(__version__))
@@ -258,7 +260,10 @@ class Station(metaclass=ABCMeta):
         try:
             self.body()
         finally:
+            self.status = "finished"
             if not self._ctx.is_simulating():
+                with open(self._log_filepath, "w") as f:
+                    f.write(self._request.log())
                 self._request.join(2, 0.5)
             self.track_tip()
             self._button.color = 'blue'

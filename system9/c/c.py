@@ -195,8 +195,11 @@ class StationC(Station):
         self._remaining_samples -= self._m20.channels
     
     def run_cycle(self):
+        self.stage = "transfer mastermix to strips"
         self.fill_mm_strips()
+        self.stage = "transfer mastermix to plate"
         self.transfer_mm()
+        self.stage = "transfer samples"
         for s, d in zip(self.sources, self.sample_dests):
             self.transfer_sample(self._sample_vol, s, d)
             if self._remaining_samples <= 0:
@@ -209,6 +212,7 @@ class StationC(Station):
             self.logger.info("cycle {}/{}".format(i + 1, self.num_cycles))
             self.run_cycle()
             if self._remaining_samples > 0:
+                self.stage = "pausing for next cycle"
                 self.pause(
                     "end of cycle {}/{}. Please, load a new plate from station B. Resume when it is ready".format(i + 1, self.num_cycles),
                     blink=True, color="green",
@@ -216,7 +220,7 @@ class StationC(Station):
 
 
 if __name__ == "__main__":
-    StationC(metadata={'apiLevel': '2.3'}).simulate()
+    StationC(num_samples=480, metadata={'apiLevel': '2.3'}).simulate()
 
 
 # Copyright (c) 2020 Covmatic.
