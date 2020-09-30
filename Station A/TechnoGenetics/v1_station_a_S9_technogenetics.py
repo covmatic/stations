@@ -16,7 +16,7 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 11
+NUM_SAMPLES = 16
 SAMPLE_VOLUME = 200
 LYSIS_VOLUME = 400
 PK_VOLUME = 30
@@ -77,9 +77,10 @@ def run(ctx: protocol_api.ProtocolContext):
         '50ml tuberack for lysis buffer + PK (tube A1)').wells()[0]
     tipracks1000 = [ctx.load_labware('opentrons_96_filtertiprack_1000ul', slot,
                                      '1000µl filter tiprack')
-                    for slot in ['8', '9', '11']]
-    tipracks20 = [ctx.load_labware('opentrons_96_filtertiprack_20ul', '7',
-                                   '20µl filter tiprack')]
+                    for slot in ['8', '9']]
+    tipracks20 = [ctx.load_labware('opentrons_96_filtertiprack_20ul', slot,
+                                   '20µl filter tiprack')
+                    for slot in['7', '11']]
 
     # load pipette
     m20 = ctx.load_instrument('p20_multi_gen2', 'left', tip_racks=tipracks20)
@@ -88,7 +89,7 @@ def run(ctx: protocol_api.ProtocolContext):
     p1000.flow_rate.aspirate = DEFAULT_ASPIRATE
     p1000.flow_rate.dispense = DEFAULT_DISPENSE
     p1000.flow_rate.blow_out = 300
-
+ 
     # setup samples
     # we try to allocate the maximum number of samples available in racks (e.g. 15*number of racks)
     # and after we will ask the user to replace the samples to reach NUM_SAMPLES
@@ -246,6 +247,7 @@ resuming.')
         }
         with open(tip_file_path, 'w') as outfile:
             json.dump(data, outfile)
+
 
 
 # Copyright (c) 2020 Covmatic.
