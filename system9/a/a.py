@@ -13,7 +13,7 @@ class StationA(Station):
         self,
         air_gap_dest_multi: float = 5,
         air_gap_sample: float = 20,
-        chilled_tubeblock_content: str = "internal control (strip 1)",
+        chilled_tubeblock_content: str = "internal control",
         dest_headroom_height: float = 2,
         dest_top_height: float = 5,
         dest_multi_headroom_height: float = 2,
@@ -176,15 +176,18 @@ class StationA(Station):
         self._tempdeck_temp = tempdeck_temp
         self._tipracks_slots = tipracks_slots
     
-    @labware_loader(0, "_tempdeck", "_strips_block")
+    @labware_loader(0, "_tempdeck")
     def load_tempdeck(self):
         self._tempdeck = self._ctx.load_module('Temperature Module Gen2', '10')
         self._tempdeck.set_temperature(self._tempdeck_temp)
+    
+    @labware_loader(0.1, "_strips_block")
+    def load_strips_block(self):
         self._strips_block = self._tempdeck.load_labware(
             'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
             'chilled tubeblock for {}'.format(self._chilled_tubeblock_content)
-        ).rows()[0][:self.num_ic_strips]
-        self.logger.info("using {} internal control strips with {} uL each".format(self.num_ic_strips, self.cols_per_strip * self._iec_volume * self._ic_lys_headroom))
+        )
+        self.logger.info("using {} {} strips with {} uL each".format(self.num_ic_strips, self._chilled_tubeblock_content, self.cols_per_strip * self._iec_volume * self._ic_lys_headroom))
     
     def _load_source_racks(self):
         self._source_racks = [
@@ -350,7 +353,7 @@ class StationA(Station):
         
         strip_ind = idx // self.cols_per_strip
         self.logger.debug("transferring internal control strip {}/{} to {}".format(strip_ind + 1, self.num_ic_strips, dest))
-        internal_control = self._strips_block[strip_ind]
+        internal_control = self._strips_block.rows()[0][strip_ind]
         self.pick_up(self._m20)
         # no air gap to use 1 transfer only avoiding drop during multiple transfers
         self._m20.transfer(self._iec_volume, internal_control, dest.bottom(self._ic_headroom_bottom), new_tip='never')
