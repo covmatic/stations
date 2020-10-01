@@ -99,12 +99,19 @@ class StationATechnogenetics(StationAP1000):
         self.setup_samples()
         self.setup_lys_tube()
         
+        self.stage = "transfer proteinase"
         self.transfer_proteinase()
+        self.stage = "transfer samples"
         self.transfer_samples()
+        self.stage = "transfer lysis buffer"
         self.transfer_lys()
         
+        self.external = True
+        self.stage = "incubation"
         self.pause("move deepwell plate to the incubator for 20 minutes at 55°C")
+        self.external = False
         
+        self.stage = "transfer beads"
         self.transfer_beads()
         self.logger.info('move deepwell plate to Station B for RNA extraction.')
 
