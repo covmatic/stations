@@ -315,7 +315,8 @@ class StationA(Station):
         self._p_main.flow_rate.aspirate = self._sample_aspirate
         self._p_main.flow_rate.dispense = self._sample_dispense
         
-        for s, d in self.non_control_positions():
+        for i, (s, d) in enumerate(self.non_control_positions()):
+            self.stage = "transfer sample {}/{}".format(i + 1, len(self._dests_multi))
             self.transfer_sample(s, d)
     
     def transfer_lys(self):
@@ -325,9 +326,10 @@ class StationA(Station):
         if self._lysis_first:
             self.pick_up(self._p_main)
         mix = {} if self._lysis_first else {'mix_after': (self._lys_mix_repeats, self._lys_mix_volume)}
-        for _, dest in self.non_control_positions():
+        for i, (_, dest) in enumerate(self.non_control_positions()):
             if not self._lysis_first:
                 self.pick_up(self._p_main)
+            self.stage = "transfer lysis {}/{}".format(i + 1, len(self._dests_multi))
             self.logger.debug("transferring lysis to {}".format(dest))
             h = max(self._lysis_tube.extract(self._lysis_volume), self._lysis_headroom_height)
             self.logger.debug("going {} mm deep".format(h))

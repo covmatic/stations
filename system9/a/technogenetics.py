@@ -84,11 +84,13 @@ class StationATechnogenetics(StationAP1000):
     def transfer_proteinase(self):
         self.pick_up(self._m20)
         for i, d in enumerate(self._dests_multi):
+            self.stage = "transfer proteinase {}/{}".format(i + 1, len(self._dests_multi))
             self._m20.transfer(self._prot_k_volume, self._prot_k[i // self.cols_per_strip], d.bottom(self._ic_headroom_bottom), new_tip='never')
         self._m20.drop_tip()
     
     def transfer_beads(self):
         for i, d in enumerate(self._dests_multi):
+            self.stage = "transfer beads {}/{}".format(i + 1, len(self._dests_multi))
             self.pick_up(self._m20)
             self._m20.transfer(self._beads_vol, self._beads, d.bottom(self._dest_multi_headroom_height), air_gap=self._air_gap_dest_multi, new_tip='never')
             self._m20.mix(self._beads_mix_repeats, self._beads_vol, d.bottom(self._dest_multi_headroom_height))
@@ -99,11 +101,8 @@ class StationATechnogenetics(StationAP1000):
         self.setup_samples()
         self.setup_lys_tube()
         
-        self.stage = "transfer proteinase"
         self.transfer_proteinase()
-        self.stage = "transfer samples"
         self.transfer_samples()
-        self.stage = "transfer lysis buffer"
         self.transfer_lys()
         
         self.external = True
@@ -111,7 +110,6 @@ class StationATechnogenetics(StationAP1000):
         self.pause("move deepwell plate to the incubator for 20 minutes at 55°C")
         self.external = False
         
-        self.stage = "transfer beads"
         self.transfer_beads()
         self.logger.info('move deepwell plate to Station B for RNA extraction.')
 
