@@ -38,7 +38,7 @@ class Copan24Specs:
                  diameter: float = 16.8,
                  distance_vert: float = 17.75,
                  distance_horz: float = 18.75,
-                 tube_diameter: float = 14,
+                 tube_diameter: float = 16,
                  tube_volume: float = 14000,
                  tube_depth: float = 93,
                  tube_height: float = 15,
