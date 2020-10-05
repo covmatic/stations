@@ -63,6 +63,7 @@ class StationA(Station):
         tip_log_folder_path: str = './data/A',
         tip_track: bool = False,
         tipracks_slots: Tuple[str, ...] = ('8', '9', '11'),
+        tipracks_slots_20: Tuple[str, ...] = ('7',),
         **kwargs
     ):
         """ Build a :py:class:`.StationA`.
@@ -118,6 +119,7 @@ class StationA(Station):
         :param tip_log_folder_path: folder for the tip log JSON dump
         :param tip_track: If True, try and load previous tiprack log from the JSON file
         :param tipracks_slots: Slots where the tipracks are positioned
+        :param tipracks_slots_20: Slots where the tipracks (20 uL) are positioned
         :param jupyter: Specify whether the protocol is run on Jupyter (or Python) instead of the robot
         """
         super(StationA, self).__init__(
@@ -175,11 +177,13 @@ class StationA(Station):
         self._source_top_height = source_top_height
         self._tempdeck_temp = tempdeck_temp
         self._tipracks_slots = tipracks_slots
+        self._tipracks_slots_20 = tipracks_slots_20
     
     @labware_loader(0, "_tempdeck")
     def load_tempdeck(self):
         self._tempdeck = self._ctx.load_module('Temperature Module Gen2', '10')
-        self._tempdeck.set_temperature(self._tempdeck_temp)
+        if self._tempdeck_temp is not None:
+            self._tempdeck.set_temperature(self._tempdeck_temp)
     
     @labware_loader(0.1, "_strips_block")
     def load_strips_block(self):
@@ -225,7 +229,10 @@ class StationA(Station):
     
     @labware_loader(5, "_tipracks20")
     def load_tipracks20(self):
-        self._tipracks20 = [self._ctx.load_labware('opentrons_96_filtertiprack_20ul', '7', '20ul filter tiprack')]
+        self._tipracks20 = [
+            self._ctx.load_labware('opentrons_96_filtertiprack_20ul', slot, '20ul filter tiprack')
+            for slot in self._tipracks_slots_20
+        ]
     
     @instrument_loader(0, "_m20")
     def load_m20(self):

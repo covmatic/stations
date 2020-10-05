@@ -1,6 +1,7 @@
 from .p1000 import StationAP1000
 from .reload import StationAReload
 from .copan_24 import Copan24Specs
+from typing import Tuple, Optional
 
 
 class StationATechnogenetics(StationAP1000):
@@ -19,6 +20,9 @@ class StationATechnogenetics(StationAP1000):
         prot_k_vol: float = 30,
         sample_aspirate: float = 100,
         sample_dispense: float = 100,
+        tempdeck_temp: Optional[float] = None,
+        tipracks_slots: Tuple[str, ...] = ('8', '9'),
+        tipracks_slots_20: Tuple[str, ...] = ('7', '11'),
         **kwargs
     ):
         """
@@ -31,6 +35,9 @@ class StationATechnogenetics(StationAP1000):
         :param prot_k_vol: volume of proteinase K per sample in uL
         :param sample_aspirate: aspiration rate for sampeles in uL/s
         :param sample_dispense: dispensation rate for sampeles in uL/s
+        :param tempdeck_temp: tempdeck temperature in Celsius degrees
+        :param tipracks_slots: Slots where the tipracks are positioned
+        :param tipracks_slots_20: Slots where the tipracks (20 uL) are positioned
         :param kwargs: other keyword arguments. See: StationAP1000, StationA
         """
         super(StationATechnogenetics, self).__init__(
@@ -45,6 +52,9 @@ class StationATechnogenetics(StationAP1000):
             iec_volume=prot_k_vol,
             ic_capacity=prot_k_capacity,
             ic_lys_headroom=prot_k_headroom,
+            tempdeck_temp=tempdeck_temp,
+            tipracks_slots=tipracks_slots,
+            tipracks_slots_20=tipracks_slots_20,
             **kwargs
         )
         self._beads_mix_repeats = beads_mix_repeats
