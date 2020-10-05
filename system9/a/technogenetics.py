@@ -63,7 +63,7 @@ class StationATechnogenetics(StationAP1000):
     # --- In Station A there is IC in the strips, these allow the renaming for Proteinase K -------
     _strips_content: str = "proteinase K"
     
-    _lys_buf_name: str = '50ml tuberack for lysis buffer + PK (tube A1)'
+    _lys_buf_name: str = '50ml tuberack for lysis buffer'
     
     @property
     def chilled_tubeblock_content(self) -> str:
@@ -95,6 +95,7 @@ class StationATechnogenetics(StationAP1000):
         return self._strips_block.rows()[0][-1]
     
     def transfer_proteinase(self):
+        self.stage = "transfer proteinase"
         self.pick_up(self._m20)
         for i, d in enumerate(self._dests_multi):
             self.stage = "transfer proteinase {}/{}".format(i + 1, len(self._dests_multi))
@@ -122,8 +123,11 @@ class StationATechnogenetics(StationAP1000):
         self.stage = "incubation"
         self.msg = "Seal the deepwell plate with a sticker.\n" + \
                    "Put the deepwell plate in the thermomixer: 700 rpm for 3 minutes.\n" + \
-                   "Finally, move the deepwell plate in the incubator at 55°C for 20 minutes."
+                   "Finally, move the deepwell plate in the incubator at 55°C for 20 minutes.\n" + \
+                   "(Resume to stop blinking)"
         self.pause(self.msg)
+        self.msg = "\n".join(self.msg.split("\n")[:-1])
+        self.pause(self.msg, blink=False)
         self.msg = None
         self.external = False
         
