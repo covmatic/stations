@@ -13,7 +13,6 @@ class StationA(Station):
         self,
         air_gap_dest_multi: float = 5,
         air_gap_sample: float = 20,
-        chilled_tubeblock_content: str = "internal control",
         dest_headroom_height: float = 2,
         dest_top_height: float = 5,
         dest_multi_headroom_height: float = 2,
@@ -70,7 +69,6 @@ class StationA(Station):
 
         :param air_gap_dest_multi: air gap for destination tube (multi) in uL
         :param air_gap_sample: air gap for sample transfer in uL
-        :param chilled_tubeblock_content: content of the chilled tubeblock (used to make the label)
         :param dest_headroom_height: headroom always to keep from the bottom of the destination tube in mm
         :param dest_top_height: top height from the bottom of the destination tube in mm when mixing
         :param dest_multi_headroom_height: headroom always to keep from the bottom of the destination tube (multi) in mm
@@ -138,7 +136,6 @@ class StationA(Station):
         )
         self._air_gap_dest_multi = air_gap_dest_multi
         self._air_gap_sample = air_gap_sample
-        self._chilled_tubeblock_content = chilled_tubeblock_content
         self._dest_headroom_height = dest_headroom_height
         self._dest_multi_headroom_height = dest_multi_headroom_height
         self._dest_top_height = dest_top_height
@@ -185,13 +182,17 @@ class StationA(Station):
         if self._tempdeck_temp is not None:
             self._tempdeck.set_temperature(self._tempdeck_temp)
     
+    @property
+    def chilled_tubeblock_content(self) -> str:
+        return "internal control (first {} strips{})".format(self.num_ic_strips, "{}")
+    
     @labware_loader(0.1, "_strips_block")
     def load_strips_block(self):
         self._strips_block = self._tempdeck.load_labware(
             'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
-            'chilled tubeblock for {}'.format(self._chilled_tubeblock_content)
+            "chilled tubeblock for {}".format(self.chilled_tubeblock_content.format(""))
         )
-        self.logger.info("using {} {} strips with {} uL each".format(self.num_ic_strips, self._chilled_tubeblock_content, self.cols_per_strip * self._iec_volume * self._ic_lys_headroom))
+        self.logger.info("using {}".format(self.chilled_tubeblock_content.format(" with {} uL each".format(self.cols_per_strip * self._iec_volume * self._ic_lys_headroom))))
     
     def _load_source_racks(self):
         self._source_racks = [
@@ -212,11 +213,13 @@ class StationA(Station):
             'nest_96_wellplate_2ml_deep', '1', '96-deepwell sample plate'
         )
     
+    _lys_buf_name: str = '50ml tuberack for lysis buffer'
+    
     @labware_loader(3, "_lys_buff")
     def load_lys_buf(self):
         self._lys_buff = self._ctx.load_labware(
             'opentrons_6_tuberack_falcon_50ml_conical', '4',
-            '50ml tuberack for lysis buffer'
+            self._lys_buf_name,
         ).wells()[0]
     
     @labware_loader(4, "_tipracks_main")
@@ -266,8 +269,7 @@ class StationA(Station):
         self._lysis_tube = LysisTube(self._lys_buff.diameter / 2, self._lysis_cone_height)
         self._lysis_tube.height = self._lysis_headroom_height
         self._lysis_tube.fill(self.initlial_volume_lys)
-        self.logger.info("number of samples: {}. Lysis buffer expected volume: {} uL".format(self._num_samples, math.ceil(self._lysis_tube.volume)))
-        self.logger.debug("lysis buffer expected height: {:.2f} mm".format(self._lysis_tube.height))
+        self.logger.info("number of samples: {}. Lysis buffer expected volume: {} uL (height: {:.2f} mm)".format(self._num_samples, math.ceil(self._lysis_tube.volume), self._lysis_tube.height))
     
     def transfer_sample(self, source, dest):
         self.logger.debug("transferring from {} to {}".format(source, dest))

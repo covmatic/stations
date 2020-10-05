@@ -9,7 +9,6 @@ class StationATechnogenetics(StationAP1000):
         beads_mix_repeats: int = 2,
         beads_mix_volume: float = 20,
         beads_vol: float = 10,
-        chilled_tubeblock_content: str = "proteinase K (strip 1) and beads (strip 2)",
         lysis_first: bool = False,
         lys_mix_repeats: int = 2,
         lys_mix_volume: float = 100,
@@ -29,7 +28,6 @@ class StationATechnogenetics(StationAP1000):
         :param beads_mix_repeats: number of repetitions during mixing the beads
         :param beads_mix_volume: volume aspirated for mixing the beads in uL
         :param beads_vol: volume of beads per sample in uL
-        :param chilled_tubeblock_content: label for the chilled tubeblock
         :param lysis_volume: volume of lysis buffer per sample in uL
         :param prot_k_headroom: headroom for proteinase K (as a multiplier)
         :param prot_k_vol: volume of proteinase K per sample in uL
@@ -41,7 +39,6 @@ class StationATechnogenetics(StationAP1000):
         :param kwargs: other keyword arguments. See: StationAP1000, StationA
         """
         super(StationATechnogenetics, self).__init__(
-            chilled_tubeblock_content=chilled_tubeblock_content,
             lysis_first=False,
             lys_mix_repeats=lys_mix_repeats,
             lys_mix_volume=lys_mix_volume,
@@ -65,6 +62,12 @@ class StationATechnogenetics(StationAP1000):
     
     # --- In Station A there is IC in the strips, these allow the renaming for Proteinase K -------
     _strips_content: str = "proteinase K"
+    
+    _lys_buf_name: str = '50ml tuberack for lysis buffer + PK (tube A1)'
+    
+    @property
+    def chilled_tubeblock_content(self) -> str:
+        return "proteinase K (first {} strips{}) and beads (last strip)".format(self.num_ic_strips, "{}")
     
     @property
     def _prot_k_capacity(self) -> float:
@@ -103,7 +106,7 @@ class StationATechnogenetics(StationAP1000):
             self.stage = "transfer beads {}/{}".format(i + 1, len(self._dests_multi))
             self.pick_up(self._m20)
             self._m20.transfer(self._beads_vol, self._beads, d.bottom(self._dest_multi_headroom_height), air_gap=self._air_gap_dest_multi, new_tip='never')
-            self._m20.mix(self._beads_mix_repeats, self._beads_vol, d.bottom(self._dest_multi_headroom_height))
+            self._m20.mix(self._beads_mix_repeats, self._beads_mix_volume, d.bottom(self._dest_multi_headroom_height))
             self._m20.air_gap(self._air_gap_dest_multi)
             self._m20.drop_tip()
     
@@ -117,7 +120,11 @@ class StationATechnogenetics(StationAP1000):
         
         self.external = True
         self.stage = "incubation"
-        self.pause("move deepwell plate to the incubator for 20 minutes at 55°C")
+        self.msg = "Seal the deepwell plate with a sticker.\n" + \
+                   "Put the deepwell plate in the thermomixer: 700 rpm for 3 minutes.\n" + \
+                   "Finally, move the deepwell plate in the incubator at 55°C for 20 minutes."
+        self.pause(self.msg)
+        self.msg = None
         self.external = False
         
         self.transfer_beads()
