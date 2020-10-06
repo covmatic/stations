@@ -154,25 +154,28 @@ class Copan24Specs:
     
     def __str__(self) -> str:
         return json.dumps(self.toJSON(), indent=4).replace(r"\u00b5", "\u00b5")
-
+    
+    def run_test(self, ctx: ProtocolContext):
+        """Test protocol"""
+        ctx.comment("Test the custom '{}' rack".format(self.metadata["displayName"]))
+        
+        rack = ctx.load_labware_from_definition(self.labware_definition(), '2', 'custom tuberack')
+        tipracks1000 = [ctx.load_labware('opentrons_96_filtertiprack_1000ul', '1', '1000µl filter tiprack')]
+        p1000 = ctx.load_instrument('p1000_single_gen2', 'right', tip_racks=tipracks1000)
+        
+        p1000.pick_up_tip()
+        for w in rack.wells():
+            ctx.pause("moving to top of {}".format(w))
+            p1000.move_to(w.top())
+            ctx.pause("moving to bottom of {} (1 mm high)".format(w))
+            p1000.move_to(w.bottom(1))
+            p1000.aspirate(5)
+            p1000.dispense(5)
+        p1000.drop_tip()
+        
 
 def run(ctx: ProtocolContext):
-    """Test protocol"""
-    ctx.comment("Test the custom Copan x24 rack")
-    
-    rack = ctx.load_labware_from_definition(Copan24Specs().labware_definition(), '2', 'custom tuberack')
-    tipracks1000 = [ctx.load_labware('opentrons_96_filtertiprack_1000ul', '1', '1000µl filter tiprack')]
-    p1000 = ctx.load_instrument('p1000_single_gen2', 'right', tip_racks=tipracks1000)
-    
-    p1000.pick_up_tip()
-    for w in rack.wells():
-        ctx.pause("moving to top of {}".format(w))
-        p1000.move_to(w.top())
-        ctx.pause("moving to bottom of {} (1 mm high)".format(w))
-        p1000.move_to(w.bottom(1))
-        p1000.aspirate(5)
-        p1000.dispense(5)
-    p1000.drop_tip()
+    Copan24Specs().run_test(ctx)
 
 
 metadata = {"apiLevel": "2.3"}
