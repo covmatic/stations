@@ -119,7 +119,6 @@ class StationATechnogenetics(StationAP1000):
         self.transfer_samples()
         self.transfer_lys()
         
-        self.external = True
         self.stage = "incubation"
         self.msg = "Seal the deepwell plate with a sticker.\n" + \
                    "Put the deepwell plate in the thermomixer: 700 rpm for 3 minutes.\n" + \
@@ -127,6 +126,7 @@ class StationATechnogenetics(StationAP1000):
                    "(Resume to stop blinking)"
         self.pause(self.msg)
         self.msg = "\n".join(self.msg.split("\n")[:-1])
+        self.external = True
         self.pause(self.msg, blink=False)
         self.msg = None
         self.external = False
