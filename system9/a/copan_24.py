@@ -41,7 +41,7 @@ class Copan24Specs:
                  tube_diameter: float = 16,
                  tube_volume: float = 14000,
                  tube_depth: float = 93,
-                 tube_height: float = 15,
+                 tube_height: float = 10,
                  global_dimensions: Tuple[float, float, float] = (121.35, 79.1, 108),
                  a1_offset: Tuple[float, float] = (11.63, 14),
                  ):
