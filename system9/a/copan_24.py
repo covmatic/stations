@@ -105,12 +105,10 @@ class Copan24Specs:
     
     @json_property
     def groups(self) -> List[dict]:
+        d = {k: self.metadata[k] for k in ("displayName", "displayCategory")}
+        d["wellBottomShape"] = "v"
         return [{
-            "metadata": {
-                "displayName": "COPAN {} Tube Rack 14000 µL".format(self.n),
-                "displayCategory": "tubeRack",
-                "wellBottomShape": "v"
-            },
+            "metadata": d,
             "brand": self.brand,
             "wells": list(chain.from_iterable(self.ordering)),
         }]
