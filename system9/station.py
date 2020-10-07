@@ -60,6 +60,7 @@ class Station(metaclass=ABCMeta):
         rest_server_kwargs: dict = DEFAULT_REST_KWARGS,
         samples_per_col: int = 8,
         skip_delay: bool = False,
+        start_at: Optional[str] = None,
         tip_log_filename: str = 'tip_log.json',
         tip_log_folder_path: str = './data/',
         tip_track: bool = False,
@@ -76,6 +77,7 @@ class Station(metaclass=ABCMeta):
         self._num_samples = num_samples
         self._rest_server_kwargs = rest_server_kwargs
         self._samples_per_col = samples_per_col
+        self._start_at = start_at
         self._skip_delay = skip_delay
         self._tip_log_filename = tip_log_filename
         self._tip_log_folder_path = tip_log_folder_path
@@ -83,6 +85,17 @@ class Station(metaclass=ABCMeta):
         self._ctx: Optional[ProtocolContext] = None
         self._drop_count = 0
         self._side_switch = True
+        self.stage = None
+        self.msg = None
+        self.external = False
+        self._run_stage = self._start_at is None
+    
+    def run_stage(self, stage: str) -> bool:
+        self.stage = stage
+        if self._start_at == self.stage:
+            self._run_stage = True
+        self.logger.debug("[{}] Stage: {}".format("x" if self._run_stage else " ", self.stage))
+        return self._run_stage
     
     @property
     def logger(self) -> logging.getLoggerClass():

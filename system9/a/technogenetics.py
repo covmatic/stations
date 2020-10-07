@@ -95,21 +95,24 @@ class StationATechnogenetics(StationAP1000):
         return self._strips_block.rows()[0][-1]
     
     def transfer_proteinase(self):
-        self.stage = "transfer proteinase"
-        self.pick_up(self._m20)
+        has_tip = False
         for i, d in enumerate(self._dests_multi):
-            self.stage = "transfer proteinase {}/{}".format(i + 1, len(self._dests_multi))
-            self._m20.transfer(self._prot_k_volume, self._prot_k[i // self.cols_per_strip], d.bottom(self._ic_headroom_bottom), new_tip='never')
-        self._m20.drop_tip()
+            if self.run_stage("transfer proteinase {}/{}".format(i + 1, len(self._dests_multi))):
+                if not has_tip:
+                    self.pick_up(self._m20)
+                    has_tip = True
+                self._m20.transfer(self._prot_k_volume, self._prot_k[i // self.cols_per_strip], d.bottom(self._ic_headroom_bottom), new_tip='never')
+        if has_tip:
+            self._m20.drop_tip()
     
     def transfer_beads(self):
         for i, d in enumerate(self._dests_multi):
-            self.stage = "transfer beads {}/{}".format(i + 1, len(self._dests_multi))
-            self.pick_up(self._m20)
-            self._m20.transfer(self._beads_vol, self._beads, d.bottom(self._dest_multi_headroom_height), air_gap=self._air_gap_dest_multi, new_tip='never')
-            self._m20.mix(self._beads_mix_repeats, self._beads_mix_volume, d.bottom(self._dest_multi_headroom_height))
-            self._m20.air_gap(self._air_gap_dest_multi)
-            self._m20.drop_tip()
+            if self.run_stage("transfer beads {}/{}".format(i + 1, len(self._dests_multi))):
+                self.pick_up(self._m20)
+                self._m20.transfer(self._beads_vol, self._beads, d.bottom(self._dest_multi_headroom_height), air_gap=self._air_gap_dest_multi, new_tip='never')
+                self._m20.mix(self._beads_mix_repeats, self._beads_mix_volume, d.bottom(self._dest_multi_headroom_height))
+                self._m20.air_gap(self._air_gap_dest_multi)
+                self._m20.drop_tip()
     
     def body(self):
         self.setup_samples()
@@ -119,20 +122,21 @@ class StationATechnogenetics(StationAP1000):
         self.transfer_samples()
         self.transfer_lys()
         
-        self.stage = "incubation"
-        self.msg = "Seal the deepwell plate with a sticker.\n" + \
-                   "Put the deepwell plate in the thermomixer: 700 rpm for 3 minutes.\n" + \
-                   "Finally, move the deepwell plate in the incubator at 55°C for 20 minutes.\n" + \
-                   "(Resume to stop blinking)"
-        self.pause(self.msg)
-        self.msg = "\n".join(self.msg.split("\n")[:-1])
-        self.external = True
-        self.pause(self.msg, blink=False)
-        self.msg = None
-        self.external = False
+        if self.run_stage("incubation"):
+            self.msg = "Seal the deepwell plate with a sticker.\n" + \
+                       "Put the deepwell plate in the thermomixer: 700 rpm for 3 minutes.\n" + \
+                       "Finally, move the deepwell plate in the incubator at 55°C for 20 minutes.\n" + \
+                       "(Resume to stop blinking)"
+            self.pause(self.msg)
+            self.msg = "\n".join(self.msg.split("\n")[:-1])
+            self.external = True
+            self.pause(self.msg, blink=False)
+            self.msg = None
+            self.external = False
         
         self.transfer_beads()
-        self.logger.info('move deepwell plate to Station B for RNA extraction.')
+        self.msg = 'move deepwell plate to Station B for RNA extraction.'
+        self.logger.info(self.msg)
 
 
 class StationATechnogeneticsReload(StationAReload, StationATechnogenetics):

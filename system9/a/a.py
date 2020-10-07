@@ -326,8 +326,8 @@ class StationA(Station):
         
         n = len(list(self.non_control_positions()))
         for i, (s, d) in enumerate(self.non_control_positions()):
-            self.stage = "transfer sample {}/{}".format(i + 1, n)
-            self.transfer_sample(s, d)
+            if self.run_stage("transfer sample {}/{}".format(i + 1, n)):
+                self.transfer_sample(s, d)
     
     def transfer_lys(self):
         self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
@@ -338,25 +338,25 @@ class StationA(Station):
         mix = {} if self._lysis_first else {'mix_after': (self._lys_mix_repeats, self._lys_mix_volume)}
         n = len(list(self.non_control_positions()))
         for i, (_, dest) in enumerate(self.non_control_positions()):
-            self.stage = "transfer lysis {}/{}".format(i + 1, n)
-            if not self._lysis_first:
-                self.pick_up(self._p_main)
-            self.logger.debug("transferring lysis to {}".format(dest))
-            h = max(self._lysis_tube.extract(self._lysis_volume), self._lysis_headroom_height)
-            self.logger.debug("going {} mm deep".format(h))
-            self._p_main.transfer(
-                self._lysis_volume,
-                self._lys_buff.bottom(h),
-                dest.bottom(self._lysis_headroom_height),
-                air_gap=self._air_gap_sample,
-                new_tip='never',
-                **mix
-            )
-            self._p_main.air_gap(self._air_gap_sample)
-            if self._lysis_first:
-                self._p_main.dispense(self._air_gap_sample, self._lys_buff.top())
-            else:
-                self.drop(self._p_main)
+            if self.run_stage("transfer lysis {}/{}".format(i + 1, n)):
+                if not self._lysis_first:
+                    self.pick_up(self._p_main)
+                self.logger.debug("transferring lysis to {}".format(dest))
+                h = max(self._lysis_tube.extract(self._lysis_volume), self._lysis_headroom_height)
+                self.logger.debug("going {} mm deep".format(h))
+                self._p_main.transfer(
+                    self._lysis_volume,
+                    self._lys_buff.bottom(h),
+                    dest.bottom(self._lysis_headroom_height),
+                    air_gap=self._air_gap_sample,
+                    new_tip='never',
+                    **mix
+                )
+                self._p_main.air_gap(self._air_gap_sample)
+                if self._lysis_first:
+                    self._p_main.dispense(self._air_gap_sample, self._lys_buff.top())
+                else:
+                    self.drop(self._p_main)
         if self._lysis_first:
             self.drop(self._p_main)
     
@@ -375,8 +375,10 @@ class StationA(Station):
         self.drop(self._m20)
     
     def transfer_internal_controls(self):
+        n = len(self._dests_multi)
         for i, d in enumerate(self._dests_multi):
-            self.transfer_internal_control(i, d)
+            if self.run_stage("transfer internal control {}/{}".format(i + 1, n)):
+                self.transfer_internal_control(i, d)
     
     def _tipracks(self) -> dict:
         return {
