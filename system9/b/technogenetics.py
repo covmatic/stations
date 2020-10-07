@@ -169,25 +169,15 @@ class StationBTechnogenetics(StationB):
         
         self.remove_wash(50)
         
-        self.pause("move the deepwell plate on the temperature module at 55°C.\n" +
-                   "Incubate for 40 minutes, at least. Set a timer.\n" +
-                   "Meanwhile, prepare the PCR plate in Station C.\n" + 
-                   "Press resume to stop blinking")
-        self.pause("move the deepwell plate on the temperature module at 55°C.\n" +
-                   "Incubate for 40 minutes, at least. Set a timer.\n" +
-                   "Meanwhile, prepare the PCR plate in Station C.\n" + 
-                   "When the beads have dried completely, press resume to make the robot continue", blink=False, color='yellow', home=False)
+        self.dual_pause("move the deepwell plate on the temperature module at 55°C.\n" +
+                        "Incubate for 40 minutes, at least. Set a timer.\n" +
+                        "Meanwhile, prepare the PCR plate in Station C")
         
         self.elute()
         
-        self.pause("Seal the deepwell plate with a sticker.\n" + 
-                   "Put the deepwell plate in the thermomixer at 700 rpm, 55°C for 5 minutes, at least.\n" + 
-                   "When the beads are re-suspended, place the deepwell plate onto the magnetic module.\n" + 
-                   "Press resume to stop blinking")
-        self.pause("Seal the deepwell plate with a sticker.\n" + 
-                   "Put the deepwell plate in the thermomixer at 700 rpm, 55°C for 5 minutes, at least.\n" + 
-                   "When the beads are re-suspended, place the deepwell plate onto the magnetic module.\n" + 
-                   "Press resume to make the robot continue", blink=False, color='yellow', home=False)
+        self.dual_pause("Seal the deepwell plate with a sticker.\n" +
+                        "Put the deepwell plate in the thermomixer at 700 rpm, 55°C for 5 minutes, at least.\n" +
+                        "When the beads are re-suspended, place the deepwell plate onto the magnetic module")
         
         self._magdeck.engage(height=self._magheight)
         self.delay(5, 'incubating on magnet at room temperature')

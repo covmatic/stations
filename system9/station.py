@@ -8,7 +8,7 @@ from abc import ABCMeta, abstractmethod
 from functools import wraps
 from itertools import chain
 from opentrons.types import Location
-from typing import Optional, Callable
+from typing import Optional, Callable, Tuple
 import json
 import math
 import os
@@ -85,6 +85,7 @@ class Station(metaclass=ABCMeta):
         self._ctx: Optional[ProtocolContext] = None
         self._drop_count = 0
         self._side_switch = True
+        self.status = "initializing"
         self.stage = None
         self.msg = None
         self.external = False
@@ -220,6 +221,7 @@ class Station(metaclass=ABCMeta):
         old_color = self._button.color
         self._button.color = color
         if msg:
+            self.msg = msg
             self.logger.log(level, msg)
         if home:
             self._ctx.home()
@@ -235,6 +237,13 @@ class Station(metaclass=ABCMeta):
             lt.stop()
         self._button.color = old_color
         self.status = "running"
+        self.msg = None
+    
+    def dual_pause(self, msg: str, cols: Tuple[str, str] = ('red', 'yellow'), between: Optional[Callable] = None):
+        self.pause(msg + ".\nPress resume to stop blinking", color=cols[0])
+        if between is not None:
+            between()
+        self.pause(msg + ".\nPress resume to make the robot continue", blink=False, color=cols[1], home=False)
     
     def delay(self,
         mins: float,

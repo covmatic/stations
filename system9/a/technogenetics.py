@@ -2,6 +2,7 @@ from .p1000 import StationAP1000
 from .reload import StationAReload
 from .copan_24 import Copan24Specs
 from typing import Tuple, Optional
+from functools import partial
 
 
 class StationATechnogenetics(StationAP1000):
@@ -123,15 +124,10 @@ class StationATechnogenetics(StationAP1000):
         self.transfer_lys()
         
         if self.run_stage("incubation"):
-            self.msg = "Seal the deepwell plate with a sticker.\n" + \
-                       "Put the deepwell plate in the thermomixer: 700 rpm for 3 minutes.\n" + \
-                       "Finally, move the deepwell plate in the incubator at 55°C for 20 minutes.\n" + \
-                       "(Resume to stop blinking)"
-            self.pause(self.msg)
-            self.msg = "\n".join(self.msg.split("\n")[:-1])
-            self.external = True
-            self.pause(self.msg, blink=False, color='yellow', home=False)
-            self.msg = None
+            self.dual_pause("Seal the deepwell plate with a sticker.\n" + 
+                            "Put the deepwell plate in the thermomixer: 700 rpm for 3 minutes.\n" + 
+                            "Finally, move the deepwell plate in the incubator at 55°C for 20 minutes",
+                            between=partial(setattr, self, "external", True))
             self.external = False
         
         self.transfer_beads()
