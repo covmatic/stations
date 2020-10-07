@@ -1,5 +1,6 @@
 include system9/a/*.json
 include system9/b/*.json
+include system9/msg/*.json
 
 
 # Copyright (c) 2020 Covmatic.

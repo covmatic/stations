@@ -38,6 +38,12 @@ Then, you have to instantiate your own station. All our classes come with a full
 station = StationAP300(num_samples=48)
 ```
 
+You can also specify your language: `'ENG'` (default) or `'ITA'`.
+
+```
+station = StationAP300(language='ITA')
+```
+
 You also have to define the metadata (at least the API level) as usual
 
 ```

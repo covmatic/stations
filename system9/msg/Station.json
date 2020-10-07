@@ -1,0 +1,26 @@
+{
+  "num samples": {
+	"ENG": "number of samples: {}",
+	"ITA": "numero di campioni: {}"
+  },
+  "version": {
+	"ENG": "using system9 version {}",
+	"ITA": "system9 è alla versione {}"
+  },
+  "tip info log": {
+	"ENG": "logging tip info in {}",
+	"ITA": "file di log delle tip è {}"
+  },
+  "tip log dump": {
+	"ENG": "dumping logging tip info in {}",
+	"ITA": "salvataggio del log delle tip in {}"
+  },
+  "stop blink": {
+	"ENG": "Press resume to stop blinking",
+	"ITA": "Premi resume per interrompere il lampeggio"
+  },
+  "continue": {
+	"ENG": "Press resume to make the robot continue",
+	"ITA": "Premi resume per riattivare il robot"
+  }
+}

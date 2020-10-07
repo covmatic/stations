@@ -1,4 +1,4 @@
-from . import __version__
+from . import __version__, __file__ as module_path
 from .request import StationRESTServerThread, DEFAULT_REST_KWARGS
 from .utils import ProtocolContextLoggingHandler
 from .lights import Button, BlinkingLightHTTP, BlinkingLight
@@ -44,7 +44,27 @@ def first_row(rack):
     return rack.rows()[0]
 
 
-class Station(metaclass=ABCMeta):
+class StationMeta(ABCMeta):
+    def __new__(meta, name, bases, classdict):
+        c = super(StationMeta, meta).__new__(meta, name, bases, classdict)
+        try:
+            with open(os.path.join(os.path.dirname(module_path), 'msg', '{}.json'.format(name))) as f:
+                c._messages = json.load(f)
+        except FileNotFoundError:
+            c._messages = {}
+        return c
+    
+    def get_message(cls, key: str, lan: str = 'ENG'):
+        for c in cls.__mro__:
+            d = getattr(c, '_messages', {})
+            if key in d:
+                d = d[key]
+                if lan in d:
+                    return d[lan]
+        return key
+
+
+class Station(metaclass=StationMeta):
     _protocol_description = "[BRIEFLY DESCRIBE YOUR PROTOCOL]"
     
     def __init__(self,
@@ -55,6 +75,7 @@ class Station(metaclass=ABCMeta):
         jupyter: bool = True,
         log_filepath: str = '/var/lib/jupyter/notebooks/outputs/completion_log.json',
         logger: Optional[logging.getLoggerClass()] = None,
+        language: str = "ENG",
         metadata: Optional[dict] = None,
         num_samples: int = 96,
         rest_server_kwargs: dict = DEFAULT_REST_KWARGS,
@@ -71,6 +92,7 @@ class Station(metaclass=ABCMeta):
         self._drop_threshold = drop_threshold
         self._dummy_lights = dummy_lights
         self.jupyter = jupyter
+        self._language = language
         self._log_filepath = log_filepath
         self._logger = logger
         self.metadata = metadata
@@ -87,9 +109,22 @@ class Station(metaclass=ABCMeta):
         self._side_switch = True
         self.status = "initializing"
         self.stage = None
-        self.msg = None
+        self._msg = ""
         self.external = False
         self._run_stage = self._start_at is None
+    
+    @property
+    def msg(self) -> str:
+        return self._msg
+    
+    @msg.setter
+    def msg(self, value: str):
+        self._msg = str(type(self).get_message(value, self._language))
+    
+    def msg_format(self, msg: str, *args, **kwargs) -> str:
+        self.msg = msg
+        self._msg = self.msg.format(*args, **kwargs)
+        return self.msg
     
     def run_stage(self, stage: str) -> bool:
         self.stage = stage
@@ -157,8 +192,8 @@ class Station(metaclass=ABCMeta):
     
     def setup_tip_log(self):
         data = {}
-        if self._tip_track:# and not self._ctx.is_simulating():
-            self.logger.info("logging tip info in {}".format(self._tip_log_filepath))
+        if self._tip_track and not self._ctx.is_simulating():
+            self.logger.info(self.msg_format("tip info log", self._tip_log_filepath))
             if os.path.isfile(self._tip_log_filepath):
                 with open(self._tip_log_filepath) as json_file:
                     data: dict = json.load(json_file)
@@ -172,8 +207,8 @@ class Station(metaclass=ABCMeta):
         self._tip_log['max'] = {t: len(p) for t, p in self._tip_log['tips'].items()}
     
     def track_tip(self):
-        if self._tip_track:# and not self._ctx.is_simulating():
-            self.logger.info("dumping logging tip info in {}".format(self._tip_log_filepath))
+        if self._tip_track and not self._ctx.is_simulating():
+            self.logger.info(self.msg_format("tip log dump", self._tip_log_filepath))
             os.makedirs(self._tip_log_folder_path, exist_ok=True)
             with open(self._tip_log_filepath, 'w') as outfile:
                 json.dump(self._tip_log['count'], outfile)
@@ -222,7 +257,7 @@ class Station(metaclass=ABCMeta):
         self._button.color = color
         if msg:
             self.msg = msg
-            self.logger.log(level, msg)
+            self.logger.log(level, self.msg)
         if home:
             self._ctx.home()
         if blink and not self._ctx.is_simulating():
@@ -237,13 +272,16 @@ class Station(metaclass=ABCMeta):
             lt.stop()
         self._button.color = old_color
         self.status = "running"
-        self.msg = None
+        self.msg = ""
     
     def dual_pause(self, msg: str, cols: Tuple[str, str] = ('red', 'yellow'), between: Optional[Callable] = None):
-        self.pause(msg + ".\nPress resume to stop blinking", color=cols[0])
+        msg = type(self).get_message(msg, self._language)
+        self._msg = "{}.\n{}".format(msg, type(self).get_message("stop blink", self._language))
+        self.pause(self.msg, color=cols[0])
         if between is not None:
             between()
-        self.pause(msg + ".\nPress resume to make the robot continue", blink=False, color=cols[1], home=False)
+        self._msg = "{}.\n{}".format(msg, type(self).get_message("continue", self._language))
+        self.pause(self.msg, blink=False, color=cols[1], home=False)
     
     def delay(self,
         mins: float,
@@ -272,13 +310,16 @@ class Station(metaclass=ABCMeta):
         if not self._ctx.is_simulating():
             self._request = StationRESTServerThread(ctx, station=self, **self._rest_server_kwargs)
             self._request.start()
-        self.logger.info(self._protocol_description)
-        self.logger.info("number of samples: {}".format(self._num_samples))
-        self.logger.info("using system9 version {}".format(__version__))
+        
+        self.logger.info(self.msg_format("protocol description"))
+        self.logger.info(self.msg_format("num samples", self._num_samples))
+        self.logger.info(self.msg_format("version", __version__))
+        
         self.load_labware()
         self.load_instruments()
         self.setup_tip_log()
         self._button.color = 'white'
+        self.msg = ""
         
         try:
             self.body()
