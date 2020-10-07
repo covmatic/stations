@@ -13,7 +13,7 @@ on:
 jobs:
   simulate:
     runs-on: ubuntu-latest
-    container: python:3
+    container: python:3.7
     strategy:
       matrix:
         target: [station_a_p300, station_b, station_c, station_a_technogenetics, station_b_technogenetics]
