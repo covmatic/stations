@@ -51,6 +51,8 @@ class StationB(Station):
         supernatant_removal_aspiration_rate: float = 25,
         supernatant_removal_height: float = 0.5,
         starting_vol: float = 380,
+        tempdeck_slot: str = '1',
+        tempdeck_temp: float = 4,
         tip_log_filename: str = 'tip_log.json',
         tip_log_folder_path: str = './data/B',
         tip_track: bool = False,
@@ -65,6 +67,7 @@ class StationB(Station):
         wash_air_gap: float = 20,
         wash_etoh_times: int = 4,
         wash_etoh_vol: float = 800,
+        wash_headroom: float = 1.1,
         wash_max_transfer_vol: float = 200,
         wash_mix_aspiration_rate: float = 400,
         wash_mix_dispense_rate: float = 400,
@@ -113,7 +116,9 @@ class StationB(Station):
         :param supernatant_removal_air_gap: Air gap when removing the supernatant in uL
         :param supernatant_removal_aspiration_rate: Aspiration flow rate when removing the supernatant in uL/s
         :param supernatant_removal_height: Height from the bottom when removing the supernatant in mm
-        :param starting_vol: Sample volume at start (volume coming from Station A) 
+        :param starting_vol: Sample volume at start (volume coming from Station A)
+        :param tempdeck_slot: Slot where the tempdeck is positioned 
+        :param tempdeck_temp: tempdeck temperature in Celsius degrees 
         :param tip_log_filename: file name for the tip log JSON dump
         :param tip_log_folder_path: folder for the tip log JSON dump
         :param tip_track: If True, try and load previous tiprack log from the JSON file
@@ -128,6 +133,7 @@ class StationB(Station):
         :param wash_air_gap: Air gap for wash in uL
         :param wash_etoh_times: Mix times for ethanol
         :param wash_etoh_vol: Volume of ethanol in uL
+        :param wash_headroom: Headroom for wash buffers (as a multiplier)
         :param wash_max_transfer_vol: Maximum volume transferred of wash in uL
         :param wash_mix_aspiration_rate: Aspiration flow rate when mixing wash buffer in uL/s
         :param wash_mix_dispense_rate: Dispensation flow rate when mixing wash buffer in uL/s
@@ -182,6 +188,8 @@ class StationB(Station):
         self._supernatant_removal_aspiration_rate = supernatant_removal_aspiration_rate
         self._supernatant_removal_height = supernatant_removal_height
         self._starting_vol = starting_vol
+        self._tempdeck_slot = tempdeck_slot
+        self._tempdeck_temp = tempdeck_temp
         self._tipracks_slots = tipracks_slots
         self._touch_tip_height = touch_tip_height
         self._wait_time_bind_off = wait_time_bind_off
@@ -193,6 +201,7 @@ class StationB(Station):
         self._wash_air_gap = wash_air_gap
         self._wash_etoh_times = wash_etoh_times
         self._wash_etoh_vol = wash_etoh_vol
+        self._wash_headroom = wash_headroom
         self._wash_max_transfer_vol = wash_max_transfer_vol
         self._wash_mix_aspiration_rate = wash_mix_aspiration_rate
         self._wash_mix_dispense_rate = wash_mix_dispense_rate
@@ -207,7 +216,7 @@ class StationB(Station):
     @labware_loader(0, "_tips300")
     def load_tips300(self):
         self._tips300 = [
-            self._ctx.load_labware('opentrons_96_tiprack_300ul', slot, '200ul filtertiprack')
+            self._ctx.load_labware('opentrons_96_tiprack_300ul', slot, '200µl filtertiprack')
             for slot in self._tipracks_slots
         ]
     
@@ -229,8 +238,9 @@ class StationB(Station):
     
     @labware_loader(4, "_tempdeck")
     def load_tempdeck(self):
-        self._tempdeck = self._ctx.load_module('Temperature Module Gen2', '1')
-        self._tempdeck.set_temperature(4)
+        self._tempdeck = self._ctx.load_module('Temperature Module Gen2', self._tempdeck_slot)
+        if self._tempdeck_temp is not None:
+            self._tempdeck.set_temperature(self._tempdeck_temp)
     
     @labware_loader(5, "_flatplate")
     def load_flatplate(self):
@@ -250,7 +260,7 @@ class StationB(Station):
     
     @labware_loader(8, "_res12")
     def load_res12(self):
-        self._res12 = self._ctx.load_labware('nest_12_reservoir_15ml', '5', 'Trough with Reagents')
+        self._res12 = self._ctx.load_labware('nest_12_reservoir_15ml', '5', 'Trough with WashReagents')
     
     @property
     def binding_buffer(self):
@@ -292,7 +302,6 @@ class StationB(Station):
                     self._m300.dispense(self._m300.current_volume, m.top())
                 self._m300.move_to(m.center())
                 self._m300.transfer(vol_per_trans, loc, self._waste, new_tip='never', air_gap=self._supernatant_removal_air_gap)
-                self._m300.blow_out(self._waste)
                 self._m300.air_gap(self._supernatant_removal_air_gap)
             self.drop(self._m300)
         self._m300.flow_rate.aspirate = self._default_aspiration_rate
@@ -337,6 +346,10 @@ class StationB(Station):
         # Remove initial supernatant
         self.remove_supernatant(self._bind_vol + self._starting_vol)
     
+    @staticmethod
+    def wash_getcol(sample_col_idx: int, wash_cols: int, source):
+        return source[sample_col_idx // ((wash_cols // len(source)) or 1)]
+    
     def wash(self, vol: float, source, mix_reps: int):
         self.logger.info("washing with {} uL of wash for {} times".format(vol, mix_reps))
         self._m300.flow_rate.aspirate = self._default_aspiration_rate
@@ -346,7 +359,7 @@ class StationB(Station):
         
         for i, m in enumerate(self.mag_samples_m):
             self.pick_up(self._m300)
-            src = source[i // ((len(self.mag_samples_m) // len(source)) or 1)]
+            src = self.wash_getcol(i, len(self.mag_samples_m), source)
             
             for n in range(num_trans):
                 if self._m300.current_volume > 0:
@@ -367,19 +380,18 @@ class StationB(Station):
             self._m300.flow_rate.aspirate = self._default_aspiration_rate
             self._m300.flow_rate.dispense = dispense_rate
             
-            # self._m300.blow_out(m.top())
-            self._m300.touch_tip(v_offset=self._touch_tip_height)
-            self._m300.air_gap(self._wash_air_gap)
             self.drop(self._m300)
         
         self._magdeck.engage(height=self._magheight)
         self.delay(self._wait_time_wash_on, 'incubating on MagDeck')
         self.remove_supernatant(vol)
     
-    def elute(self):
+    def elute(self, positions=None, transfer: bool = True):
+        if positions is None:
+            positions = self.mag_samples_m
         """Resuspend beads in elution"""
         self._m300.flow_rate.aspirate = self._elute_aspiration_rate
-        for i, m in enumerate(self.mag_samples_m):
+        for i, m in enumerate(positions):
             self.pick_up(self._m300)
             side = 1 if i % 2 == 0 else -1
             loc = m.bottom(self._bottom_headroom_height).move(Point(x=side*2))
@@ -397,17 +409,18 @@ class StationB(Station):
             self._magdeck.engage(height=self._magheight)
             self.delay(self._wait_time_elute_on, 'incubating on magnet at room temperature')
         
-        for i, (m, e) in enumerate(zip(
-            self.mag_samples_m,
-            self.elution_samples_m
-        )):
-            self.pick_up(self._m300)
-            side = -1 if i % 2 == 0 else 1
-            loc = m.bottom(self._bottom_headroom_height).move(Point(x=side*2))
-            self._m300.transfer(self._elution_vol, loc, e.bottom(self._elution_height), air_gap=self._elute_air_gap, new_tip='never')
-            # m300.blow_out(e.top(-2))
-            self._m300.air_gap(self._elute_air_gap)
-            self.drop(self._m300)
+        if transfer:
+            for i, (m, e) in enumerate(zip(
+                self.mag_samples_m,
+                self.elution_samples_m
+            )):
+                self.pick_up(self._m300)
+                side = -1 if i % 2 == 0 else 1
+                loc = m.bottom(self._bottom_headroom_height).move(Point(x=side*2))
+                self._m300.transfer(self._elution_vol, loc, e.bottom(self._elution_height), air_gap=self._elute_air_gap, new_tip='never')
+                # m300.blow_out(e.top(-2))
+                self._m300.air_gap(self._elute_air_gap)
+                self.drop(self._m300)
     
     def body(self):
         self.bind()

@@ -130,7 +130,7 @@ class StationATechnogenetics(StationAP1000):
             self.pause(self.msg)
             self.msg = "\n".join(self.msg.split("\n")[:-1])
             self.external = True
-            self.pause(self.msg, blink=False)
+            self.pause(self.msg, blink=False, color='yellow', home=False)
             self.msg = None
             self.external = False
         

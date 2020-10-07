@@ -269,7 +269,7 @@ class StationA(Station):
         self._lysis_tube = LysisTube(self._lys_buff.diameter / 2, self._lysis_cone_height)
         self._lysis_tube.height = self._lysis_headroom_height
         self._lysis_tube.fill(self.initlial_volume_lys)
-        self.logger.info("number of samples: {}. Lysis buffer expected volume: {} uL (height: {:.2f} mm)".format(self._num_samples, math.ceil(self._lysis_tube.volume), self._lysis_tube.height))
+        self.logger.info("lysis buffer expected volume: {} uL (height: {:.2f} mm)".format(self._num_samples, math.ceil(self._lysis_tube.volume), self._lysis_tube.height))
     
     def transfer_sample(self, source, dest):
         self.logger.debug("transferring from {} to {}".format(source, dest))

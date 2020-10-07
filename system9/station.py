@@ -264,6 +264,7 @@ class Station(metaclass=ABCMeta):
             self._request = StationRESTServerThread(ctx, station=self, **self._rest_server_kwargs)
             self._request.start()
         self.logger.info(self._protocol_description)
+        self.logger.info("number of samples: {}".format(self._num_samples))
         self.logger.info("using system9 version {}".format(__version__))
         self.load_labware()
         self.load_instruments()
