@@ -1,7 +1,6 @@
 from ..station import Station, labware_loader, instrument_loader
 from ..geometry import LysisTube
 from ..utils import mix_bottom_top
-from opentrons.protocol_api import ProtocolContext
 from itertools import chain, islice
 import math
 import logging
@@ -184,7 +183,7 @@ class StationA(Station):
     
     @property
     def chilled_tubeblock_content(self) -> str:
-        return "internal control (first {} strips{})".format(self.num_ic_strips, "{}")
+        return self.get_msg_format("chilled tubeblock content", self.num_ic_strips, "{}")
     
     @labware_loader(0.1, "_strips_block")
     def load_strips_block(self):
@@ -192,7 +191,10 @@ class StationA(Station):
             'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
             "chilled tubeblock for {}".format(self.chilled_tubeblock_content.format(""))
         )
-        self.logger.info("using {}".format(self.chilled_tubeblock_content.format(" with {} uL each".format(self.cols_per_strip * self._iec_volume * self._ic_lys_headroom))))
+        self.logger.info("{} {}".format(
+            type(self).get_message("using", self._language),
+            self.chilled_tubeblock_content.format(self.get_msg_format("chilled tubeblock content with", self.cols_per_strip * self._iec_volume * self._ic_lys_headroom))
+        ))
     
     def _load_source_racks(self):
         self._source_racks = [
@@ -269,7 +271,7 @@ class StationA(Station):
         self._lysis_tube = LysisTube(self._lys_buff.diameter / 2, self._lysis_cone_height)
         self._lysis_tube.height = self._lysis_headroom_height
         self._lysis_tube.fill(self.initlial_volume_lys)
-        self.logger.info("lysis buffer expected volume: {} uL (height: {:.2f} mm)".format(self._num_samples, math.ceil(self._lysis_tube.volume), self._lysis_tube.height))
+        self.logger.info(self.msg_format("lysis geometry", math.ceil(self._lysis_tube.volume), self._lysis_tube.height))
     
     def transfer_sample(self, source, dest):
         self.logger.debug("transferring from {} to {}".format(source, dest))
@@ -394,9 +396,10 @@ class StationA(Station):
         for t in (T if self._lysis_first else reversed(T)):
             t()
         
-        self.pause("incubate sample plate (slot 4) at 55-57°C for 20 minutes. Return to slot 4 when complete")
+        self.dual_pause("incubate", between=self.set_external)
+        self.set_internal()
         self.transfer_internal_controls()
-        self.logger.info('move deepwell plate (slot 1) to Station B for RNA extraction.')
+        self.logger.info(self.msg_format("move to B"))
 
 
 # Copyright (c) 2020 Covmatic.

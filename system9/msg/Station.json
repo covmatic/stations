@@ -1,4 +1,12 @@
 {
+  "delay minutes": {
+	"ENG": "{} for {} minutes{}",
+	"ITA": "{} per {} minuti{}"
+  },
+  "skip delay": {
+	"ENG": ". Pausing for skipping delay. Please resume",
+	"ITA": ". Pausa per saltare il delay. Premere resume"
+  },
   "num samples": {
 	"ENG": "number of samples: {}",
 	"ITA": "numero di campioni: {}"

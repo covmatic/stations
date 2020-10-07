@@ -1,0 +1,25 @@
+{
+  "chilled tubeblock content": {
+	"ENG": "internal control (first {} strips{})",
+	"ITA": "controllo interno (prime {} strips{})"
+  },
+  "using": {
+	"ITA": "verrà usato:"
+  },
+  "chilled tubeblock content with": {
+	"ENG": " with {:.0f} uL each",
+	"ITA": " con {:.0f} uL ciascuna"
+  },
+  "lysis geometry": {
+	"ENG": "lysis buffer expected volume: {} uL (height: {:.2f} mm)",
+	"ITA": "volume atteso di lysis buffer: {} uL (altezza: {:.2f} mm)"
+  },
+  "incubate": {
+	"ENG": "incubate sample plate (slot 4) at 55-57°C for 20 minutes. Return to slot 4 when complete",
+	"ITA": "mettere la piastra dei campioni (slot 4) in incubazione a 55-57°C per 20 minuti. Dopodiché, rimetterla nello slot 4"
+  },
+  "move to B": {
+	"ENG": "move deepwell plate (slot 1) to Station B for RNA extraction",
+	"ITA": "sposta la deepwell plate (slot 1) nella Stazione B per procedere con l'estrazione"
+  }
+}

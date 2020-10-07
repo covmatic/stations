@@ -1,0 +1,10 @@
+{
+  "refills": {
+	"ENG": "using {} samples per time. Refills needed: {}",
+	"ITA": "verranno processati {} campioni per volta. Rifornimenti necessari: {}"
+  },
+  "refill": {
+	"ENG": "please, refill {} samples",
+	"ITA": "ricarica {} campioni"
+  }
+}

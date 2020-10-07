@@ -5,7 +5,7 @@ from .lights import Button, BlinkingLightHTTP, BlinkingLight
 from opentrons.protocol_api import ProtocolContext
 from opentrons.types import Point
 from abc import ABCMeta, abstractmethod
-from functools import wraps
+from functools import wraps, partialmethod
 from itertools import chain
 from opentrons.types import Location
 from typing import Optional, Callable, Tuple
@@ -113,17 +113,28 @@ class Station(metaclass=StationMeta):
         self.external = False
         self._run_stage = self._start_at is None
     
+    def set_external(self, value: bool = True) -> bool:
+        self.external = value
+        return self.external
+    
+    set_internal = partialmethod(set_external, value=False)
+    
+    def get_msg(self, value: str) -> str:
+        return str(type(self).get_message(value, self._language))
+    
+    def get_msg_format(self, value: str, *args, **kwargs) -> str:
+        return self.get_msg(value).format(*args, **kwargs)
+    
     @property
     def msg(self) -> str:
         return self._msg
     
     @msg.setter
     def msg(self, value: str):
-        self._msg = str(type(self).get_message(value, self._language))
+        self._msg = self.get_msg(value)
     
-    def msg_format(self, msg: str, *args, **kwargs) -> str:
-        self.msg = msg
-        self._msg = self.msg.format(*args, **kwargs)
+    def msg_format(self, value: str, *args, **kwargs) -> str:
+        self._msg = self.get_msg_format(value, *args, **kwargs)
         return self.msg
     
     def run_stage(self, stage: str) -> bool:
@@ -275,12 +286,12 @@ class Station(metaclass=StationMeta):
         self.msg = ""
     
     def dual_pause(self, msg: str, cols: Tuple[str, str] = ('red', 'yellow'), between: Optional[Callable] = None):
-        msg = type(self).get_message(msg, self._language)
-        self._msg = "{}.\n{}".format(msg, type(self).get_message("stop blink", self._language))
+        msg = self.get_msg(msg)
+        self._msg = "{}.\n{}".format(msg, self.get_msg("stop blink"))
         self.pause(self.msg, color=cols[0])
         if between is not None:
             between()
-        self._msg = "{}.\n{}".format(msg, type(self).get_message("continue", self._language))
+        self._msg = "{}.\n{}".format(msg, self.get_msg("continue"))
         self.pause(self.msg, blink=False, color=cols[1], home=False)
     
     def delay(self,
@@ -291,7 +302,7 @@ class Station(metaclass=StationMeta):
         level: int = logging.INFO,
     ):
         self.pause(
-            msg="{} for {} minutes{}".format(msg, mins, ". Pausing for skipping delay. Please resume" if self._skip_delay else ""),
+            msg=self.get_msg_format("delay minutes", self.get_msg(msg), mins, self.get_msg("skip delay") if self._skip_delay else ""),
             blink=False,
             color=color,
             delay_time=0 if self._skip_delay else (60 * mins),
