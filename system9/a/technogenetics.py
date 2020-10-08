@@ -114,6 +114,7 @@ class StationATechnogenetics(StationAP1000):
     def body(self):
         self.setup_samples()
         self.setup_lys_tube()
+        self.msg = ""
         
         self.transfer_proteinase()
         self.transfer_samples()

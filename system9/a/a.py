@@ -391,6 +391,7 @@ class StationA(Station):
     def body(self):
         self.setup_samples()
         self.setup_lys_tube()
+        self.msg = ""
         
         T = (self.transfer_lys, self.transfer_samples)
         for t in (T if self._lysis_first else reversed(T)):
