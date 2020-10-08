@@ -1,0 +1,34 @@
+{
+  "protocol description": {
+	"ENG": "station B protocol for Technogenetics kit",
+	"ITA": "protocollo stazione B per kit Technogenetics"
+  },
+  "check dry": {
+	"ENG": "check the drying of deepwell plate",
+	"ITA": "check the drying of deepwell plate"
+  },
+  "volume": {
+	"ENG": "{} volume: {:.3f} mL",
+	"ITA": "volume {}: {:.3f} mL"
+  },
+  "spin the deepwell": {
+	"ENG": "Spin the deepwell plate for 20 seconds at room temperature.\nThen, put the deepwell plate back onto the magnetic module",
+	"ITA": "Spinnare la deepwell per 20 sec a RT.\nAl termine rimettere la deepwell nel modulo magnetico"
+  },
+  "deepwell incubation" : {
+	"ENG": "Move the deepwell plate on the temperature module at 55°C.\nIncubate for 40 minutes, at least. Set a timer.\nMeanwhile, prepare the PCR plate in Station C\nWhen beads have dried, please make the robot continue",
+	"ITA": "Spostare la deepwell sul modulo di temperatura a 55°C.\nIncubare per almeno 40 min, impostare timer.\nN.B. PREPARARE LA PCR PLATE NELLA STAZIONE C\nAd asciugatura completa, riattivare il robot"
+  },
+  "seal the deepwell": {
+	"ENG": "Seal the deepwell plate with a sticker.\nPut the deepwell plate in the thermomixer at 700 rpm, 55°C for 5 minutes, at least.\nWhen the beads are re-suspended, place the deepwell plate onto the magnetic module",
+	"ITA": "Sigillare la deepwell con un adesivo.\nMettere la deepwell nel thermomixer: 700 rpm 55°C per almeno 5 min.\nA biglie risospese, posizionare la deepwell sul modulo MAGNETICO"
+  },
+  "input PCR": {
+	"ENG": "put the PCR plate in slot 1, onto the aluminum block",
+	"ITA": "mettere la PCR plate nello slot 1, sulla piastra di alluminio"
+  },
+  "move to PCR": {
+	"ENG": "move the PCR plate to the RT-PCR",
+	"ITA": "spostare la PCR plate nella RT-PCR"
+  }
+}

@@ -1,4 +1,12 @@
 {
+  "empty tips": {
+	"ENG": "please empty tips from waste before resuming",
+	"ITA": "svuotare il cestino delle tips prima di riprendere"
+  },
+  "refill tips": {
+	"ENG": "before resuming, please replace this racks:\n{}",
+	"ITA": "prima di riprendere, rifornire questi rack:\n{}"
+  },
   "delay minutes": {
 	"ENG": "{} for {} minutes{}",
 	"ITA": "{} per {} minuti{}"

@@ -236,7 +236,7 @@ class Station(metaclass=StationMeta):
             
             if self._tip_log['count'][tiprack] == self._tip_log['max'][tiprack]:
                 # If empty, wait for refill
-                self.pause('before resuming, please replace {}'.format(", ".join(map(str, getattr(self, tiprack)))))
+                self.pause(self.get_msg_format("refill tips", "\n".join(map(str, getattr(self, tiprack)))))
                 self._tip_log['count'][tiprack] = 0
             pip.pick_up_tip(self._tip_log['tips'][tiprack][self._tip_log['count'][tiprack]])
             self._tip_log['count'][tiprack] += 1
@@ -250,7 +250,7 @@ class Station(metaclass=StationMeta):
         pip.drop_tip(drop_loc)
         self._drop_count += pip.channels
         if self._drop_count >= self._drop_threshold:
-            self.pause('pausing. Please empty tips from waste before resuming')
+            self.pause('empty tips')
             self._drop_count = 0
     
     def pause(self,

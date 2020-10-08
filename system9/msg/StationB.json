@@ -1,0 +1,28 @@
+{
+  "protocol description": {
+	"ENG": "station B protocol",
+	"ITA": "protocollo stazione B"
+  },
+  "magnet wait": {
+	"ENG": "waiting before magnetic module activation",
+	"ITA": "attesa prima dell'attivazione del modulo magnetico"
+  },
+  "incubate on magdeck": {
+	"ENG": "incubating {} magnet at room temperature",
+	"ITA": "incubazione a RT con modulo magnetico {}"
+  },
+  "on": {
+	"ITA": "attivo"
+  },
+  "off": {
+	"ITA": "spento"
+  },
+  "wash info": {
+	"ENG": "washing with {} uL of {} for {} times",
+	"ITA": "lavaggio con {} uL di {} per {} volte"
+  },
+  "airdry": {
+	"ENG": "airdrying beads at room temperature",
+	"ITA": "asciugatura delle beads a RT"
+  }
+}
