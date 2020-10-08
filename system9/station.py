@@ -337,6 +337,7 @@ class Station(metaclass=StationMeta):
         finally:
             self.status = "finished"
             if not self._ctx.is_simulating():
+                os.makedirs(os.path.dirname(self._log_filepath), exist_ok=True)
                 with open(self._log_filepath, "w") as f:
                     f.write(self._request.log())
                 self._request.join(2, 0.5)
