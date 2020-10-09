@@ -15,7 +15,7 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 11  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
+NUM_SAMPLES = 13 # start with 8 samples, slowly increase to 48, then 94 (max is 94)
 STARTING_VOL = 650
 ELUTION_VOL = 50
 WASH_VOL = 680
@@ -159,8 +159,8 @@ resuming.')
         drop_count += 8
         if drop_count == drop_threshold:
             # Setup for flashing lights notification to empty trash
-            ctx.pause('Please empty tips from waste before resuming.')
             ctx.home()  # home before continuing with protocol
+            ctx.pause('Please empty tips from waste before resuming.')
             drop_count = 0
     
     def mix(repetition, vol, slot):
@@ -222,6 +222,7 @@ resuming.')
                 if n < num_trans - 1:  # only air_gap if going back to source
                     m300.air_gap(20)
             m300.mix(mix_reps, 150, loc)
+            m300.air_gap(20)
             drop(m300)
 
         magdeck.engage(height=magheight)
@@ -240,13 +241,14 @@ resuming.')
         for i, m in enumerate(temp_samples_m):
             pick_up(m300)
             m300.aspirate(vol, elution)
+            m300.air_gap(20)
             m300.move_to(m.center())
             m300.dispense(vol, m.bottom(0.7))
             side = 1 if i % 2 == 0 else -1
             loc = m.bottom(0.3).move(Point(x=side*2))
             m300.mix(15, 30, loc)
+            m300.dispense(30, m.bottom(0.5))
             m300.touch_tip(v_offset=-5)
-            m300.air_gap(20)
             drop(m300)
             
     elution_tot_vol = NUM_SAMPLES * ELUTION_VOL * 1.1
@@ -309,6 +311,7 @@ resuming.')
             drop(m300)
     
     magdeck.disengage()
+    ctx.home()
     ctx.comment("Spostare la PCR plate nella RT-PCR.")
     # -------------------------------------------------------------------------
 
@@ -316,4 +319,4 @@ resuming.')
 # Copyright (c) 2020 Covmatic.
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 # The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
