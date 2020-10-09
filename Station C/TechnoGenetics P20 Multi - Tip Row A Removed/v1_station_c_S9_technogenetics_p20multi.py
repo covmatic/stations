@@ -44,12 +44,12 @@ metadata = {
 }
 
 
-NUM_SAMPLES = 11  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
-NUM_SEDUTE = 1
+NUM_SAMPLES = 16  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
+NUM_SEDUTE = 2
 TIP_TRACK = False
 
-liquid_headroom = 1.2
-mm_tube_capacity = 1450
+liquid_headroom = 1.1
+mm_tube_capacity = 1950
 mm_strips_capacity = 180
 
 mm_mix = {
@@ -71,12 +71,9 @@ def run(ctx: protocol_api.ProtocolContext):
         'chilled elution plate on block from Station B')
     tips20 = [
         ctx.load_labware('opentrons_96_filtertiprack_20ul', slot)
-        for slot in ['2', '3', '6', '7', '9']
+        for slot in ['2', '3', '6', '7', '9', '11']
     ]
-    tips20_no_a = [
-        ctx.load_labware('opentrons_96_filtertiprack_20ul', '11',
-        '20µl tiprack - no tips in row A')
-    ]
+    
     tips300 = [ctx.load_labware('opentrons_96_filtertiprack_200ul', '10')]
     tempdeck = ctx.load_module('Temperature Module Gen2', '4')
     pcr_plate = tempdeck.load_labware(
@@ -86,7 +83,7 @@ def run(ctx: protocol_api.ProtocolContext):
         'mastermix strips')
     #tempdeck.set_temperature(4)
     tube_block = ctx.load_labware(
-        'opentrons_24_aluminumblock_nest_1.5ml_snapcap', '5',
+        'opentrons_24_aluminumblock_nest_2ml_screwcap', '5',
         '2ml screw tube aluminum block for mastermix + controls')
     
     # pipette
@@ -113,23 +110,18 @@ def run(ctx: protocol_api.ProtocolContext):
                     tip_log['count'][p300] = data['tips300']
                 else:
                     tip_log['count'][p300] = 0
-                if 'tips20_no_a' in data:
-                    tip_log['count']['tips20_no_a'] = data['tips20_no_a']
-                else:
-                    tip_log['count']['tips20_no_a'] = 0
         else:
-            tip_log['count'] = {m20: 0, p300: 0, 'tips20_no_a': 0}
+            tip_log['count'] = {m20: 0, p300: 0}
     else:
-        tip_log['count'] = {m20: 0, p300: 0, 'tips20_no_a': 0}
+        tip_log['count'] = {m20: 0, p300: 0}
 
     tip_log['tips'] = {
         m20: [tip for rack in tips20 for tip in rack.rows()[0]],
-        p300: [tip for rack in tips300 for tip in rack.wells()],
-        'tips20_no_a': [tip for rack in tips20_no_a for tip in rack.rows()[0]]
+        p300: [tip for rack in tips300 for tip in rack.wells()]
     }
     tip_log['max'] = {
         pip: len(tip_log['tips'][pip])
-        for pip in [m20, p300, 'tips20_no_a']
+        for pip in [m20, p300]
     }
 
     def pick_up(pip):
@@ -142,16 +134,6 @@ def run(ctx: protocol_api.ProtocolContext):
         pip.pick_up_tip(tip_log['tips'][pip][tip_log['count'][pip]])
         tip_log['count'][pip] += 1
         # print("Picked up {} with {} [#{}]".format(tip_log['tips'][pip][tip_log['count'][pip]-1], pip, tip_log['count'][pip]))
-
-    def pick_up_no_a():
-        nonlocal tip_log
-        if tip_log['count']['tips20_no_a'] == tip_log['max']['tips20_no_a']:
-            ctx.pause('Replace 20ul tiprack in slot 10 (without tips in row A) \
-before resuming.')
-            tip_log['count']['tips20_no_a'] = 0
-        m20.pick_up_tip(tip_log['tips']['tips20_no_a'][tip_log['count']['tips20_no_a']])
-        tip_log['count']['tips20_no_a'] += 1
-        # print("Picked up {} with {} [#{}]".format(tip_log['tips']['tips20_no_a'][tip_log['count']['tips20_no_a']-1], 'tips20_no_a', tip_log['count']['tips20_no_a']))
 
     """ mastermix component maps """
     # setup tube mastermix
@@ -194,7 +176,7 @@ before resuming.')
         pick_up(p300)
         for mt, ms, ns in zip(mm_tube, mm_strip, samples_per_mm_tube):
             for strip_i, strip_w in enumerate(ms):
-                p300.transfer((ns // 8 + (1 if strip_i < ns % 8 else 0)) * MM_PER_SAMPLE * liquid_headroom, mt, strip_w, new_tip='never')
+                p300.transfer((ns // 8 + (1 if strip_i < ns % 8 else 0)) * MM_PER_SAMPLE * liquid_headroom, mt.bottom(0.2), strip_w, new_tip='never')
         p300.drop_tip()
     
         # transfer mastermix to plate
@@ -219,8 +201,7 @@ before resuming.')
             os.mkdir(folder_path)
         data = {
             'tips20': tip_log['count'][m20],
-            'tips300': tip_log['count'][p300],
-            'tips20_no_a': tip_log['count']['tips20_no_a']
+            'tips300': tip_log['count'][p300]
         }
         with open(tip_file_path, 'w') as outfile:
             json.dump(data, outfile)
