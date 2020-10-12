@@ -67,10 +67,6 @@ class StationATechnogenetics(StationAP1000):
     _lys_buf_name: str = '50ml tuberack for lysis buffer'
     
     @property
-    def chilled_tubeblock_content(self) -> str:
-        return "proteinase K (first {} strips{}) and beads (last strip)".format(self.num_ic_strips, "{}")
-    
-    @property
     def _prot_k_capacity(self) -> float:
         return self._ic_capacity
     
@@ -118,21 +114,18 @@ class StationATechnogenetics(StationAP1000):
     def body(self):
         self.setup_samples()
         self.setup_lys_tube()
+        self.msg = ""
         
         self.transfer_proteinase()
         self.transfer_samples()
         self.transfer_lys()
         
         if self.run_stage("incubation"):
-            self.dual_pause("Seal the deepwell plate with a sticker.\n" + 
-                            "Put the deepwell plate in the thermomixer: 700 rpm for 3 minutes.\n" + 
-                            "Finally, move the deepwell plate in the incubator at 55°C for 20 minutes",
-                            between=partial(setattr, self, "external", True))
-            self.external = False
+            self.dual_pause("incubate", between=self.set_external)
+            self.set_internal()
         
         self.transfer_beads()
-        self.msg = 'move deepwell plate to Station B for RNA extraction.'
-        self.logger.info(self.msg)
+        self.logger.info(self.msg_format("move to B"))
 
 
 class StationATechnogeneticsReload(StationAReload, StationATechnogenetics):

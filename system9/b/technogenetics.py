@@ -18,6 +18,9 @@ class StationBTechnogenetics(StationB):
                  final_transfer_rate_aspirate: float = 30,
                  final_transfer_rate_dispense: float = 30,
                  final_vol: float = 20,
+                 mix_incubate_on_time: float = 20,
+                 mix_incubate_off_time: float = 5,
+                 remove_wash_vol: float = 50,
                  sample_mix_height: float = 0.3,
                  sample_mix_times: float = 10,
                  sample_mix_vol: float = 180,
@@ -25,6 +28,7 @@ class StationBTechnogenetics(StationB):
                  supernatant_removal_height: float = 0.2,
                  tempdeck_slot: str = '7',
                  tempdeck_temp: float = 55,
+                 thermomixer_incubation_time: float = 5,
                  tipracks_slots: Tuple[str, ...] = ('3', '6', '8', '9', '10'),
                  wash_1_vol: float = 680,
                  wash_2_vol: float = 680,
@@ -39,9 +43,13 @@ class StationBTechnogenetics(StationB):
         :param final_transfer_rate_aspirate: Aspiration rate during final transfer in uL/s
         :param final_transfer_rate_dispense: Dispensation rate during final transfer in uL/s
         :param final_vol: Volume to transfer to the PCR plate in uL
+        :param mix_incubate_on_time: Time for incubation on magnet after mix in minutes 
+        :param mix_incubate_off_time: Time for incubation off magnet after mix in minutes
+        :param remove_wash_vol: Volume to remove during wash removal in uL
         :param sample_mix_times: Mixing height for samples in mm from the bottom
         :param sample_mix_times: Mixing repetitions for samples
         :param sample_mix_vol: Mixing volume for samples in uL
+        :param thermomixer_incubation_time: Time for incubation after thermomixer in minutes 
         """
         super(StationBTechnogenetics, self).__init__(
             bind_max_transfer_vol=bind_max_transfer_vol,
@@ -65,9 +73,13 @@ class StationBTechnogenetics(StationB):
         self._final_transfer_rate_aspirate = final_transfer_rate_aspirate
         self._final_transfer_rate_dispense = final_transfer_rate_dispense
         self._final_vol = final_vol
+        self._mix_incubate_on_time = mix_incubate_on_time
+        self._mix_incubate_off_time = mix_incubate_off_time
+        self._remove_wash_vol = remove_wash_vol
         self._sample_mix_height = sample_mix_height
         self._sample_mix_times = sample_mix_times
         self._sample_mix_vol = sample_mix_vol
+        self._thermomixer_incubation_time = thermomixer_incubation_time
     
     @labware_loader(5, "_flatplate")
     def load_flatplate(self):
@@ -109,18 +121,18 @@ class StationBTechnogenetics(StationB):
     
     def mix_samples(self):
         self._m300.flow_rate.aspirate = 94
-        for m in self.mag_samples_m:
-            self.pick_up(self._m300)
-            self._m300.mix(self._sample_mix_times, self._sample_mix_vol, m.bottom(self._sample_mix_height))
-            self._m300.air_gap(self._bind_air_gap)
-            self.drop(self._m300)
+        for i, m in enumerate(self.mag_samples_m):
+            if self.run_stage("mix sample {}/{}".format(i + 1, len(self.mag_samples_m))):
+                self.pick_up(self._m300)
+                self._m300.mix(self._sample_mix_times, self._sample_mix_vol, m.bottom(self._sample_mix_height))
+                self._m300.air_gap(self._bind_air_gap)
+                self.drop(self._m300)
     
-    def elute(self, positions=None, transfer: bool = False):
+    def elute(self, positions=None, transfer: bool = False, stage: str = "elute"):
         if positions is None:
             positions = self.temp_samples_m
         self._magdeck.disengage()
-        self.pause("check the drying of deepwell plate")
-        super(StationBTechnogenetics, self).elute(positions=positions, transfer=transfer)
+        super(StationBTechnogenetics, self).elute(positions=positions, transfer=transfer, stage=stage)
     
     def remove_wash(self, vol):
         self._magdeck.engage(height=self._magheight)
@@ -128,66 +140,74 @@ class StationBTechnogenetics(StationB):
         num_trans, vol_per_trans = uniform_divide(vol, self._wash_max_transfer_vol)
         
         for i, m in enumerate(self.mag_samples_m):
-            self.pick_up(self._m300)
-            for _ in range(num_trans):
-                if self._m300.current_volume > 0:
-                    self._m300.dispense(self._m300.current_volume, m.top())  # void air gap if necessary
-                self._m300.move_to(m.center())
-                self._m300.transfer(vol_per_trans, m.bottom(self._supernatant_removal_height), self._waste, air_gap=self._supernatant_removal_air_gap, new_tip='never')
-                self._m300.air_gap(self._supernatant_removal_air_gap)
-            self.drop(self._m300)
+            if self.run_stage("remove wash {}/{}".format(i + 1, len(self.mag_samples_m))):
+                self.pick_up(self._m300)
+                for _ in range(num_trans):
+                    if self._m300.current_volume > 0:
+                        self._m300.dispense(self._m300.current_volume, m.top())  # void air gap if necessary
+                    self._m300.move_to(m.center())
+                    self._m300.transfer(vol_per_trans, m.bottom(self._supernatant_removal_height), self._waste, air_gap=self._supernatant_removal_air_gap, new_tip='never')
+                    self._m300.air_gap(self._supernatant_removal_air_gap)
+                self.drop(self._m300)
         self._m300.flow_rate.aspirate = self._default_aspiration_rate
         self._magdeck.disengage()
     
     def final_transfer(self):
         self._m300.flow_rate.aspirate = self._final_transfer_rate_aspirate
         self._m300.flow_rate.dispense = self._final_transfer_rate_dispense
+        n = len(list(zip(self.mag_samples_m, self.pcr_samples_m)))
         for i, (m, e) in enumerate(zip(self.mag_samples_m, self.pcr_samples_m)):
-            self.pick_up(self._m300)
-            side = -1 if i % 2 == 0 else 1
-            loc = m.bottom(0.3).move(Point(x=side*2))
-            self._m300.transfer(self._final_vol, loc, e.bottom(self._elution_height), air_gap=self._elute_air_gap, new_tip='never')
-            self._m300.mix(self._final_mix_times, self._final_mix_vol, e.bottom(self._final_mix_height))
-            self._m300.air_gap(self._elute_air_gap)
-            self.drop(self._m300)
+            if self.run_stage("final transfer {}/{}".format(i + 1, n)):
+                self.pick_up(self._m300)
+                side = -1 if i % 2 == 0 else 1
+                loc = m.bottom(0.3).move(Point(x=side*2))
+                self._m300.transfer(self._final_vol, loc, e.bottom(self._elution_height), air_gap=self._elute_air_gap, new_tip='never')
+                self._m300.mix(self._final_mix_times, self._final_mix_vol, e.bottom(self._final_mix_height))
+                self._m300.air_gap(self._elute_air_gap)
+                self.drop(self._m300)
     
     def body(self):
-        self.logger.info("wash 1 volume: {:.3f} mL".format(self._wash_headroom * self._wash_1_vol * self._num_samples / 1000))
-        self.logger.info("wash 2 volume: {:.3f} mL".format(self._wash_headroom * self._wash_2_vol * self._num_samples / 1000))
-        self.logger.info("elution volume: {:.3f} mL".format(self._wash_headroom * self._elution_vol * self._num_samples / 1000))
+        self.logger.info(self.get_msg_format("volume", "wash 1", self._wash_headroom * self._wash_1_vol * self._num_samples / 1000))
+        self.logger.info(self.get_msg_format("volume", "wash 2", self._wash_headroom * self._wash_2_vol * self._num_samples / 1000))
+        self.logger.info(self.get_msg_format("volume", "elution buffer", self._wash_headroom * self._elution_vol * self._num_samples / 1000))
         self.mix_samples()
         
-        self.delay(20, 'incubating off magnet at room temperature')
+        if self.run_stage("mix incubate on"):
+            self.delay(self._mix_incubate_on_time, self.get_msg_format("incubate on magdeck", self.get_msg("off")))
         self._magdeck.engage(height=self._magheight)
-        self.delay(5, 'incubating on magnet at room temperature')
+        if self.run_stage("mix incubate off"):
+            self.delay(self._mix_incubate_off_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         
         self.remove_supernatant(self._starting_vol)
-        self.wash(self._wash_1_vol, self.wash1, self._wash_1_times)
-        self.wash(self._wash_2_vol, self.wash2, self._wash_2_times)
+        self.wash(self._wash_1_vol, self.wash1, self._wash_1_times, "wash 1")
+        self.wash(self._wash_2_vol, self.wash2, self._wash_2_times, "wash 2")
         
-        self.pause("spin the deepwell plate for 20 seconds at room temperature.\nThen, put the deepwell plate back onto the magnetic module")
+        if self.run_stage("spin deepwell"):
+            self.dual_pause("spin the deepwell", between=self.set_external)
+            self.set_internal()
         
-        self.remove_wash(50)
+        self.remove_wash(self._remove_wash_vol)
         
-        self.dual_pause("move the deepwell plate on the temperature module at 55°C.\n" +
-                        "Incubate for 40 minutes, at least. Set a timer.\n" +
-                        "Meanwhile, prepare the PCR plate in Station C")
+        if self.run_stage("deepwell incubation"):
+            self.dual_pause("deepwell incubation")
         
         self.elute()
         
-        self.dual_pause("Seal the deepwell plate with a sticker.\n" +
-                        "Put the deepwell plate in the thermomixer at 700 rpm, 55°C for 5 minutes, at least.\n" +
-                        "When the beads are re-suspended, place the deepwell plate onto the magnetic module")
+        if self.run_stage("thermomixer"):
+            self.dual_pause("seal the deepwell", between=self.set_external)
+            self.set_internal()
         
         self._magdeck.engage(height=self._magheight)
-        self.delay(5, 'incubating on magnet at room temperature')
+        if self.run_stage("post thermomixer incubation"):
+            self.delay(self._thermomixer_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         
-        self.pause("put the PCR plate in slot 1, onto the aluminum block.")
+        if self.run_stage("input PCR"):
+            self.dual_pause("input PCR")
         
         self.final_transfer()
         
         self._magdeck.disengage()
-        self.logger.info("move the PCR plate to the RT-PCR")
+        self.logger.info(self.msg_format("move to PCR"))
 
 
 if __name__ == "__main__":

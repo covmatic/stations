@@ -173,11 +173,16 @@ class StationC(Station):
     def fill_mm_strips(self):
         vol_per_strip_well = self.remaining_cols * self._mastermix_vol * self._mastermix_vol_headroom
         
-        self.pick_up(self._p300)        
-        for well in self.mm_strip:
-            self.logger.debug("filling mastermix at {}".format(well))
-            self._p300.transfer(vol_per_strip_well, self.mm_tube, well, new_tip='never')
-        self._p300.drop_tip()
+        has_tip = False        
+        for i, well in enumerate(self.mm_strip):
+            if self.run_stage("transfer mastermix to strips {}/{} {}".format(i + 1, len(self.mm_strip), self._cycle)):
+                if not has_tip:
+                    self.pick_up(self._p300)
+                    has_tip = True
+                self.logger.debug("filling mastermix at {}".format(well))
+                self._p300.transfer(vol_per_strip_well, self.mm_tube, well, new_tip='never')
+        if has_tip:
+            self._p300.drop_tip()
     
     def transfer_mm(self):
         self.pick_up(self._m20)
@@ -192,31 +197,34 @@ class StationC(Station):
         self._m20.blow_out(dest.top(self._sample_blow_height))
         self._m20.aspirate(self._suck_vol, dest.top(self._suck_height))  # suck in any remaining droplets on way to trash
         self._m20.drop_tip()
-        self._remaining_samples -= self._m20.channels
     
     def run_cycle(self):
-        self.stage = "transfer mastermix to strips"
+        self._cycle = self.stage
         self.fill_mm_strips()
-        self.stage = "transfer mastermix to plate"
-        self.transfer_mm()
-        self.stage = "transfer samples"
-        for s, d in zip(self.sources, self.sample_dests):
-            self.transfer_sample(self._sample_vol, s, d)
+        if self.run_stage("transfer mastermix to plate {}".format(self._cycle)):
+            self.transfer_mm()
+        
+        n = self._remaining_samples
+        for i, (s, d) in enumerate(zip(self.sources, self.sample_dests)):
+            if self.run_stage("transfer samples {}/{}".format(self._num_samples + min(self._m20.channels - self._remaining_samples, 0), self._num_samples)):
+                self.msg_format("sample per cycle", (i + 1) * self._m20.channels, min(n, self._samples_per_cycle), self._cycle.split(" ")[-1])
+                self.logger.info(self.msg)
+                self.transfer_sample(self._sample_vol, s, d)
+                self.msg = ""
+            self._remaining_samples -= self._m20.channels
             if self._remaining_samples <= 0:
                 break
     
     def body(self):
-        self.logger.info("set up for {} samples in {} cycle{}".format(self._num_samples, self.num_cycles, "" if self.num_cycles == 1 else "s"))
+        self.logger.info(self.get_msg_format("number of cycles", self._num_samples, self.num_cycles))
         
         for i in range(self.num_cycles):
-            self.logger.info("cycle {}/{}".format(i + 1, self.num_cycles))
-            self.run_cycle()
-            if self._remaining_samples > 0:
-                self.stage = "pausing for next cycle"
-                self.pause(
-                    "end of cycle {}/{}. Please, load a new plate from station B. Resume when it is ready".format(i + 1, self.num_cycles),
-                    blink=True, color="green",
-                )
+            if self.run_stage("cycle {}/{}".format(i + 1, self.num_cycles)):
+                self.run_cycle()
+            else:
+                self._remaining_samples -= self._samples_per_cycle
+            if i + 1 < self.num_cycles and self.run_stage("pausing for next cycle {}/{}".format(i + 2, self.num_cycles)):
+                self.dual_pause(self.get_msg_format("new cycle", i + 1, self.num_cycles), cols=("yellow", "green"))
 
 
 if __name__ == "__main__":

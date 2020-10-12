@@ -1,9 +1,7 @@
 from ..station import Station, labware_loader, instrument_loader
 from ..utils import mix_bottom_top, uniform_divide, mix_walk
 from . import magnets
-from opentrons.protocol_api import ProtocolContext
-from opentrons.types import Point, Location
-from itertools import repeat
+from opentrons.types import Point
 from typing import Optional, Tuple
 import logging
 import math
@@ -289,21 +287,22 @@ class StationB(Station):
     def _tipracks(self) -> dict:
         return {"_tips300": "_m300",}
     
-    def remove_supernatant(self, vol: float):
+    def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
         self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
         num_trans = math.ceil(vol / self._bind_max_transfer_vol)
         vol_per_trans = vol / num_trans
         
         for i, m in enumerate(self.mag_samples_m):
-            self.pick_up(self._m300)
-            loc = m.bottom(self._supernatant_removal_height).move(Point(x=(-1 if i % 2 == 0 else 1)*2))
-            for _ in range(num_trans):
-                if self._m300.current_volume > 0:
-                    self._m300.dispense(self._m300.current_volume, m.top())
-                self._m300.move_to(m.center())
-                self._m300.transfer(vol_per_trans, loc, self._waste, new_tip='never', air_gap=self._supernatant_removal_air_gap)
-                self._m300.air_gap(self._supernatant_removal_air_gap)
-            self.drop(self._m300)
+            if self.run_stage("{} {}/{}".format(stage, i + 1, len(self.mag_samples_m))):
+                self.pick_up(self._m300)
+                loc = m.bottom(self._supernatant_removal_height).move(Point(x=(-1 if i % 2 == 0 else 1)*2))
+                for _ in range(num_trans):
+                    if self._m300.current_volume > 0:
+                        self._m300.dispense(self._m300.current_volume, m.top())
+                    self._m300.move_to(m.center())
+                    self._m300.transfer(vol_per_trans, loc, self._waste, new_tip='never', air_gap=self._supernatant_removal_air_gap)
+                    self._m300.air_gap(self._supernatant_removal_air_gap)
+                self.drop(self._m300)
         self._m300.flow_rate.aspirate = self._default_aspiration_rate
         
     def bind(self):
@@ -311,124 +310,133 @@ class StationB(Station):
         self._m300.flow_rate.aspirate = self._bind_aspiration_rate
         
         for i, well in enumerate(self.mag_samples_m):
-            source = self.binding_buffer[i // ((len(self.mag_samples_m) // len(self.binding_buffer)) or 1)]
-            self.pick_up(self._m300)
-            mix_bottom_top(
-                self._m300,
-                self._bind_mix_times,
-                self._bind_mix_vol,
-                source.bottom,
-                self._bind_mix_loc_bottom,
-                self._bind_mix_loc_top
-            )
-            
-            num_trans, vol_per_trans = uniform_divide(self._bind_vol, self._bind_max_transfer_vol)
-            
-            for t in range(num_trans):
-                if self._m300.current_volume > 0:
-                    self._m300.dispense(self._m300.current_volume, source.top())  # void air gap if necessary
-                self._m300.transfer(vol_per_trans, source, well.top(), air_gap=self._bind_air_gap, new_tip='never')
-                if t == 0:
-                    self._m300.air_gap(self._bind_air_gap)
-            self._m300.mix(self._bind_sample_mix_times, self._bind_sample_mix_vol, well)
-            
-            self._m300.touch_tip(v_offset=self._touch_tip_height)
-            self._m300.air_gap(self._bind_air_gap)
-            self.drop(self._m300)
+            if self.run_stage("transfer binding {}/{}".format(i + 1, len(self.mag_samples_m))):
+                source = self.binding_buffer[i // ((len(self.mag_samples_m) // len(self.binding_buffer)) or 1)]
+                self.pick_up(self._m300)
+                mix_bottom_top(
+                    self._m300,
+                    self._bind_mix_times,
+                    self._bind_mix_vol,
+                    source.bottom,
+                    self._bind_mix_loc_bottom,
+                    self._bind_mix_loc_top
+                )
+                
+                num_trans, vol_per_trans = uniform_divide(self._bind_vol, self._bind_max_transfer_vol)
+                
+                for t in range(num_trans):
+                    if self._m300.current_volume > 0:
+                        self._m300.dispense(self._m300.current_volume, source.top())  # void air gap if necessary
+                    self._m300.transfer(vol_per_trans, source, well.top(), air_gap=self._bind_air_gap, new_tip='never')
+                    if t == 0:
+                        self._m300.air_gap(self._bind_air_gap)
+                self._m300.mix(self._bind_sample_mix_times, self._bind_sample_mix_vol, well)
+                
+                self._m300.touch_tip(v_offset=self._touch_tip_height)
+                self._m300.air_gap(self._bind_air_gap)
+                self.drop(self._m300)
         
-        # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
-        self.delay(self._wait_time_bind_off, 'waiting before magnetic module activation')
+        if self.run_stage("bind wait"):
+            # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
+            self.delay(self._wait_time_bind_off, 'magnet wait')
         self._magdeck.engage(height=self._magheight)
         
-        # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
-        self.delay(self._wait_time_bind_on, 'incubating on MagDeck')
+        if self.run_stage("bind incubate"):
+            # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
+            self.delay(self._wait_time_bind_on, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
 
         # Remove initial supernatant
-        self.remove_supernatant(self._bind_vol + self._starting_vol)
+        self.remove_supernatant(self._bind_vol + self._starting_vol, "remove binding")
     
     @staticmethod
     def wash_getcol(sample_col_idx: int, wash_cols: int, source):
         return source[sample_col_idx // ((wash_cols // len(source)) or 1)]
     
-    def wash(self, vol: float, source, mix_reps: int):
-        self.logger.info("washing with {} uL of wash for {} times".format(vol, mix_reps))
+    def wash(self, vol: float, source, mix_reps: int, wash_name: str = "wash"):
+        self.logger.info(self.msg_format("wash info", vol, wash_name, mix_reps))
         self._m300.flow_rate.aspirate = self._default_aspiration_rate
         dispense_rate = self._m300.flow_rate.dispense
         self._magdeck.disengage()
         num_trans, vol_per_trans = uniform_divide(vol, self._wash_max_transfer_vol)
         
         for i, m in enumerate(self.mag_samples_m):
-            self.pick_up(self._m300)
-            src = self.wash_getcol(i, len(self.mag_samples_m), source)
-            
-            for n in range(num_trans):
-                if self._m300.current_volume > 0:
-                    self._m300.dispense(self._m300.current_volume, src.top())
-                self._m300.transfer(vol_per_trans, src, m.top(), air_gap=20, new_tip='never')
-                if n < num_trans - 1:  # only air_gap if going back to source
-                    self._m300.air_gap(self._wash_air_gap)
-            
-            # Mix
-            self._m300.flow_rate.aspirate = self._wash_mix_aspiration_rate
-            self._m300.flow_rate.dispense = self._wash_mix_dispense_rate
-            if self._wash_mix_walk:
-                a_locs = [m.bottom(self._bottom_headroom_height).move(Point(x=2*(-1 if i % 2 else +1), y=2*(2*j/(mix_reps - 1) - 1))) for j in range(mix_reps)]
-                mix_walk(self._m300, mix_reps, self._wash_mix_vol, a_locs, speed=self._wash_mix_speed, logger=self.logger)
-            else:
-                loc = m.bottom(self._bottom_headroom_height).move(Point(x=2*(-1 if i % 2 else +1)))
-                self._m300.mix(mix_reps, self._wash_mix_vol, loc)
-            self._m300.flow_rate.aspirate = self._default_aspiration_rate
-            self._m300.flow_rate.dispense = dispense_rate
-            
-            self.drop(self._m300)
+            if self.run_stage("{} {}/{}".format(wash_name, i + 1, len(self.mag_samples_m))):
+                self.pick_up(self._m300)
+                src = self.wash_getcol(i, len(self.mag_samples_m), source)
+                
+                for n in range(num_trans):
+                    if self._m300.current_volume > 0:
+                        self._m300.dispense(self._m300.current_volume, src.top())
+                    self._m300.transfer(vol_per_trans, src, m.top(), air_gap=20, new_tip='never')
+                    if n < num_trans - 1:  # only air_gap if going back to source
+                        self._m300.air_gap(self._wash_air_gap)
+                
+                # Mix
+                self._m300.flow_rate.aspirate = self._wash_mix_aspiration_rate
+                self._m300.flow_rate.dispense = self._wash_mix_dispense_rate
+                if self._wash_mix_walk:
+                    a_locs = [m.bottom(self._bottom_headroom_height).move(Point(x=2*(-1 if i % 2 else +1), y=2*(2*j/(mix_reps - 1) - 1))) for j in range(mix_reps)]
+                    mix_walk(self._m300, mix_reps, self._wash_mix_vol, a_locs, speed=self._wash_mix_speed, logger=self.logger)
+                else:
+                    loc = m.bottom(self._bottom_headroom_height).move(Point(x=2*(-1 if i % 2 else +1)))
+                    self._m300.mix(mix_reps, self._wash_mix_vol, loc)
+                self._m300.flow_rate.aspirate = self._default_aspiration_rate
+                self._m300.flow_rate.dispense = dispense_rate
+                
+                self.drop(self._m300)
         
         self._magdeck.engage(height=self._magheight)
-        self.delay(self._wait_time_wash_on, 'incubating on MagDeck')
-        self.remove_supernatant(vol)
+        if self.run_stage("{} incubate".format(wash_name)):
+            self.delay(self._wait_time_wash_on, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
+        self.remove_supernatant(vol, stage="remove {}".format(wash_name))
     
-    def elute(self, positions=None, transfer: bool = True):
+    def elute(self, positions=None, transfer: bool = True, stage: str = "elute"):
+        """Resuspend beads in elution"""
         if positions is None:
             positions = self.mag_samples_m
-        """Resuspend beads in elution"""
         self._m300.flow_rate.aspirate = self._elute_aspiration_rate
         for i, m in enumerate(positions):
-            self.pick_up(self._m300)
-            side = 1 if i % 2 == 0 else -1
-            loc = m.bottom(self._bottom_headroom_height).move(Point(x=side*2))
-            self._m300.aspirate(self._elution_vol, self.water)
-            self._m300.move_to(m.center())
-            self._m300.dispense(self._elution_vol, loc)
-            self._m300.mix(self._elute_mix_times, self._elute_mix_vol, loc)
-            # self._m300.blow_out(m.bottom(5))		# trying not to make bubbles
-            self._m300.touch_tip(v_offset=self._touch_tip_height)
-            self._m300.air_gap(self._elute_air_gap)
-            self.drop(self._m300)
+            if self.run_stage("{} {}/{}".format(stage, i + 1, len(positions))):
+                self.pick_up(self._m300)
+                side = 1 if i % 2 == 0 else -1
+                loc = m.bottom(self._bottom_headroom_height).move(Point(x=side*2))
+                self._m300.aspirate(self._elution_vol, self.water)
+                self._m300.move_to(m.center())
+                self._m300.dispense(self._elution_vol, loc)
+                self._m300.mix(self._elute_mix_times, self._elute_mix_vol, loc)
+                # self._m300.blow_out(m.bottom(5))		# trying not to make bubbles
+                self._m300.touch_tip(v_offset=self._touch_tip_height)
+                self._m300.air_gap(self._elute_air_gap)
+                self.drop(self._m300)
         
-        if self._elute_incubate:
-            self.delay(self._wait_time_elute_off, 'incubating off magnet at room temperature')
-            self._magdeck.engage(height=self._magheight)
-            self.delay(self._wait_time_elute_on, 'incubating on magnet at room temperature')
+        if self._elute_incubate and self.run_stage("{} incubate off".format(stage)):
+            self.delay(self._wait_time_elute_off, self.get_msg_format("incubate on magdeck", self.get_msg("off")))
+        self._magdeck.engage(height=self._magheight)
+        if self._elute_incubate and self.run_stage("{} incubate on".format(stage)):
+            self.delay(self._wait_time_elute_on, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         
         if transfer:
             for i, (m, e) in enumerate(zip(
-                self.mag_samples_m,
+                positions,
                 self.elution_samples_m
             )):
-                self.pick_up(self._m300)
-                side = -1 if i % 2 == 0 else 1
-                loc = m.bottom(self._bottom_headroom_height).move(Point(x=side*2))
-                self._m300.transfer(self._elution_vol, loc, e.bottom(self._elution_height), air_gap=self._elute_air_gap, new_tip='never')
-                # m300.blow_out(e.top(-2))
-                self._m300.air_gap(self._elute_air_gap)
-                self.drop(self._m300)
+                if self.run_stage("{} transfer {}/{}".format(stage, i + 1, len(positions))):
+                    self.pick_up(self._m300)
+                    side = -1 if i % 2 == 0 else 1
+                    loc = m.bottom(self._bottom_headroom_height).move(Point(x=side*2))
+                    self._m300.transfer(self._elution_vol, loc, e.bottom(self._elution_height), air_gap=self._elute_air_gap, new_tip='never')
+                    # m300.blow_out(e.top(-2))
+                    self._m300.air_gap(self._elute_air_gap)
+                    self.drop(self._m300)
     
     def body(self):
         self.bind()
-        self.wash(self._wash_1_vol, self.wash1, self._wash_1_times)
-        self.wash(self._wash_2_vol, self.wash2, self._wash_2_times)
-        self.wash(self._wash_etoh_vol, self._etoh, self._wash_etoh_times)
+        self.wash(self._wash_1_vol, self.wash1, self._wash_1_times, "wash 1")
+        self.wash(self._wash_2_vol, self.wash2, self._wash_2_times, "wash 2")
+        self.wash(self._wash_etoh_vol, self._etoh, self._wash_etoh_times, "ethanol")
         self._magdeck.disengage()
-        self.delay(self._wait_time_dry, 'airdrying beads at room temperature')
+        if self.run_stage("airdry beads"):
+            self.delay(self._wait_time_dry, 'airdry')
         self.elute()
         self._magdeck.disengage()
 
