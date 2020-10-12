@@ -26,22 +26,25 @@ In the `utilities/config` directory you can find python scripts for generating s
 
 In the `protocols` directory you can find examples for using the `covid19-system9` protocols.
 
-First, you have to import the station you want to use. In this example (`protocols/station_a_p300.py`) we will use the Station A loaded with 300uL tips, that can be used for BPGenomics samples.
+First, you have to import the station you want to use. In this example (`protocols/station_a_technogenetics.py`) we will use the Station A loaded with 300uL tips, that can be used for BPGenomics samples.
 
 ```
-from system9.a.p300 import StationAP300
+from system9.a.technogenetics import StationATechnogenetics24
 ```
 
 Then, you have to instantiate your own station. All our classes come with a full set of default parameters, that you can change to suit your needs. E.g. let's assume you want to change the number of samples to 48.
 
 ```
-station = StationAP300(num_samples=48)
+station = StationATechnogenetics24(num_samples=96)
 ```
 
-You can also specify your language: `'ENG'` (default) or `'ITA'`.
+You can also specify your language: `'ENG'` (default) or `'ITA'`. E.g.
 
 ```
-station = StationAP300(language='ITA')
+station = StationATechnogenetics24(
+    num_samples=96,
+    language="ITA"
+)
 ```
 
 You also have to define the metadata (at least the API level) as usual
