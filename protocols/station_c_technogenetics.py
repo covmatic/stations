@@ -4,11 +4,7 @@ from system9.c.technogenetics import StationCTechnogenetics
 
 logging.getLogger(StationCTechnogenetics.__name__).setLevel(logging.INFO)
 metadata = {'apiLevel': '2.3'}
-station = StationCTechnogenetics(
-    num_samples=16*2,
-    samples_per_cycle=16,
-    language="ITA"
-)
+station = StationCTechnogenetics(num_samples=96)
 
 
 def run(ctx):
