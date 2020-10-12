@@ -207,7 +207,7 @@ class StationC(Station):
         n = self._remaining_samples
         for i, (s, d) in enumerate(zip(self.sources, self.sample_dests)):
             if self.run_stage("transfer samples {}/{}".format(self._num_samples + min(self._m20.channels - self._remaining_samples, 0), self._num_samples)):
-                self.msg = "sample {}/{} of {}".format((i + 1) * self._m20.channels, min(n, self._samples_per_cycle), self._cycle)
+                self.msg_format("sample per cycle", (i + 1) * self._m20.channels, min(n, self._samples_per_cycle), self._cycle.split(" ")[-1])
                 self.logger.info(self.msg)
                 self.transfer_sample(self._sample_vol, s, d)
                 self.msg = ""
@@ -216,7 +216,7 @@ class StationC(Station):
                 break
     
     def body(self):
-        self.logger.info("set up for {} samples in {} cycle{}".format(self._num_samples, self.num_cycles, "" if self.num_cycles == 1 else "s"))
+        self.logger.info(self.get_msg_format("number of cycles", self._num_samples, self.num_cycles))
         
         for i in range(self.num_cycles):
             if self.run_stage("cycle {}/{}".format(i + 1, self.num_cycles)):
@@ -224,10 +224,7 @@ class StationC(Station):
             else:
                 self._remaining_samples -= self._samples_per_cycle
             if i + 1 < self.num_cycles and self.run_stage("pausing for next cycle {}/{}".format(i + 2, self.num_cycles)):
-                self.pause(
-                    "end of cycle {}/{}. Please, load a new plate from station B. Resume when it is ready".format(i + 1, self.num_cycles),
-                    blink=True, color="green",
-                )
+                self.dual_pause(self.get_msg_format("new cycle", i + 1, self.num_cycles), cols=("yellow", "green"))
 
 
 if __name__ == "__main__":
