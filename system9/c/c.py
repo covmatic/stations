@@ -1,7 +1,8 @@
 from ..station import Station, labware_loader, instrument_loader
-from opentrons.protocol_api import ProtocolContext
+from itertools import chain
 import math
 import logging
+from itertools import repeat
 from typing import Optional, Tuple
 
 
@@ -17,7 +18,8 @@ class StationC(Station):
         jupyter: bool = True,
         logger: Optional[logging.getLoggerClass()] = None,
         mastermix_vol: float = 12,
-        mastermix_vol_headroom: float = 1.1,
+        mastermix_vol_headroom: float = 1.2,
+        mastermix_vol_headroom_aspirate: float = 1.1,
         metadata: Optional[dict] = None,
         num_samples: int = 96,
         positive_control_well: str = 'A10',
@@ -29,12 +31,14 @@ class StationC(Station):
         samples_per_col: int = 8,
         samples_per_cycle: int = 96,
         skip_delay: bool = False,
+        source_plate_name: str = 'chilled elution plate on block from Station B',
         suck_height: float = 2,
         suck_vol: float = 5,
         tipracks_slots: Tuple[str, ...] = ('2', '3', '6', '7', '9'),
         tip_log_filename: str = 'tip_log.json',
         tip_log_folder_path: str = './data/C',
         tip_track: bool = False,
+        transfer_samples: bool = True,
         **kwargs
     ):
         """ Build a :py:class:`.StationC`.
@@ -44,7 +48,8 @@ class StationC(Station):
         :param drop_threshold: the amount of dropped tips after which the run is paused for emptying the trash
         :param logger: logger object. If not specified, the default logger is used that logs through the ProtocolContext comment method
         :param mastermix_vol: Mastermix volume per sample in uL
-        :param mastermix_vol_headroom: Headroom for mastermix volume as a multiplier
+        :param mastermix_vol_headroom: Headroom for mastermix preparation volume as a multiplier
+        :param mastermix_vol_headroom_aspirate: Headroom for mastermix aspiration volume as a divisor
         :param metadata: protocol metadata
         :param num_samples: The number of samples that will be loaded on the station B
         :param positive_control_well: Position of the positive control well
@@ -55,12 +60,14 @@ class StationC(Station):
         :param sample_vol: Sample volume
         :param samples_per_col: The number of samples in a column of the destination plate
         :param samples_per_cycle: The number of samples processable in one cycle
+        :param source_plate_name: Name for the source plate
         :param skip_delay: If True, pause instead of delay.
         :param suck_height: Height from the top when sucking in any remaining droplets on way to trash in mm
         :param suck_vol: Volume for sucking in any remaining droplets on way to trash in uL
         :param tip_log_filename: file name for the tip log JSON dump
         :param tip_log_folder_path: folder for the tip log JSON dump
         :param tip_track: If True, try and load previous tiprack log from the JSON file
+        :param transfer_samples: Whether to transfer samples or not
         """
         super(StationC, self).__init__(
             drop_loc_l=drop_loc_l,
@@ -80,26 +87,30 @@ class StationC(Station):
         self._bottom_headroom_height = bottom_headroom_height
         self._mastermix_vol = mastermix_vol
         self._mastermix_vol_headroom = mastermix_vol_headroom
+        self._mastermix_vol_headroom_aspirate = mastermix_vol_headroom_aspirate
         self._positive_control_well = positive_control_well
         self._sample_blow_height = sample_blow_height
         self._sample_bottom_height = sample_bottom_height
         self._sample_mix_vol = sample_mix_vol
         self._sample_mix_reps = sample_mix_reps
         self._sample_vol = sample_vol
-        self._samples_per_cycle = samples_per_cycle
+        self._samples_per_cycle = int(math.ceil(samples_per_cycle / 8) * 8)
+        self._source_plate_name = source_plate_name
         self._suck_height = suck_height
         self._suck_vol = suck_vol
         self._tipracks_slots = tipracks_slots
+        self._transfer_samples = transfer_samples
         
         self._remaining_samples = self._num_samples
+        self._samples_this_cycle = min(self._remaining_samples, self._samples_per_cycle)
     
     @property
     def num_cycles(self) -> int:
         return int(math.ceil(self._num_samples / self._samples_per_cycle))
     
     @labware_loader(0, "_source_plate")
-    def load_tips300(self):
-        self._source_plate = self._ctx.load_labware('opentrons_96_aluminumblock_nest_wellplate_100ul', '1', 'chilled elution plate on block from Station B')
+    def load_source_plate(self):
+        self._source_plate = self._ctx.load_labware('opentrons_96_aluminumblock_nest_wellplate_100ul', '1', self._source_plate_name)
     
     @labware_loader(1, "_tips20")
     def load_tips20(self):
@@ -159,34 +170,40 @@ class StationC(Station):
         self.pick_up(self._m20, tiprack="_tips20_no_a")
         
     @property
-    def mm_tube(self):
-        return self._tube_block.wells()[0]
+    def mm_tubes(self):
+        return self._tube_block.wells()[:1]
     
     @property
-    def mm_strip(self):
-        return self._mm_strips.columns()[0]
+    def mm_strips(self):
+        return self._mm_strips.columns()[:1]
     
     @property
     def remaining_cols(self) -> int: 
         return int(math.ceil(min(self._remaining_samples, self._samples_per_cycle) / self._m20.channels))
     
     def fill_mm_strips(self):
-        vol_per_strip_well = self.remaining_cols * self._mastermix_vol * self._mastermix_vol_headroom
+        vol_per_strip_well = self.remaining_cols * self._mastermix_vol * self._mastermix_vol_headroom / len(self.mm_strips)
         
         has_tip = False        
-        for i, well in enumerate(self.mm_strip):
-            if self.run_stage("transfer mastermix to strips {}/{} {}".format(i + 1, len(self.mm_strip), self._cycle)):
-                if not has_tip:
-                    self.pick_up(self._p300)
-                    has_tip = True
-                self.logger.debug("filling mastermix at {}".format(well))
-                self._p300.transfer(vol_per_strip_well, self.mm_tube, well, new_tip='never')
+        for j, (strip, tube) in enumerate(zip(self.mm_strips, self.mm_tubes)):
+            for i, well in enumerate(strip):
+                if self.run_stage("transfer mastermix to strip {}/{} {}/{}{}{}".format(j + 1, len(self.mm_strips), i + 1, len(strip), " " if self.num_cycles > 1 else "", self._cycle)):
+                    if not has_tip:
+                        self.pick_up(self._p300)
+                        has_tip = True
+                    self.logger.debug("filling mastermix at {}".format(well))
+                    self._p300.transfer(vol_per_strip_well, tube, well, new_tip='never')
         if has_tip:
             self._p300.drop_tip()
     
+    @property
+    def mm_indices(self):
+        return list(repeat(0, self._samples_per_cycle))
+    
     def transfer_mm(self):
         self.pick_up(self._m20)
-        self._m20.transfer(self._mastermix_vol, self.mm_strip[0].bottom(self._bottom_headroom_height), self.sample_dests[:self.remaining_cols], new_tip='never')
+        for m_idx, s in zip(self.mm_indices[::self._m20.channels], self.sample_dests[:self.remaining_cols]):
+            self._m20.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate, self.mm_strips[m_idx][0].bottom(0.5), s, new_tip='never')
         self._m20.drop_tip()
     
     def transfer_sample(self, vol: float, source, dest):
@@ -197,34 +214,41 @@ class StationC(Station):
         self._m20.blow_out(dest.top(self._sample_blow_height))
         self._m20.aspirate(self._suck_vol, dest.top(self._suck_height))  # suck in any remaining droplets on way to trash
         self._m20.drop_tip()
+        
+    def cycle_begin(self):
+        self.logger.info(self.get_msg_format("current cycle", self._cycle.split(" ")[-1]))
+        self._cycle = self._cycle if self.num_cycles > 1 else ""
     
     def run_cycle(self):
         self._cycle = self.stage
-        self.fill_mm_strips()
-        if self.run_stage("transfer mastermix to plate {}".format(self._cycle)):
-            self.transfer_mm()
-        
         n = self._remaining_samples
+        self._samples_this_cycle = min(n, self._samples_per_cycle)
+        
+        self.cycle_begin()
+        
+        self.fill_mm_strips()
+        if self.run_stage("transfer mastermix to plate{}{}".format(" " if self.num_cycles > 1 else "", self._cycle)):
+            self.transfer_mm()
         for i, (s, d) in enumerate(zip(self.sources, self.sample_dests)):
-            if self.run_stage("transfer samples {}/{}".format(self._num_samples + min(self._m20.channels - self._remaining_samples, 0), self._num_samples)):
-                self.msg_format("sample per cycle", (i + 1) * self._m20.channels, min(n, self._samples_per_cycle), self._cycle.split(" ")[-1])
-                self.logger.info(self.msg)
+            if self._transfer_samples and self.run_stage("transfer samples {}/{}".format(self._num_samples + min(self._m20.channels - self._remaining_samples, 0), self._num_samples)):
+                if self.num_cycles > 1:
+                    self.msg_format("sample per cycle", (i + 1) * self._m20.channels, self._samples_this_cycle, self._cycle.split(" ")[-1])
+                    self.logger.info(self.msg)
                 self.transfer_sample(self._sample_vol, s, d)
                 self.msg = ""
             self._remaining_samples -= self._m20.channels
-            if self._remaining_samples <= 0:
-                break
+            if self._remaining_samples <= 0 or n - self._remaining_samples >= self._samples_this_cycle:
+                break 
     
     def body(self):
         self.logger.info(self.get_msg_format("number of cycles", self._num_samples, self.num_cycles))
         
         for i in range(self.num_cycles):
-            if self.run_stage("cycle {}/{}".format(i + 1, self.num_cycles)):
-                self.run_cycle()
-            else:
-                self._remaining_samples -= self._samples_per_cycle
+            self.run_stage("cycle {}/{}".format(i + 1, self.num_cycles))
+            self.run_cycle()
+            self.pause(self.get_msg_format("end of cycle", i + 1, self.num_cycles), color="yellow")
             if i + 1 < self.num_cycles and self.run_stage("pausing for next cycle {}/{}".format(i + 2, self.num_cycles)):
-                self.dual_pause(self.get_msg_format("new cycle", i + 1, self.num_cycles), cols=("yellow", "green"))
+                self.pause("new cycle", color="green", blink=False, home=False)
 
 
 if __name__ == "__main__":

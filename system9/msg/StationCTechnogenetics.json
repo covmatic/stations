@@ -1,0 +1,18 @@
+{
+  "protocol description": {
+	"ENG": "station C protocol for Technogenetics kit",
+	"ITA": "protocollo Technogenetics Stazione C"
+  },
+  "load tubes": {
+	"ENG": "mastermix: load {} tubes with at least{}",
+	"ITA": "mastermix: caricare {} tube con almeno{}"
+  },
+  "end of cycle": {
+	"ENG": "end of cycle {}/{}.\nSeal the PCR plate with a sticker.\nStore the PCR plate at +4°C",
+	"ITA": "fine del ciclo {}/{}.\nSigillare la PCR plate con un adesivo.\nRiporre la PCR plate a +4°C"
+  },
+  "new cycle": {
+	"ENG": "please, load a new plate",
+	"ITA": "caricare un'altra piastra"
+  }
+}

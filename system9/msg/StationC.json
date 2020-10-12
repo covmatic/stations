@@ -7,12 +7,20 @@
 	"ENG": "set up for {} samples in {} cycles",
 	"ITA": "configurato per {} campioni in {} cicli"
   },
+  "current cycle": {
+	"ENG": "cycle {}",
+	"ITA": "ciclo {}"
+  },
   "sample per cycle": {
 	"ENG": "sample {}/{} of cycle {}",
 	"ITA": "campione {}/{} del ciclo {}"
   },
+  "end of cycle": {
+	"ENG": "end of cycle {}/{}",
+	"ITA": "fine del ciclo {}/{}"
+  },
   "new cycle": {
-	"ENG": "end of cycle {}/{}. Please, load a new plate from station B",
-	"ITA": "fine del ciclo {}/{}. Caricare un'altra piastra dalla stazione B"
+	"ENG": "please, load a new plate from station B",
+	"ITA": "caricare un'altra piastra dalla stazione B"
   }
 }
