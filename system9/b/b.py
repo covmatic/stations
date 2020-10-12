@@ -148,6 +148,7 @@ class StationB(Station):
         super(StationB, self).__init__(
             drop_loc_l=drop_loc_l,
             drop_loc_r=drop_loc_r,
+            drop_loc_y=drop_loc_y,
             jupyter=jupyter,
             logger=logger,
             metadata=metadata,
