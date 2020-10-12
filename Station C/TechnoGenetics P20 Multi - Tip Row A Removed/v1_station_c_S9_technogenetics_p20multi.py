@@ -48,6 +48,7 @@ NUM_SAMPLES = 16  # start with 8 samples, slowly increase to 48, then 94 (max is
 NUM_SEDUTE = 2
 TIP_TRACK = False
 
+liquid_headroom_mix = 1.2
 liquid_headroom = 1.1
 mm_tube_capacity = 1950
 mm_strips_capacity = 180
@@ -68,7 +69,7 @@ def run(ctx: protocol_api.ProtocolContext):
     # check source (elution) labware type
     source_plate = ctx.load_labware(
         'opentrons_96_aluminumblock_nest_wellplate_100ul', '1',
-        'chilled elution plate on block from Station B')
+        'chilled elution plate on block for Station B')
     tips20 = [
         ctx.load_labware('opentrons_96_filtertiprack_20ul', slot)
         for slot in ['2', '3', '6', '7', '9', '11']
@@ -137,12 +138,12 @@ def run(ctx: protocol_api.ProtocolContext):
 
     """ mastermix component maps """
     # setup tube mastermix
-    num_mm_tubes = math.ceil( MM_PER_SAMPLE * NUM_SAMPLES * liquid_headroom / mm_tube_capacity)
+    num_mm_tubes = math.ceil( MM_PER_SAMPLE * NUM_SAMPLES * liquid_headroom_mix / mm_tube_capacity)
     samples_per_mm_tube = []
     for i in range(num_mm_tubes):
         remaining_samples = NUM_SAMPLES - sum(samples_per_mm_tube)
         samples_per_mm_tube.append(min(8 * math.ceil(remaining_samples / (8 * (num_mm_tubes - i))), remaining_samples))
-    mm_per_tube = [MM_PER_SAMPLE * liquid_headroom * ns for ns in samples_per_mm_tube]
+    mm_per_tube = [MM_PER_SAMPLE * liquid_headroom_mix * ns for ns in samples_per_mm_tube]
     
     mm_tube = tube_block.wells()[:num_mm_tubes]
     # ctx.comment("Mastermix: caricare {} tubes con almeno [{}] uL ciascuno".format(num_mm_tubes, ", ".join(map(str, map(round, mm_per_tube)))))
@@ -152,7 +153,7 @@ def run(ctx: protocol_api.ProtocolContext):
     for i, (mt, mm, ns) in enumerate(zip(mm_tube, mm_per_tube, samples_per_mm_tube)):
         msg += (
             "\n  {} --> {} uL".format(str(mt).split(" ")[0], fmt(mm)) +
-            "".join("\n    {} -> {} uL".format(k, fmt(ns * v * liquid_headroom)) for k, v in mm_mix.items())
+            "".join("\n    {} -> {} uL".format(k, fmt(ns * v * liquid_headroom_mix)) for k, v in mm_mix.items())
         )
     for r in msg.split("\n"):
         while "  " in r: r = r.replace("  ", "\u2007 ")
@@ -176,13 +177,13 @@ def run(ctx: protocol_api.ProtocolContext):
         pick_up(p300)
         for mt, ms, ns in zip(mm_tube, mm_strip, samples_per_mm_tube):
             for strip_i, strip_w in enumerate(ms):
-                p300.transfer((ns // 8 + (1 if strip_i < ns % 8 else 0)) * MM_PER_SAMPLE * liquid_headroom, mt.bottom(0.2), strip_w, new_tip='never')
+                p300.transfer((ns // 8 + (1 if strip_i < ns % 8 else 0)) * MM_PER_SAMPLE * liquid_headroom_mix, mt.bottom(0.2), strip_w, new_tip='never')
         p300.drop_tip()
     
         # transfer mastermix to plate
         pick_up(m20)
         for m_idx, s in zip(mm_indices[::8], sample_dests):
-            m20.transfer(18, mm_strip[m_idx][0].bottom(0.5), s, new_tip='never')
+            m20.transfer(MM_PER_SAMPLE / liquid_headroom, mm_strip[m_idx][0].bottom(0.5), s, new_tip='never')
         m20.drop_tip()
         ctx.pause("Sigillare la PCR plate con un adesivo. \nRiporre la PCR plate a +4°C.")
         

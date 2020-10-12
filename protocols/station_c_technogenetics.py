@@ -1,10 +1,10 @@
 import logging
-from system9.a.p1000reload import StationAP1000Reload
+from system9.c.technogenetics import StationCTechnogenetics
 
 
-logging.getLogger(StationAP1000Reload.__name__).setLevel(logging.INFO)
+logging.getLogger(StationCTechnogenetics.__name__).setLevel(logging.INFO)
 metadata = {'apiLevel': '2.3'}
-station = StationAP1000Reload(num_samples=96)
+station = StationCTechnogenetics(num_samples=96)
 
 
 def run(ctx):

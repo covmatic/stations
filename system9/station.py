@@ -285,14 +285,14 @@ class Station(metaclass=StationMeta):
         self.status = "running"
         self.msg = ""
     
-    def dual_pause(self, msg: str, cols: Tuple[str, str] = ('red', 'yellow'), between: Optional[Callable] = None):
+    def dual_pause(self, msg: str, cols: Tuple[str, str] = ('red', 'yellow'), between: Optional[Callable] = None, home: Tuple[bool, bool] = (True, False)):
         msg = self.get_msg(msg)
         self._msg = "{}.\n{}".format(msg, self.get_msg("stop blink"))
-        self.pause(self.msg, color=cols[0])
+        self.pause(self.msg, color=cols[0], home=home[0])
         if between is not None:
             between()
         self._msg = "{}.\n{}".format(msg, self.get_msg("continue"))
-        self.pause(self.msg, blink=False, color=cols[1], home=False)
+        self.pause(self.msg, blink=False, color=cols[1], home=home[1])
     
     def delay(self,
         mins: float,
