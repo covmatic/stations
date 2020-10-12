@@ -187,7 +187,7 @@ class StationC(Station):
         has_tip = False        
         for j, (strip, tube) in enumerate(zip(self.mm_strips, self.mm_tubes)):
             for i, well in enumerate(strip):
-                if self.run_stage("transfer mastermix to strip {}/{} {}/{}{}{}".format(j + 1, len(self.mm_strips), i + 1, len(strip), " " if self.num_cycles > 1 else "", self._cycle)):
+                if self.run_stage("transfer mastermix {}/{} to strip {}/{}{}{}".format(i + 1, len(strip), j + 1, len(self.mm_strips), " " if self.num_cycles > 1 else "", self._cycle)):
                     if not has_tip:
                         self.pick_up(self._p300)
                         has_tip = True
@@ -200,11 +200,17 @@ class StationC(Station):
     def mm_indices(self):
         return list(repeat(0, self._samples_per_cycle))
     
-    def transfer_mm(self):
-        self.pick_up(self._m20)
-        for m_idx, s in zip(self.mm_indices[::self._m20.channels], self.sample_dests[:self.remaining_cols]):
+    def transfer_mm(self, stage="transfer mastermix {}/{}"):
+        has_tip = False
+        n = len(list(zip(self.mm_indices[::self._m20.channels], self.sample_dests[:self.remaining_cols])))
+        for i, (m_idx, s) in enumerate(zip(self.mm_indices[::self._m20.channels], self.sample_dests[:self.remaining_cols])):
+            if self.run_stage(stage.format(i + 1, n)):
+                if not has_tip:
+                    self.pick_up(self._m20)
+                    has_tip = True
             self._m20.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate, self.mm_strips[m_idx][0].bottom(0.5), s, new_tip='never')
-        self._m20.drop_tip()
+        if has_tip:
+            self._m20.drop_tip()
     
     def transfer_sample(self, vol: float, source, dest):
         self.logger.debug("transferring {:.0f} uL from {} to {}".format(vol, source, dest))
@@ -227,8 +233,7 @@ class StationC(Station):
         self.cycle_begin()
         
         self.fill_mm_strips()
-        if self.run_stage("transfer mastermix to plate{}{}".format(" " if self.num_cycles > 1 else "", self._cycle)):
-            self.transfer_mm()
+        self.transfer_mm(stage="transfer mastermix to plate {}{}{}".format("{}/{}", " " if self.num_cycles > 1 else "", self._cycle))
         for i, (s, d) in enumerate(zip(self.sources, self.sample_dests)):
             if self._transfer_samples and self.run_stage("transfer samples {}/{}".format(self._num_samples + min(self._m20.channels - self._remaining_samples, 0), self._num_samples)):
                 if self.num_cycles > 1:
