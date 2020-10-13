@@ -15,7 +15,7 @@ metadata = {
     'apiLevel': '2.3'
 }
 
-NUM_SAMPLES = 13 # start with 8 samples, slowly increase to 48, then 94 (max is 94)
+NUM_SAMPLES = 16 # start with 8 samples, slowly increase to 48, then 94 (max is 94)
 STARTING_VOL = 650
 ELUTION_VOL = 50
 WASH_VOL = 680
@@ -151,7 +151,7 @@ resuming.')
     def drop(pip):
         nonlocal switch
         nonlocal drop_count
-        side = 30 if switch else -18
+        side = 30 if switch else -10
         drop_loc = ctx.loaded_labwares[12].wells()[0].top().move(
             Point(x=side))
         pip.drop_tip(drop_loc)
@@ -242,12 +242,11 @@ resuming.')
             pick_up(m300)
             m300.aspirate(vol, elution)
             m300.air_gap(20)
-            m300.move_to(m.center())
+            m300.dispense(20, m.top())
             m300.dispense(vol, m.bottom(0.7))
             side = 1 if i % 2 == 0 else -1
             loc = m.bottom(0.3).move(Point(x=side*2))
             m300.mix(15, 30, loc)
-            m300.dispense(30, m.bottom(0.5))
             m300.touch_tip(v_offset=-5)
             drop(m300)
             
