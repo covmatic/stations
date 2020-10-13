@@ -26,8 +26,9 @@ class StationB(Station):
         bind_vol: float = 210,
         bottom_headroom_height: float = 0.5,
         default_aspiration_rate: float = 150,
-        drop_loc_l: float = 30,
-        drop_loc_r: float = -18,
+        drop_loc_l: float = -10,
+        drop_loc_r: float = 30,
+        drop_loc_y: float = 0,
         drop_threshold: int = 296,
         elute_air_gap: float = 20,
         elute_aspiration_rate: float = 50,
@@ -95,6 +96,7 @@ class StationB(Station):
         :param default_aspiration_rate: Default aspiration flow rate in uL/s
         :param drop_loc_l: offset for dropping to the left side (should be positive) in mm
         :param drop_loc_r: offset for dropping to the right side (should be negative) in mm
+        :param drop_loc_y: offset in the fron/back direction for dropping in mm
         :param drop_threshold: the amount of dropped tips after which the run is paused for emptying the trash
         :param elute_air_gap: Air gap when aspirating elution buffer in uL
         :param elute_aspiration_rate: Aspiration flow rate when aspirating elution buffer in uL/s
@@ -146,6 +148,7 @@ class StationB(Station):
         super(StationB, self).__init__(
             drop_loc_l=drop_loc_l,
             drop_loc_r=drop_loc_r,
+            drop_loc_y=drop_loc_y,
             jupyter=jupyter,
             logger=logger,
             metadata=metadata,

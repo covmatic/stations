@@ -70,6 +70,7 @@ class Station(metaclass=StationMeta):
     def __init__(self,
         drop_loc_l: float = 0,
         drop_loc_r: float = 0,
+        drop_loc_y: float = 0,
         drop_threshold: int = 296,
         dummy_lights: bool = True,
         jupyter: bool = True,
@@ -89,6 +90,7 @@ class Station(metaclass=StationMeta):
     ):
         self._drop_loc_l = drop_loc_l
         self._drop_loc_r = drop_loc_r
+        self._drop_loc_y = drop_loc_y
         self._drop_threshold = drop_threshold
         self._dummy_lights = dummy_lights
         self.jupyter = jupyter
@@ -245,7 +247,7 @@ class Station(metaclass=StationMeta):
     
     def drop(self, pip):
         # Drop in the Fixed Trash (on 12) at different positions to avoid making a tall heap of tips
-        drop_loc = self._ctx.loaded_labwares[12].wells()[0].top().move(Point(x=self._drop_loc_r if self._side_switch else self._drop_loc_l))
+        drop_loc = self._ctx.loaded_labwares[12].wells()[0].top().move(Point(x=self._drop_loc_r if self._side_switch else self._drop_loc_l, y=self._drop_loc_y))
         self._side_switch = not self._side_switch
         pip.drop_tip(drop_loc)
         self._drop_count += pip.channels
