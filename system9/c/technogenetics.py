@@ -23,6 +23,7 @@ class StationCTechnogenetics(StationC):
         source_plate_name: str = 'chilled elution plate on block for Station B',
         tiprack_slots: Tuple[str, ...] = ('2', '3', '6', '7', '9', '11'),
         transfer_samples: bool = False,
+        tube_block_model: str = "opentrons_24_aluminumblock_nest_2ml_screwcap",
         **kwargs
     ):
         """ Build a :py:class:`.StationCTechnogenetics`.
@@ -35,6 +36,7 @@ class StationCTechnogenetics(StationC):
             source_plate_name=source_plate_name,
             tipracks_slots=tiprack_slots,
             transfer_samples=transfer_samples,
+            tube_block_model=tube_block_model,
             **kwargs
         )
         self._mm_mix = copy.deepcopy(mm_mix)

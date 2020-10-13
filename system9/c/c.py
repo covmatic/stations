@@ -39,6 +39,7 @@ class StationC(Station):
         tip_log_folder_path: str = './data/C',
         tip_track: bool = False,
         transfer_samples: bool = True,
+        tube_block_model: str = "opentrons_24_aluminumblock_nest_1.5ml_snapcap",
         **kwargs
     ):
         """ Build a :py:class:`.StationC`.
@@ -68,6 +69,7 @@ class StationC(Station):
         :param tip_log_folder_path: folder for the tip log JSON dump
         :param tip_track: If True, try and load previous tiprack log from the JSON file
         :param transfer_samples: Whether to transfer samples or not
+        :param tube_block_model: Tube block model name
         """
         super(StationC, self).__init__(
             drop_loc_l=drop_loc_l,
@@ -100,6 +102,7 @@ class StationC(Station):
         self._suck_vol = suck_vol
         self._tipracks_slots = tipracks_slots
         self._transfer_samples = transfer_samples
+        self._tube_block_model = tube_block_model
         
         self._remaining_samples = self._num_samples
         self._samples_this_cycle = min(self._remaining_samples, self._samples_per_cycle)
@@ -141,7 +144,7 @@ class StationC(Station):
     
     @labware_loader(7, "_tube_block")
     def load_tube_block(self):
-        self._tube_block = self._ctx.load_labware('opentrons_24_aluminumblock_nest_1.5ml_snapcap', '5', '2ml screw tube aluminum block for mastermix + controls')
+        self._tube_block = self._ctx.load_labware(self._tube_block_model, '5', 'screw tube aluminum block for mastermix + controls')
     
     @instrument_loader(0, "_m20")
     def load_m20(self):
