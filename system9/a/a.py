@@ -57,9 +57,6 @@ class StationA(Station):
         source_racks_definition_filepath: str = "",
         source_racks_slots: Tuple[str, ...] = ('2', '3', '5', '6'),
         tempdeck_temp: float = 4,
-        tip_log_filename: str = 'tip_log.json',
-        tip_log_folder_path: str = './data/A',
-        tip_track: bool = False,
         tipracks_slots: Tuple[str, ...] = ('8', '9', '11'),
         tipracks_slots_20: Tuple[str, ...] = ('7',),
         **kwargs
@@ -112,9 +109,6 @@ class StationA(Station):
         :param source_racks_definition_filepath: filepath for source racks definitions
         :param source_racks_slots: slots where source racks are installed
         :param tempdeck_temp: tempdeck temperature in Celsius degrees
-        :param tip_log_filename: file name for the tip log JSON dump
-        :param tip_log_folder_path: folder for the tip log JSON dump
-        :param tip_track: If True, try and load previous tiprack log from the JSON file
         :param tipracks_slots: Slots where the tipracks are positioned
         :param tipracks_slots_20: Slots where the tipracks (20 uL) are positioned
         :param jupyter: Specify whether the protocol is run on Jupyter (or Python) instead of the robot
@@ -128,9 +122,6 @@ class StationA(Station):
             metadata=metadata,
             num_samples=num_samples,
             samples_per_col=samples_per_col,
-            tip_log_filename=tip_log_filename,
-            tip_log_folder_path=tip_log_folder_path,
-            tip_track=tip_track,
             **kwargs
         )
         self._air_gap_dest_multi = air_gap_dest_multi

@@ -84,8 +84,8 @@ class Station(metaclass=StationMeta):
         skip_delay: bool = False,
         start_at: Optional[str] = None,
         tip_log_filename: str = 'tip_log.json',
-        tip_log_folder_path: str = './data/',
-        tip_track: bool = False,
+        tip_log_folder_path: str = '/var/lib/jupyter/notebooks/outputs',
+        tip_track: bool = True,
         **kwargs,
     ):
         self._drop_loc_l = drop_loc_l
@@ -205,11 +205,11 @@ class Station(metaclass=StationMeta):
     
     def setup_tip_log(self):
         data = {}
-        if self._tip_track and not self._ctx.is_simulating():
+        if self._tip_track:
             self.logger.info(self.msg_format("tip info log", self._tip_log_filepath))
             if os.path.isfile(self._tip_log_filepath):
                 with open(self._tip_log_filepath) as json_file:
-                    data: dict = json.load(json_file)
+                    data: dict = json.load(json_file).get("count", {})
         else:
             self.logger.debug("not using tip log file")
         
@@ -221,10 +221,13 @@ class Station(metaclass=StationMeta):
     
     def track_tip(self):
         if self._tip_track and not self._ctx.is_simulating():
-            self.logger.info(self.msg_format("tip log dump", self._tip_log_filepath))
+            self.logger.info(self.get_msg_format("tip log dump", self._tip_log_filepath))
             os.makedirs(self._tip_log_folder_path, exist_ok=True)
             with open(self._tip_log_filepath, 'w') as outfile:
-                json.dump(self._tip_log['count'], outfile)
+                json.dump({
+                    "count": self._tip_log['count'],
+                    "next": {k: str(self._tip_log['tips'][k][v % self._tip_log['max'][k]]) for k, v in self._tip_log['count'].items()},
+                }, outfile, indent=2)
     
     def pick_up(self, pip, loc: Optional[Location] = None, tiprack: Optional[str] = None):
         if loc is None:
@@ -238,10 +241,12 @@ class Station(metaclass=StationMeta):
             
             if self._tip_log['count'][tiprack] == self._tip_log['max'][tiprack]:
                 # If empty, wait for refill
-                self.pause(self.get_msg_format("refill tips", "\n".join(map(str, getattr(self, tiprack)))))
                 self._tip_log['count'][tiprack] = 0
-            pip.pick_up_tip(self._tip_log['tips'][tiprack][self._tip_log['count'][tiprack]])
+                self.track_tip()
+                self.pause(self.get_msg_format("refill tips", "\n".join(map(str, getattr(self, tiprack)))))
             self._tip_log['count'][tiprack] += 1
+            self.track_tip()
+            pip.pick_up_tip(self._tip_log['tips'][tiprack][self._tip_log['count'][tiprack] - 1])
         else:
             pip.pick_up_tip(loc)
     

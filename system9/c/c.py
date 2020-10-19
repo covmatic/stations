@@ -35,9 +35,6 @@ class StationC(Station):
         suck_height: float = 2,
         suck_vol: float = 5,
         tipracks_slots: Tuple[str, ...] = ('2', '3', '6', '7', '9'),
-        tip_log_filename: str = 'tip_log.json',
-        tip_log_folder_path: str = './data/C',
-        tip_track: bool = False,
         transfer_samples: bool = True,
         tube_block_model: str = "opentrons_24_aluminumblock_nest_1.5ml_snapcap",
         **kwargs
@@ -65,9 +62,6 @@ class StationC(Station):
         :param skip_delay: If True, pause instead of delay.
         :param suck_height: Height from the top when sucking in any remaining droplets on way to trash in mm
         :param suck_vol: Volume for sucking in any remaining droplets on way to trash in uL
-        :param tip_log_filename: file name for the tip log JSON dump
-        :param tip_log_folder_path: folder for the tip log JSON dump
-        :param tip_track: If True, try and load previous tiprack log from the JSON file
         :param transfer_samples: Whether to transfer samples or not
         :param tube_block_model: Tube block model name
         """
@@ -81,9 +75,6 @@ class StationC(Station):
             num_samples=num_samples,
             samples_per_col=samples_per_col,
             skip_delay=skip_delay,
-            tip_log_filename=tip_log_filename,
-            tip_log_folder_path=tip_log_folder_path,
-            tip_track=tip_track,
             **kwargs
         )
         self._bottom_headroom_height = bottom_headroom_height

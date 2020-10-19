@@ -52,9 +52,6 @@ class StationB(Station):
         starting_vol: float = 380,
         tempdeck_slot: str = '1',
         tempdeck_temp: float = 4,
-        tip_log_filename: str = 'tip_log.json',
-        tip_log_folder_path: str = './data/B',
-        tip_track: bool = False,
         tipracks_slots: Tuple[str, ...] = ('3', '6', '7', '8', '9', '10'),
         touch_tip_height: float = -5,
         wait_time_bind_off: float = 5,
@@ -119,9 +116,6 @@ class StationB(Station):
         :param starting_vol: Sample volume at start (volume coming from Station A)
         :param tempdeck_slot: Slot where the tempdeck is positioned 
         :param tempdeck_temp: tempdeck temperature in Celsius degrees 
-        :param tip_log_filename: file name for the tip log JSON dump
-        :param tip_log_folder_path: folder for the tip log JSON dump
-        :param tip_track: If True, try and load previous tiprack log from the JSON file
         :param tipracks_slots: Slots where the tipracks are positioned
         :param touch_tip_height: Touch-tip height in mm (should be negative)
         :param wait_time_bind_off: Wait time for bind beads phase off magnet in minutes
@@ -155,9 +149,6 @@ class StationB(Station):
             num_samples=num_samples,
             samples_per_col=samples_per_col,
             skip_delay=skip_delay,
-            tip_log_filename=tip_log_filename,
-            tip_log_folder_path=tip_log_folder_path,
-            tip_track=tip_track,
             **kwargs
         )
         self._bind_air_gap = bind_air_gap
