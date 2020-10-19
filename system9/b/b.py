@@ -377,6 +377,7 @@ class StationB(Station):
                 self._m300.flow_rate.aspirate = self._default_aspiration_rate
                 self._m300.flow_rate.dispense = dispense_rate
                 
+                self._m300.air_gap(self._wash_air_gap)
                 self.drop(self._m300)
         
         self._magdeck.engage(height=self._magheight)
@@ -395,10 +396,10 @@ class StationB(Station):
                 side = 1 if i % 2 == 0 else -1
                 loc = m.bottom(self._bottom_headroom_height).move(Point(x=side*2))
                 self._m300.aspirate(self._elution_vol, self.water)
-                self._m300.move_to(m.center())
+                self._m300.air_gap(self._elute_air_gap)
+                self._m300.dispense(self._elute_air_gap, m.top())
                 self._m300.dispense(self._elution_vol, loc)
                 self._m300.mix(self._elute_mix_times, self._elute_mix_vol, loc)
-                # self._m300.blow_out(m.bottom(5))		# trying not to make bubbles
                 self._m300.touch_tip(v_offset=self._touch_tip_height)
                 self._m300.air_gap(self._elute_air_gap)
                 self.drop(self._m300)
