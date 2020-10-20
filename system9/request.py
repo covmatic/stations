@@ -13,7 +13,7 @@ DEFAULT_REST_KWARGS = dict(
     favicon_url="https://opentrons.com/icons/icon-48x48.png",
     config={
         "global": {
-            "server.socket_host": "0.0.0.0",
+            "server.socket_host": "::",
             "server.socket_port": 8080,
             "engine.autoreload.on": False,
         },
