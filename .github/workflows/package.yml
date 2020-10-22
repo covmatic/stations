@@ -42,7 +42,7 @@ jobs:
       env:
         TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
-        TWINE_REPOSITORY: testpypi
+        TWINE_REPOSITORY: ${{ secrets.TWINE_REPOSITORY }}
         TWINE_NON_INTERACTIVE: 1
 
 
