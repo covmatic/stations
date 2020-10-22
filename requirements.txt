@@ -3,6 +3,7 @@ cherrypy
 typing-extensions
 twine
 requests
+jupyter
 
 
 # Copyright (c) 2020 Covmatic.
