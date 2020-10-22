@@ -21,8 +21,6 @@ jobs:
         target: [station_a_technogenetics, station_b_technogenetics, station_c_technogenetics]
     steps:
     - uses: actions/checkout@v2
-    - name: Install Opentrons separately
-      run: python -m pip install opentrons --upgrade
     - name: Install
       run: python setup.py install
     - name: Simulate the protocol
