@@ -20,8 +20,8 @@
 	"ITA": "numero di campioni: {}"
   },
   "version": {
-	"ENG": "using system9 version {}",
-	"ITA": "system9 è alla versione {}"
+	"ENG": "using covmatic-stations version {}",
+	"ITA": "covmatic-stations è alla versione {}"
   },
   "tip info log": {
 	"ENG": "logging tip info in {}",

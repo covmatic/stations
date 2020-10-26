@@ -16,9 +16,9 @@ Visit the website https://covmatic.org/ for more documentation and information.
 > :warning: **This software is still in its beta phase**  
 > Every feature may be subject to change without notice
 
-You can [install the Covmatic Stations package via `pip`](https://test.pypi.org/project/covid19-system9/):
+You can [install the Covmatic Stations package via `pip`](https://test.pypi.org/project/covmatic-stations/):
 ```
-<python> -m pip install -i https://test.pypi.org/simple/ covid19-system9
+<python> -m pip install -i https://test.pypi.org/simple/ covmatic-stations
 ```
 Where `<python>` should be changed for the Python instance you wish to install the LocalWebServer onto. We will be following this convention for all the next instructions. 
 
@@ -33,7 +33,7 @@ In this example ([`protocols/station_a_technogenetics.py`](protocols/station_a_t
 we will use the Station A class for the Technogenetics kit that uses custom 4x6 COPAN tube racks.
 
 ```
-from system9.a.technogenetics import StationATechnogenetics24
+from covmatic_stations.a.technogenetics import StationATechnogenetics24
 ```
 
 Then, you have to instantiate your own station.
@@ -109,7 +109,7 @@ The JSON file should be an array of objects, each of which has the fields `seria
 
 To inspect a field of a magnet, use the following pattern `magnets.<field>.by_<key>["keyvalue"]`. E.g. to get the height of the magnet whose serial is `X` you would write
 ```
-from system9.b import magnets
+from covmatic_stations.b import magnets
 h = magnets.height.by_serial["X"]
 ```
 
