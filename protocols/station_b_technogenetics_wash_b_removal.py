@@ -1,16 +1,14 @@
 import logging
+from system9.b.technogenetics_short import StationBTechnogeneticsWashBRemoval
 
 
-__version__ = "0.5.1"
+logging.getLogger(StationBTechnogeneticsWashBRemoval.__name__).setLevel(logging.INFO)
+metadata = {'apiLevel': '2.3'}
+station = StationBTechnogeneticsWashBRemoval(num_samples=96, num_cycles=3)
 
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s %(name)-12s %(levelname)-8s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-)
-logging.getLogger("opentrons").setLevel(logging.WARNING)
-logging.getLogger("asyncio").setLevel(logging.WARNING)
+def run(ctx):
+    return station.run(ctx)
 
 
 # Copyright (c) 2020 Covmatic.
