@@ -16,9 +16,9 @@ Visit the website https://covmatic.org/ for more documentation and information.
 > :warning: **This software is still in its beta phase**  
 > Every feature may be subject to change without notice
 
-You can [install the Covmatic Stations package via `pip`](https://test.pypi.org/project/covmatic-stations/):
+You can [install the Covmatic Stations package via `pip`](https://pypi.org/project/covmatic-stations/):
 ```
-<python> -m pip install -i https://test.pypi.org/simple/ covmatic-stations
+<python> -m pip install covmatic-stations
 ```
 Where `<python>` should be changed for the Python instance you wish to install the LocalWebServer onto. We will be following this convention for all the next instructions. 
 
