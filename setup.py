@@ -23,14 +23,16 @@ def get_version(rel_path):
 
 
 setuptools.setup(
-    name="covid19-system9",
-    version=get_version("system9/__init__.py"),
+    name="covmatic-stations",
+    version=get_version("covmatic_stations/__init__.py"),
     author="Marco Tiraboschi",
-    author_email="marcotiraboschi@hotmail.it",
-    description="Package for the COVID19 System-9 (Calcinate)",
+    author_email="marco.tiraboschi@unimi.it",
+    maintainer="Marco Tiraboschi, Agostino Facotti, Giada Facoetti",
+    maintainer_email="marco.tiraboschi@unimi.it, agostino.facotti@gmail.com, giada.facoetti@hotmail.it",
+    description="Package for the COVMATIC Opentrons stations",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/OpenSourceCovidTesting/covid19-system-9",
+    url="https://github.com/covmatic/stations",
     packages=setuptools.find_packages(),
     include_package_data=True,
     setup_requires=[

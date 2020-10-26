@@ -1,6 +1,6 @@
-include system9/a/*.json
-include system9/b/*.json
-include system9/msg/*.json
+include covmatic_stations/a/*.json
+include covmatic_stations/b/*.json
+include covmatic_stations/msg/*.json
 
 
 # Copyright (c) 2020 Covmatic.

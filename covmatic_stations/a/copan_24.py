@@ -2,9 +2,9 @@
 This file can be
  - imported: e.g. `from copan_24 import Copan24Specs`.
     Labware definition can be accessed with the method Copan24Specs.labware_definition
- - executed with opentrons_simulate or opetrons_execute: e.g. `opentrons_simulate system9/a/copan_24.py`
+ - executed with opentrons_simulate or opetrons_execute: e.g. `opentrons_simulate covmatic_stations/a/copan_24.py`
     This file acts as a test protocol for the custom labware.
- - executed with python:  e.g. `python -m system9.a.copan_24`.
+ - executed with python:  e.g. `python -m covmatic_stations.a.copan_24`.
     This script generates the json file for the custom labware"""
 import json
 from collections import OrderedDict

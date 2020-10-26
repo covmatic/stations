@@ -1,0 +1,14 @@
+{
+  "protocol description": {
+	"ENG": "wash B removal protocol for station B with Technogenetics kit",
+	"ITA": "protocollo di rimozione wash B per stazione B con kit Technogenetics"
+  },
+  "final cycle": {
+	"ENG": "If the wells have not dried, start a new run",
+	"ITA": "Se i pozzetti non sono asciutti, avviare una nuova run"
+  },
+  "end of cycle": {
+	"ENG": "If the wells have dried, press 'Cancel Run'",
+	"ITA": "Se i pozzetti sono asciutti, premere 'Cancel Run'"
+  }
+}

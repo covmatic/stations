@@ -2,11 +2,11 @@
 This file can be
  - imported: e.g. `from copan_48 import StaggeredCopan48Specs`.
     Labware definition can be accessed with the method StaggeredCopan48Specs.labware_definition
- - executed with opentrons_simulate or opetrons_execute: e.g. `opentrons_simulate system9/a/copan_48.py`
+ - executed with opentrons_simulate or opetrons_execute: e.g. `opentrons_simulate covmatic_stations/a/copan_48.py`
     This file acts as a test protocol for the custom labware.
- - executed with python:  e.g. `python -m system9.a.copan_48`.
+ - executed with python:  e.g. `python -m covmatic_stations.a.copan_48`.
     This script generates the json file for the custom labware"""
-from system9.a.copan_24 import Copan24Specs, json_property
+from covmatic_stations.a.copan_24 import Copan24Specs, json_property
 from opentrons.protocol_api import ProtocolContext
 from typing import Tuple
 

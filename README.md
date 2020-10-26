@@ -1,44 +1,53 @@
-[![Build status](https://github.com/OpenSourceCovidTesting/covid19-system-9_PRIVATE/workflows/package/badge.svg?branch=master)](https://github.com/OpenSourceCovidTesting/covid19-system-9_PRIVATE/actions?query=workflow%3Apackage)
+# Stations
+This software is part of the *Covmatic* project.  
+Visit the website https://covmatic.org/ for more documentation and information.
 
-# Introduction
+> :warning: **This package is meant to be directly used only by an informed developer audience**  
+>  [Non-devs can more easily access the protocols implemented in this package via the Covmatic LocalWebServer GUI](https://github.com/covmatic/localwebserver)  
 
-Indexed on [Test PyPi](https://test.pypi.org/project/covid19-system9)
+## Table of Contents
+* [Installation](#installation)
+* [Robot network configuration](#robot-network-configuration)
+* [Usage](#usage)
+* [Logging](#logging)
+* [Magnet settings](#magnet-settings)
 
-This is the protocol repository for Opentrons COVID-19 System 9 ([site name]).
+## Installation
+> :warning: **This software is still in its beta phase**  
+> Every feature may be subject to change without notice
 
-The protocol files that you can upload to your OT-2s will be kept here.
+You can [install the Covmatic Stations package via `pip`](https://test.pypi.org/project/covmatic-stations/):
+```
+<python> -m pip install -i https://test.pypi.org/simple/ covmatic-stations
+```
+Where `<python>` should be changed for the Python instance you wish to install the LocalWebServer onto. We will be following this convention for all the next instructions. 
 
-In order to avoid errors running local protocol simulations add the ./custom_defaults/*.json files to your ~/.opentrons folder.
+## Robot network configuration
+See the [`config`](config) folder for robot network configuration protocols. 
 
-# Utilities
+## Usage
+In the `protocols` directory you can find usage examples.
 
-In the `utilities` directory you can find helpful protocols for the setup of the robots.
-
- - `update.py` update (or install) the `covid19-system9` package on the robot
-
-## Config
-
-In the `utilities/config` directory you can find python scripts for generating setup protocols.
-
- - `hostame_ip.py` set the robot name, the hostname, the DNS, the NTP server and a static ip for the robot
-
-# Usage
-
-In the `protocols` directory you can find examples for using the `covid19-system9` protocols.
-
-First, you have to import the station you want to use. In this example (`protocols/station_a_technogenetics.py`) we will use the Station A loaded with 300uL tips, that can be used for BPGenomics samples.
+First, you have to import the station you want to use.
+In this example ([`protocols/station_a_technogenetics.py`](protocols/station_a_technogenetics.py)),
+we will use the Station A class for the Technogenetics kit that uses custom 4x6 COPAN tube racks.
 
 ```
-from system9.a.technogenetics import StationATechnogenetics24
+from covmatic_stations.a.technogenetics import StationATechnogenetics24
 ```
 
-Then, you have to instantiate your own station. All our classes come with a full set of default parameters, that you can change to suit your needs. E.g. let's assume you want to change the number of samples to 48.
+Then, you have to instantiate your own station.
+All classes come with a full set of default parameters,
+that you can change to suit your needs.
+E.g. let's assume you want to change the number of samples to 96.
 
 ```
 station = StationATechnogenetics24(num_samples=96)
 ```
 
-You can also specify your language: `'ENG'` (default) or `'ITA'`. E.g.
+You can also specify your language: `'ENG'` (default) or `'ITA'`.
+This choice will affect the messages that the internal protocol server sends to the LocalWebServer.
+E.g.
 
 ```
 station = StationATechnogenetics24(
@@ -71,11 +80,14 @@ logging.getLogger(StationAP300.__name__).setLevel(logging.INFO)
 By default, the level is set to `DEBUG`.
 
 ## Magnet Settings
-Magnet settings are read from a JSON file in the package. To override the file path, you can set the environment variable `OT_MAGNET_JSON` to your custom path (a path on the OT's Raspberry). If the file is `/home/altern_magnet.json`, you would write
+Magnet settings are read from a JSON file in the package.
+To override the file path, you can set the environment variable `OT_MAGNET_JSON`
+to your custom path (a path on the OT's Raspberry).
+If the file was `/home/altern_magnet.json`, you would have to write
 ```
 export OT_MAGNET_JSON=/home/altern_magnet.json
 ```
-To delete the variable you would write
+To delete the variable you can run
 ```
 unset OT_MAGNET_JSON
 ```
@@ -97,7 +109,7 @@ The JSON file should be an array of objects, each of which has the fields `seria
 
 To inspect a field of a magnet, use the following pattern `magnets.<field>.by_<key>["keyvalue"]`. E.g. to get the height of the magnet whose serial is `X` you would write
 ```
-from system9.b import magnets
+from covmatic_stations.b import magnets
 h = magnets.height.by_serial["X"]
 ```
 

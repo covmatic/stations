@@ -1,0 +1,14 @@
+{
+  "protocol description": {
+	"ENG": "elution removal protocol for station B with Technogenetics kit",
+	"ITA": "protocollo di rimozione eluato per stazione B con kit Technogenetics"
+  },
+  "final cycle": {
+	"ENG": "Remove all plates.\nStore the NEST plate at +4°C",
+	"ITA": "Rimuovere le piastre.\nConservare la NEST plate a +4°C"
+  },
+  "end of cycle": {
+	"ENG": "Remove all plates.\nStore the NEST plate at +4°C.\nLoad new plates",
+	"ITA": "Rimuovere le piastre.\nConservare la NEST plate a +4°C.\nCaricare le nuove piastre"
+  }
+}

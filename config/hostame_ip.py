@@ -74,7 +74,7 @@ NTP={ntp}
         exec_simul: bool = False,
     ):
         self.name = name
-        self.hostname = hostname or (name and "CAL-LAB-{}".format(name))
+        self.hostname = hostname or name
         self.ip = ip and "{}/24".format(ip)
         self.dns = dns
         self.gateway = gateway

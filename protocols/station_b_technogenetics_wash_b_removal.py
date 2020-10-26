@@ -1,10 +1,10 @@
 import logging
-from covmatic_stations.b.technogenetics import StationBTechnogenetics
+from covmatic_stations.b.technogenetics_short import StationBTechnogeneticsWashBRemoval
 
 
-logging.getLogger(StationBTechnogenetics.__name__).setLevel(logging.INFO)
+logging.getLogger(StationBTechnogeneticsWashBRemoval.__name__).setLevel(logging.INFO)
 metadata = {'apiLevel': '2.3'}
-station = StationBTechnogenetics(num_samples=96)
+station = StationBTechnogeneticsWashBRemoval(num_samples=96, num_cycles=3)
 
 
 def run(ctx):

@@ -1,5 +1,5 @@
 import logging
-from system9.a.technogenetics import StationATechnogenetics24
+from covmatic_stations.a.technogenetics import StationATechnogenetics24
 
 
 logging.getLogger(StationATechnogenetics24.__name__).setLevel(logging.INFO)

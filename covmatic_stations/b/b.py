@@ -274,9 +274,12 @@ class StationB(Station):
     @instrument_loader(0, "_m300")
     def load_m300(self):
         self._m300 = self._ctx.load_instrument('p300_multi_gen2', 'left', tip_racks=self._tips300)
-        self._m300.flow_rate.aspirate = self._bind_aspiration_rate
-        self._m300.flow_rate.dispense = self._bind_dispense_rate
-        self._m300.flow_rate.blow_out = self._bind_blowout_rate
+        if self._bind_aspiration_rate:
+            self._m300.flow_rate.aspirate = self._bind_aspiration_rate
+        if self._bind_dispense_rate:
+            self._m300.flow_rate.dispense = self._bind_dispense_rate
+        if self._bind_blowout_rate:
+            self._m300.flow_rate.blow_out = self._bind_blowout_rate
     
     def _tipracks(self) -> dict:
         return {"_tips300": "_m300",}

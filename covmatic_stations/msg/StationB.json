@@ -8,7 +8,7 @@
 	"ITA": "attesa prima dell'attivazione del modulo magnetico"
   },
   "incubate on magdeck": {
-	"ENG": "incubating {} magnet at room temperature",
+	"ENG": "incubating {} magnetic module at room temperature",
 	"ITA": "incubazione a RT con modulo magnetico {}"
   },
   "on": {
