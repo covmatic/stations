@@ -1,8 +1,13 @@
+# Install before
 opentrons
+
+# Required for core package
 cherrypy
 typing-extensions
-twine
 requests
+
+# Required for complete repo
+twine
 jupyter
 
 

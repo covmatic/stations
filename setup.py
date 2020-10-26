@@ -33,6 +33,9 @@ setuptools.setup(
     url="https://github.com/OpenSourceCovidTesting/covid19-system-9",
     packages=setuptools.find_packages(),
     include_package_data=True,
+    setup_requires=[
+        'opentrons',
+    ],
     install_requires=[
         'opentrons',
         'cherrypy',

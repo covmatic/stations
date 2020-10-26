@@ -5,6 +5,8 @@ on:
     branches:
       - master
       - develop
+    tags:
+      - 'v*.*'
   pull_request:
     branches:
       - master
@@ -19,12 +21,29 @@ jobs:
         target: [station_a_technogenetics, station_b_technogenetics, station_c_technogenetics]
     steps:
     - uses: actions/checkout@v2
-    - name: Install Opentrons separately
-      run: python -m pip install opentrons --upgrade
     - name: Install
       run: python setup.py install
     - name: Simulate the protocol
       run: opentrons_simulate protocols/${{ matrix.target }}.py
+
+  upload:
+    if: ${{ startsWith( github.ref , 'refs/tags/' ) }}
+    runs-on: ubuntu-latest
+    container: python:3.7
+    needs: simulate
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: python setup.py sdist
+    - name: Install Twine
+      run: python -m pip install twine
+    - name: Upload
+      run: python -m twine upload --verbose dist/*
+      env:
+        TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+        TWINE_REPOSITORY: ${{ secrets.TWINE_REPOSITORY }}
+        TWINE_NON_INTERACTIVE: 1
 
 
 # Copyright (c) 2020 Covmatic.
