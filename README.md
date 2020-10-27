@@ -69,7 +69,69 @@ def run(ctx):
     return station.run(ctx)
 ```
 
-## Logging
+### Extend stations
+If you want to customize your station further than what changing parameters allows, you can create your own station class.
+First identify the base stations that you want to customize (e.g. `StationBTechnogenetics`).
+
+You want to create a new class that extends that base class.
+The method `body` implements the core of the protocol instructions.
+Labware and instrument initialization is done before the body. Cleanup is done after.
+
+To change the protocol procedure, override `body`.
+
+If you want not to load a labware piece (or instrument), identify the corresponding loader method:
+it should be tagged by a `@labware_loader` (or `@instrument_loader`) decorator.
+> :warning: The method may be implemented by a parent class of the class you are looking at.
+> If you don't find the method in the class you are extending, look in the parent classes. 
+
+If you want to load a new labware piece (or instrument), define a corresponding loader method:
+it should be decorated by a `@labware_loader` (or `@instrument_loader`) decorator.
+The decorators take two arguments
+- `index`: labware and instruments are loaded in the order defined by these indices (first all the labware, then all the instruments)
+- `name`: the name of the labware or instrument (for debug purposes)
+
+An example of protocol file made by extending a station class could be
+```
+import logging
+from covmatic_stations.b.technogenetics import StationBTechnogenetics
+
+
+class CustomStation(StationBTechnogenetics)
+    # override loader: tempdeck will not be loaded
+    def load_tempdeck(self):
+        pass
+    
+    # load a custom labware piece
+    @labware_loader(10, "_custom_labware")
+        self._custom_labware = self._ctx.load_labware(...)
+    
+    # override body: redefine the procedure
+    def body(self)
+        ...
+
+# debug level brings up more log messages, try this when extending a new class
+logging.getLogger(CustomStation.__name__).setLevel(logging.DEBUG)
+metadata = {'apiLevel': '2.3'}
+station = CustomStation(num_samples=96)
+
+
+def run(ctx):
+    return station.run(ctx)
+``` 
+
+> :warning: If you are using the LocalWebServer GUI to upload the protocol file
+> store this custom file in a different path than the one used for the automatically generated protocol
+
+To upload this custom file using the LocalWebServer GUI:
+- **Save** the automatically generated protocol to a file
+- **Copy** the custom file to overwrite the automatically generated protocol
+- **Upload** the file (press the upload button)
+- **Verify** that the uploaded file is the correct one
+  - Read the confirmation message: you should read that the expecte file has been uploaded
+
+If the robot's Jupyter server is on, you can directly overwrite the protocol file on the robot via the Jupyter interface.
+
+### Logging
 You can adjust the logging level of your station (e.g. to `INFO`) like so
 
 ```
