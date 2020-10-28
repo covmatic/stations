@@ -1,15 +1,14 @@
-# Install before
-opentrons
-wheel
+import logging
+from covmatic_stations.a.technogenetics import StationATechnogenetics48
 
-# Required for core package
-cherrypy
-typing-extensions
-requests
 
-# Required for complete repo
-twine
-jupyter
+logging.getLogger(StationATechnogenetics48.__name__).setLevel(logging.INFO)
+metadata = {'apiLevel': '2.3'}
+station = StationATechnogenetics48(num_samples=96, language="ITA")
+
+
+def run(ctx):
+    return station.run(ctx)
 
 
 # Copyright (c) 2020 Covmatic.

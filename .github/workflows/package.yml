@@ -18,7 +18,7 @@ jobs:
     container: python:3.7
     strategy:
       matrix:
-        target: [station_a_technogenetics, station_b_technogenetics, station_b_technogenetics_elution_removal, station_b_technogenetics_wash_b_removal, station_c_technogenetics]
+        target: [station_a_technogenetics_24, station_a_technogenetics_48, station_b_technogenetics, station_b_technogenetics_elution_removal, station_b_technogenetics_wash_b_removal, station_c_technogenetics]
     steps:
     - uses: actions/checkout@v2
     - name: Install

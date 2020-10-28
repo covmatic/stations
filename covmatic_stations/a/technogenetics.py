@@ -1,8 +1,8 @@
 from .p1000 import StationAP1000
-from .reload import StationAReload
+from .reload import StationAReloadMixin
 from .copan_24 import Copan24Specs
+from .copan_48 import StaggeredCopan48Specs
 from typing import Tuple, Optional
-from functools import partial
 
 
 class StationATechnogenetics(StationAP1000):
@@ -23,6 +23,7 @@ class StationATechnogenetics(StationAP1000):
         tempdeck_temp: Optional[float] = None,
         tipracks_slots: Tuple[str, ...] = ('8', '9'),
         tipracks_slots_20: Tuple[str, ...] = ('7', '11'),
+        *args,
         **kwargs
     ):
         """
@@ -40,6 +41,7 @@ class StationATechnogenetics(StationAP1000):
         :param kwargs: other keyword arguments. See: StationAP1000, StationA
         """
         super(StationATechnogenetics, self).__init__(
+            *args,
             lysis_first=False,
             lys_mix_repeats=lys_mix_repeats,
             lys_mix_volume=lys_mix_volume,
@@ -128,7 +130,7 @@ class StationATechnogenetics(StationAP1000):
         self.logger.info(self.msg_format("move to B"))
 
 
-class StationATechnogeneticsReload(StationAReload, StationATechnogenetics):
+class StationATechnogeneticsReload(StationAReloadMixin, StationATechnogenetics):
     _protocol_description = "station A protocol for Technogenetics kit and COPAN 330C refillable samples."
 
 
@@ -137,6 +139,33 @@ class StationATechnogenetics24(StationATechnogenetics):
 
     def _load_source_racks(self):
         labware_def = Copan24Specs().labware_definition()
+        self._source_racks = [
+            self._ctx.load_labware_from_definition(
+                labware_def, slot,
+                'source tuberack ' + str(i + 1)
+            ) for i, slot in enumerate(self._source_racks_slots)
+        ]
+
+
+class StationATechnogenetics48(StationATechnogeneticsReload):
+    _protocol_description = "station A protocol for Technogenetics kit and COPAN 330C (x48 rack)"
+    
+    def __init__(
+        self,
+        positive_control_well: str = 'A7',
+        source_racks_slots: Tuple[str, ...] = ('2',),
+        *args,
+        **kwargs
+    ):
+        super(StationATechnogenetics48, self).__init__(
+            *args,
+            positive_control_well=positive_control_well,
+            source_racks_slots=source_racks_slots,
+            **kwargs
+        )
+    
+    def _load_source_racks(self):
+        labware_def = StaggeredCopan48Specs().labware_definition()
         self._source_racks = [
             self._ctx.load_labware_from_definition(
                 labware_def, slot,
