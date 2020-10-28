@@ -149,7 +149,7 @@ class Station(metaclass=StationMeta):
         self.stage = stage
         if self._start_at == self.stage:
             self._run_stage = True
-        self.logger.debug("[{}] Stage: {}".format("x" if self._run_stage else " ", self.stage))
+        self.logger.info("[{}] Stage: {}".format("x" if self._run_stage else " ", self.stage))
         return self._run_stage
     
     @property
