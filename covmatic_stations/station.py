@@ -1,6 +1,6 @@
 from . import __version__, __file__ as module_path
 from .request import StationRESTServerThread, DEFAULT_REST_KWARGS
-from .utils import ProtocolContextLoggingHandler
+from .utils import ProtocolContextLoggingHandler, LocalWebServerLoggingHandler
 from .lights import Button, BlinkingLightHTTP, BlinkingLight
 from opentrons.protocol_api import ProtocolContext
 from opentrons.types import Point
@@ -75,6 +75,7 @@ class Station(metaclass=StationMeta):
         dummy_lights: bool = True,
         jupyter: bool = True,
         log_filepath: Optional[str] = None,
+        log_lws_url: Optional[str] = None,
         logger: Optional[logging.getLoggerClass()] = None,
         language: str = "ENG",
         metadata: Optional[dict] = None,
@@ -84,6 +85,7 @@ class Station(metaclass=StationMeta):
         skip_delay: bool = False,
         start_at: Optional[str] = None,
         simulation_log_file: bool = False,
+        simulation_log_lws: bool = False,
         tip_log_filename: str = 'tip_log.json',
         tip_log_folder_path: str = '/var/lib/jupyter/notebooks/outputs',
         tip_track: bool = True,
@@ -97,6 +99,7 @@ class Station(metaclass=StationMeta):
         self.jupyter = jupyter
         self._language = language
         self._log_filepath = log_filepath
+        self._log_lws_url = log_lws_url
         self._logger = logger
         self.metadata = metadata
         self._num_samples = num_samples
@@ -111,6 +114,7 @@ class Station(metaclass=StationMeta):
         self._drop_count = 0
         self._side_switch = True
         self._simulation_log_file = simulation_log_file
+        self._simulation_log_lws = simulation_log_lws
         self.status = "initializing"
         self.stage = None
         self._msg = ""
@@ -155,21 +159,14 @@ class Station(metaclass=StationMeta):
             self._logger.addHandler(ProtocolContextLoggingHandler(self._ctx))
         return self._logger
     
-    @property
-    def log_file_handler(self) -> Optional[logging.getLoggerClass()]:
-        if not hasattr(self, "_fh"):
-            if self._log_filepath and self._simulation_log_file:
-                os.makedirs(os.path.dirname(self._log_filepath), exist_ok=True)
-                self._fh = logging.FileHandler(self._log_filepath)
-            else:
-                self._fh = None
-        return self._fh
-    
     def setup_opentrons_logger(self):
         stack_logger = logging.getLogger('opentrons')
         stack_logger.setLevel(self.logger.getEffectiveLevel())
-        if self.log_file_handler:
-            stack_logger.addHandler(self.log_file_handler)
+        if self._log_filepath and (self._simulation_log_file or not self._ctx.is_simulating()):
+            os.makedirs(os.path.dirname(self._log_filepath), exist_ok=True)
+            stack_logger.addHandler(logging.FileHandler(self._log_filepath))
+        if self._log_lws_url and (self._simulation_log_lws or not self._ctx.is_simulating()):
+            stack_logger.addHandler(LocalWebServerLoggingHandler(self._log_lws_url))
     
     @property
     def logger_name(self) -> str:

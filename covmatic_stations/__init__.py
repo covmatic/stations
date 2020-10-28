@@ -1,7 +1,7 @@
 import logging
 
 
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 
 logging.basicConfig(
@@ -10,6 +10,7 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S',
 )
 logging.getLogger("asyncio").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
 # Copyright (c) 2020 Covmatic.

@@ -2,6 +2,7 @@ from opentrons.protocol_api import ProtocolContext
 from opentrons.types import Location
 import logging
 import math
+import requests
 from itertools import tee, cycle, islice, chain, repeat
 from typing import Tuple, Union, Iterable, Callable, Optional
 
@@ -17,6 +18,19 @@ class ProtocolContextLoggingHandler(logging.Handler):
             self._ctx.comment(self.format(record))
         except Exception:
             self.handleError(record)
+
+
+class LocalWebServerLoggingHandler(logging.Handler):
+    """Logging Handler that emits logs through the ProtocolContext comment method"""
+    def __init__(self, url: str, *args, **kwargs):
+        super(LocalWebServerLoggingHandler, self).__init__(*args, **kwargs)
+        self._url = url
+    
+    def emit(self, record):
+        try:
+            requests.post(self._url, self.format(record))
+        except Exception:
+            pass
 
 
 def mix_bottom_top(pip, reps: int, vol: float, pos: Callable[[float], Location], bottom: float, top: float):
