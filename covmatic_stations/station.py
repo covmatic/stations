@@ -74,7 +74,7 @@ class Station(metaclass=StationMeta):
         drop_threshold: int = 296,
         dummy_lights: bool = True,
         jupyter: bool = True,
-        log_filepath: str = '/var/lib/jupyter/notebooks/outputs/completion_log.json',
+        log_filepath: Optional[str] = None,
         logger: Optional[logging.getLoggerClass()] = None,
         language: str = "ENG",
         metadata: Optional[dict] = None,
@@ -83,6 +83,7 @@ class Station(metaclass=StationMeta):
         samples_per_col: int = 8,
         skip_delay: bool = False,
         start_at: Optional[str] = None,
+        simulation_log_file: bool = False,
         tip_log_filename: str = 'tip_log.json',
         tip_log_folder_path: str = '/var/lib/jupyter/notebooks/outputs',
         tip_track: bool = True,
@@ -109,6 +110,7 @@ class Station(metaclass=StationMeta):
         self._ctx: Optional[ProtocolContext] = None
         self._drop_count = 0
         self._side_switch = True
+        self._simulation_log_file = simulation_log_file
         self.status = "initializing"
         self.stage = None
         self._msg = ""
@@ -152,6 +154,22 @@ class Station(metaclass=StationMeta):
             self._logger = logging.getLogger(self.logger_name)
             self._logger.addHandler(ProtocolContextLoggingHandler(self._ctx))
         return self._logger
+    
+    @property
+    def log_file_handler(self) -> Optional[logging.getLoggerClass()]:
+        if not hasattr(self, "_fh"):
+            if self._log_filepath and self._simulation_log_file:
+                os.makedirs(os.path.dirname(self._log_filepath), exist_ok=True)
+                self._fh = logging.FileHandler(self._log_filepath)
+            else:
+                self._fh = None
+        return self._fh
+    
+    def setup_opentrons_logger(self):
+        stack_logger = logging.getLogger('opentrons')
+        stack_logger.setLevel(self.logger.getEffectiveLevel())
+        if self.log_file_handler:
+            stack_logger.addHandler(self.log_file_handler)
     
     @property
     def logger_name(self) -> str:
@@ -329,6 +347,7 @@ class Station(metaclass=StationMeta):
             self._request = StationRESTServerThread(ctx, station=self, **self._rest_server_kwargs)
             self._request.start()
         
+        self.setup_opentrons_logger()
         self.logger.info(self.msg_format("protocol description"))
         self.logger.info(self.msg_format("num samples", self._num_samples))
         self.logger.info(self.msg_format("version", __version__))
@@ -344,9 +363,6 @@ class Station(metaclass=StationMeta):
         finally:
             self.status = "finished"
             if not self._ctx.is_simulating():
-                os.makedirs(os.path.dirname(self._log_filepath), exist_ok=True)
-                with open(self._log_filepath, "w") as f:
-                    f.write(self._request.log())
                 self._request.join(2, 0.5)
             self.track_tip()
             self._button.color = 'blue'
