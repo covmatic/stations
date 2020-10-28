@@ -25,11 +25,11 @@ class StationAReloadMixin(metaclass=StationMeta):
         for set_idx in reversed(range(self.sets_of_samples)):
             self.logger.debug("{} remaining samples".format(self.remaining_samples))
             for s, d in self.non_control_positions(self._sources[:self.remaining_samples], self._dests_single[self._done_samples:]):
-                self.transfer_sample(s, d)
+                if self.run_stage("transfer sample {}/{}".format(self._done_samples + 1, self._num_samples)):
+                    self.transfer_sample(s, d)
                 self._done_samples += 1
-            if set_idx:
-                self.logger.info(self.msg_format("refill", min(self.remaining_samples, self.max_samples_per_set)))
-                self._ctx.pause()
+            if set_idx and self.run_stage("refill {}/{}".format(self.sets_of_samples - set_idx, self.sets_of_samples - 1)):
+                self.dual_pause(self.msg_format("refill", min(self.remaining_samples, self.max_samples_per_set)))
 
 
 # Subclass is more straightforward
