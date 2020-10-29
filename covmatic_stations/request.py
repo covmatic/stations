@@ -78,6 +78,7 @@ class StationRESTServer:
             "time": datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S:%f"),
             "temp": getattr(getattr(self._station, "_tempdeck", None), "temperature", None),
             "tips": tip_log,
+            "runlog": self._station._log_filepath,
         }, indent=2)
     
     @cherrypy.expose

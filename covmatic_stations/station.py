@@ -14,6 +14,7 @@ import json
 import math
 import os
 import logging
+import time
 
 
 def loader(key):
@@ -75,7 +76,7 @@ class Station(metaclass=StationMeta):
         drop_threshold: int = 296,
         dummy_lights: bool = True,
         jupyter: bool = True,
-        log_filepath: Optional[str] = None,
+        log_filepath: Optional[str] = '/var/lib/jupyter/notebooks/outputs/run_{}.log',
         log_lws_ip: Optional[str] = None,
         log_lws_endpoint: str = ":5002/log",
         logger: Optional[logging.getLoggerClass()] = None,
@@ -101,7 +102,7 @@ class Station(metaclass=StationMeta):
         self._dummy_lights = dummy_lights
         self.jupyter = jupyter
         self._language = language
-        self._log_filepath = log_filepath
+        self._log_filepath = log_filepath.format(time.strftime("%Y_%m_%d__%H_%M_%S"))
         self._log_lws_ip = log_lws_ip
         self._log_lws_endpoint = log_lws_endpoint
         self._logger = logger
