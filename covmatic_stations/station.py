@@ -243,7 +243,7 @@ class Station(metaclass=StationMeta):
     
     def track_tip(self):
         if self._tip_track and not self._ctx.is_simulating():
-            self.logger.info(self.get_msg_format("tip log dump", self._tip_log_filepath))
+            self.logger.debug(self.get_msg_format("tip log dump", self._tip_log_filepath))
             os.makedirs(self._tip_log_folder_path, exist_ok=True)
             with open(self._tip_log_filepath, 'w') as outfile:
                 json.dump({
