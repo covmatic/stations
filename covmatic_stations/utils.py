@@ -20,29 +20,6 @@ class ProtocolContextLoggingHandler(logging.Handler):
             self.handleError(record)
 
 
-def make_runlog_cb():
-    level = 0
-    last_dollar = None
-
-    def _str_runlog(command: Dict[str, Any]) -> str:
-        nonlocal level
-        nonlocal last_dollar
-
-        if last_dollar == command['$']:
-            if command['$'] == 'before':
-                level += 1
-            else:
-                level -= 1
-        last_dollar = command['$']
-        if command['$'] == 'before':
-            return ' '.join([
-                '\t' * level,
-                command['payload'].get('text', '')
-                .format(**command['payload'])])
-
-    return _str_runlog
-
-
 class LocalWebServerLogger:
     def __init__(self, url: str, *args, **kwargs):
         super(LocalWebServerLogger, self).__init__(*args, **kwargs)
@@ -63,12 +40,10 @@ class LocalWebServerLogger:
     def __call__(self, record: Dict[str, Any]):
         s = self.format(record)
         if s:
-            print(s)
             try:
                 requests.post(self._url, s.encode('utf-8'), headers={'Content-type': 'text/plain; charset=utf-8'})
             except Exception:
                 pass
-        
 
 
 def mix_bottom_top(pip, reps: int, vol: float, pos: Callable[[float], Location], bottom: float, top: float):
