@@ -64,6 +64,7 @@ class StationRESTServer:
         
         if self._station._wait_first_log and self._station._waiting_first_log:
             self._station._ctx.resume()
+            return json.dumps({})
         
         status = getattr(self._station, "status", None)
         tip_log = copy.deepcopy(getattr(self._station, "_tip_log", {}))
