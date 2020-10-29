@@ -120,6 +120,7 @@ class Station(metaclass=StationMeta):
         self._simulation_log_file = simulation_log_file
         self._simulation_log_lws = simulation_log_lws
         self._wait_first_log = wait_first_log
+        self._waiting_first_log = False
         self.status = "initializing"
         self.stage = None
         self._msg = ""
@@ -352,7 +353,9 @@ class Station(metaclass=StationMeta):
         
         self.setup_opentrons_logger()
         if self._wait_first_log:
-            self.pause("wait log", blink=False)
+            self._waiting_first_log = True
+            self.pause("wait log", blink=False, home=False, color='yellow')
+            self._waiting_first_log = False
         
         self.logger.info(self.msg_format("protocol description"))
         self.logger.info(self.msg_format("num samples", self._num_samples))

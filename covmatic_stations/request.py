@@ -62,8 +62,7 @@ class StationRESTServer:
             lws_logger.ip = ip
             self._station.logger.debug("Set runlog URL to: {}".format(lws_logger.url))
         
-        if self._station._wait_first_log:
-            self._station._wait_first_log = False
+        if self._station._wait_first_log and self._station._waiting_first_log:
             self._station._ctx.resume()
         
         status = getattr(self._station, "status", None)
