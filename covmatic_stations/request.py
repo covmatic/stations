@@ -60,7 +60,7 @@ class StationRESTServer:
                 if ip == "::1":
                     ip = "127.0.0.1"
             lws_logger.ip = ip
-            self._station.logger.info("Set runlog URL to: {}".format(lws_logger.url))
+            self._station.logger.debug("Set runlog URL to: {}".format(lws_logger.url))
         
         status = getattr(self._station, "status", None)
         tip_log = copy.deepcopy(getattr(self._station, "_tip_log", {}))
