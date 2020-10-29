@@ -62,6 +62,10 @@ class StationRESTServer:
             lws_logger.ip = ip
             self._station.logger.debug("Set runlog URL to: {}".format(lws_logger.url))
         
+        if self._station._wait_first_log:
+            self._station._wait_first_log = False
+            self._station._ctx.resume()
+        
         status = getattr(self._station, "status", None)
         tip_log = copy.deepcopy(getattr(self._station, "_tip_log", {}))
         if "tips" in tip_log:

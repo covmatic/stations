@@ -91,6 +91,7 @@ class Station(metaclass=StationMeta):
         tip_log_filename: str = 'tip_log.json',
         tip_log_folder_path: str = '/var/lib/jupyter/notebooks/outputs',
         tip_track: bool = True,
+        wait_first_log: bool = False,
         **kwargs,
     ):
         self._drop_loc_l = drop_loc_l
@@ -118,6 +119,7 @@ class Station(metaclass=StationMeta):
         self._side_switch = True
         self._simulation_log_file = simulation_log_file
         self._simulation_log_lws = simulation_log_lws
+        self._wait_first_log = wait_first_log
         self.status = "initializing"
         self.stage = None
         self._msg = ""
@@ -349,6 +351,9 @@ class Station(metaclass=StationMeta):
             self._request.start()
         
         self.setup_opentrons_logger()
+        if self._wait_first_log:
+            self.pause("wait log", blink=False)
+        
         self.logger.info(self.msg_format("protocol description"))
         self.logger.info(self.msg_format("num samples", self._num_samples))
         self.logger.info(self.msg_format("version", __version__))
