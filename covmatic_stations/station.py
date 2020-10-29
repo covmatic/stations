@@ -1,9 +1,10 @@
 from . import __version__, __file__ as module_path
 from .request import StationRESTServerThread, DEFAULT_REST_KWARGS
-from .utils import ProtocolContextLoggingHandler, LocalWebServerLoggingHandler
+from .utils import ProtocolContextLoggingHandler, LocalWebServerLogger
 from .lights import Button, BlinkingLightHTTP, BlinkingLight
 from opentrons.protocol_api import ProtocolContext
 from opentrons.types import Point
+from opentrons import commands
 from abc import ABCMeta, abstractmethod
 from functools import wraps, partialmethod
 from itertools import chain
@@ -166,7 +167,7 @@ class Station(metaclass=StationMeta):
             os.makedirs(os.path.dirname(self._log_filepath), exist_ok=True)
             stack_logger.addHandler(logging.FileHandler(self._log_filepath))
         if self._log_lws_url and (self._simulation_log_lws or not self._ctx.is_simulating()):
-            stack_logger.addHandler(LocalWebServerLoggingHandler(self._log_lws_url))
+            self._ctx.broker.subscribe(commands.command_types.COMMAND, LocalWebServerLogger(self._log_lws_url))
     
     @property
     def logger_name(self) -> str:
