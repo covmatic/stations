@@ -7,6 +7,7 @@ import copy
 import json
 import time
 import os
+import ipaddress
 
 
 DEFAULT_REST_KWARGS = dict(
@@ -46,6 +47,21 @@ class StationRESTServer:
     
     @cherrypy.expose
     def log(self) -> str:
+        lws_logger = getattr(self._station, "_lws_logger", None)
+        if lws_logger:
+            ip = cherrypy.request.remote.ip
+            try:
+                ip = ipaddress.ip_address(ip)
+            except ValueError:
+                pass
+            else:
+                ipv4 = ip.ipv4_mapped if isinstance(ip, ipaddress.IPv6Address) else None
+                ip = str(ip) if ipv4 is None else str(ipv4)
+                if ip == "::1":
+                    ip = "127.0.0.1"
+            lws_logger.ip = ip
+            self._station.logger.info("Set runlog URL to: {}".format(lws_logger.url))
+        
         status = getattr(self._station, "status", None)
         tip_log = copy.deepcopy(getattr(self._station, "_tip_log", {}))
         if "tips" in tip_log:

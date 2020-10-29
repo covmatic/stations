@@ -21,11 +21,16 @@ class ProtocolContextLoggingHandler(logging.Handler):
 
 
 class LocalWebServerLogger:
-    def __init__(self, url: str, *args, **kwargs):
+    def __init__(self, ip: Optional[str] = None, endpoint: str = ":5002/log", *args, **kwargs):
         super(LocalWebServerLogger, self).__init__(*args, **kwargs)
-        self._url = url
+        self.ip = ip
+        self.endpoint = endpoint
         self.level = 0
         self.last_dollar = None
+    
+    @property
+    def url(self) -> str:
+        return "http://{}{}".format(self.ip, self.endpoint)
     
     def format(self, record):
         if self.last_dollar == record['$']:
@@ -39,9 +44,10 @@ class LocalWebServerLogger:
     
     def __call__(self, record: Dict[str, Any]):
         s = self.format(record)
-        if s:
+        url = self.url
+        if url and s:
             try:
-                requests.post(self._url, s.encode('utf-8'), headers={'Content-type': 'text/plain; charset=utf-8'})
+                requests.post(url, s.encode('utf-8'), headers={'Content-type': 'text/plain; charset=utf-8'})
             except Exception:
                 pass
 
