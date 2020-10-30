@@ -94,15 +94,11 @@ class StationATechnogenetics(StationAP1000):
         return self._strips_block.rows()[0][-1]
     
     def transfer_proteinase(self):
-        has_tip = False
         for i, d in enumerate(self._dests_multi):
             if self.run_stage("transfer proteinase {}/{}".format(i + 1, len(self._dests_multi))):
-                if not has_tip:
-                    self.pick_up(self._m20)
-                    has_tip = True
+                self.pick_up(self._m20)
                 self._m20.transfer(self._prot_k_volume, self._prot_k[i // self.cols_per_strip], d.bottom(self._ic_headroom_bottom), new_tip='never')
-        if has_tip:
-            self._m20.drop_tip()
+                self._m20.drop_tip()
     
     def transfer_beads(self):
         for i, d in enumerate(self._dests_multi):
