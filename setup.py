@@ -43,6 +43,7 @@ setuptools.setup(
         'opentrons',
         'cherrypy',
         'requests',
+        'ipaddress',
         'typing-extensions'
     ],
     classifiers=[

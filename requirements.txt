@@ -6,6 +6,7 @@ wheel
 cherrypy
 typing-extensions
 requests
+ipaddress
 
 # Required for complete repo
 twine

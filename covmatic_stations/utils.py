@@ -2,8 +2,9 @@ from opentrons.protocol_api import ProtocolContext
 from opentrons.types import Location
 import logging
 import math
+import requests
 from itertools import tee, cycle, islice, chain, repeat
-from typing import Tuple, Union, Iterable, Callable, Optional
+from typing import Tuple, Union, Iterable, Callable, Optional, Dict, Any
 
 
 class ProtocolContextLoggingHandler(logging.Handler):
@@ -17,6 +18,38 @@ class ProtocolContextLoggingHandler(logging.Handler):
             self._ctx.comment(self.format(record))
         except Exception:
             self.handleError(record)
+
+
+class LocalWebServerLogger:
+    def __init__(self, ip: Optional[str] = None, endpoint: str = ":5002/log", *args, **kwargs):
+        super(LocalWebServerLogger, self).__init__(*args, **kwargs)
+        self.ip = ip
+        self.endpoint = endpoint
+        self.level = 0
+        self.last_dollar = None
+    
+    @property
+    def url(self) -> str:
+        return "http://{}{}".format(self.ip, self.endpoint)
+    
+    def format(self, record):
+        if self.last_dollar == record['$']:
+            if record['$'] == 'before':
+                self.level += 1
+            else:
+                self.level -= 1
+        self.last_dollar = record['$']
+        if record['$'] == 'before':
+            return ' '.join(['\t' * self.level, record['payload'].get('text', '').format(**record['payload'])])
+    
+    def __call__(self, record: Dict[str, Any]):
+        s = self.format(record)
+        url = self.url
+        if url and s:
+            try:
+                requests.post(url, s.encode('utf-8'), headers={'Content-type': 'text/plain; charset=utf-8'})
+            except Exception:
+                pass
 
 
 def mix_bottom_top(pip, reps: int, vol: float, pos: Callable[[float], Location], bottom: float, top: float):

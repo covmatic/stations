@@ -1,4 +1,8 @@
 {
+  "wait log": {
+	"ENG": "waiting for the first log request to start",
+	"ITA": "attendo la prima richiesta di log per iniziare"
+  },
   "empty tips": {
 	"ENG": "please empty tips from waste before resuming",
 	"ITA": "svuotare il cestino delle tips prima di riprendere"

@@ -1,9 +1,10 @@
 from . import __version__, __file__ as module_path
 from .request import StationRESTServerThread, DEFAULT_REST_KWARGS
-from .utils import ProtocolContextLoggingHandler
+from .utils import ProtocolContextLoggingHandler, LocalWebServerLogger
 from .lights import Button, BlinkingLightHTTP, BlinkingLight
 from opentrons.protocol_api import ProtocolContext
 from opentrons.types import Point
+from opentrons import commands
 from abc import ABCMeta, abstractmethod
 from functools import wraps, partialmethod
 from itertools import chain
@@ -13,6 +14,7 @@ import json
 import math
 import os
 import logging
+import time
 
 
 def loader(key):
@@ -74,7 +76,9 @@ class Station(metaclass=StationMeta):
         drop_threshold: int = 296,
         dummy_lights: bool = True,
         jupyter: bool = True,
-        log_filepath: str = '/var/lib/jupyter/notebooks/outputs/completion_log.json',
+        log_filepath: Optional[str] = '/var/lib/jupyter/notebooks/outputs/run_{}.log',
+        log_lws_ip: Optional[str] = None,
+        log_lws_endpoint: str = ":5002/log",
         logger: Optional[logging.getLoggerClass()] = None,
         language: str = "ENG",
         metadata: Optional[dict] = None,
@@ -83,9 +87,12 @@ class Station(metaclass=StationMeta):
         samples_per_col: int = 8,
         skip_delay: bool = False,
         start_at: Optional[str] = None,
+        simulation_log_file: bool = False,
+        simulation_log_lws: bool = False,
         tip_log_filename: str = 'tip_log.json',
         tip_log_folder_path: str = '/var/lib/jupyter/notebooks/outputs',
         tip_track: bool = True,
+        wait_first_log: bool = False,
         **kwargs,
     ):
         self._drop_loc_l = drop_loc_l
@@ -95,7 +102,9 @@ class Station(metaclass=StationMeta):
         self._dummy_lights = dummy_lights
         self.jupyter = jupyter
         self._language = language
-        self._log_filepath = log_filepath
+        self._log_filepath = log_filepath.format(time.strftime("%Y_%m_%d__%H_%M_%S"))
+        self._log_lws_ip = log_lws_ip
+        self._log_lws_endpoint = log_lws_endpoint
         self._logger = logger
         self.metadata = metadata
         self._num_samples = num_samples
@@ -109,6 +118,10 @@ class Station(metaclass=StationMeta):
         self._ctx: Optional[ProtocolContext] = None
         self._drop_count = 0
         self._side_switch = True
+        self._simulation_log_file = simulation_log_file
+        self._simulation_log_lws = simulation_log_lws
+        self._wait_first_log = wait_first_log
+        self._waiting_first_log = False
         self.status = "initializing"
         self.stage = None
         self._msg = ""
@@ -143,7 +156,7 @@ class Station(metaclass=StationMeta):
         self.stage = stage
         if self._start_at == self.stage:
             self._run_stage = True
-        self.logger.debug("[{}] Stage: {}".format("x" if self._run_stage else " ", self.stage))
+        self.logger.info("[{}] Stage: {}".format("x" if self._run_stage else " ", self.stage))
         return self._run_stage
     
     @property
@@ -152,6 +165,16 @@ class Station(metaclass=StationMeta):
             self._logger = logging.getLogger(self.logger_name)
             self._logger.addHandler(ProtocolContextLoggingHandler(self._ctx))
         return self._logger
+    
+    def setup_opentrons_logger(self):
+        stack_logger = logging.getLogger('opentrons')
+        stack_logger.setLevel(self.logger.getEffectiveLevel())
+        if self._log_filepath and (self._simulation_log_file or not self._ctx.is_simulating()):
+            os.makedirs(os.path.dirname(self._log_filepath), exist_ok=True)
+            stack_logger.addHandler(logging.FileHandler(self._log_filepath))
+        self._lws_logger = LocalWebServerLogger(self._log_lws_ip, self._log_lws_endpoint)
+        if self._simulation_log_lws or not self._ctx.is_simulating():
+            self._ctx.broker.subscribe(commands.command_types.COMMAND, self._lws_logger)
     
     @property
     def logger_name(self) -> str:
@@ -221,7 +244,7 @@ class Station(metaclass=StationMeta):
     
     def track_tip(self):
         if self._tip_track and not self._ctx.is_simulating():
-            self.logger.info(self.get_msg_format("tip log dump", self._tip_log_filepath))
+            self.logger.debug(self.get_msg_format("tip log dump", self._tip_log_filepath))
             os.makedirs(self._tip_log_folder_path, exist_ok=True)
             with open(self._tip_log_filepath, 'w') as outfile:
                 json.dump({
@@ -325,9 +348,15 @@ class Station(metaclass=StationMeta):
         self.status = "running"
         self._ctx = ctx
         self._button = (Button.dummy if self._dummy_lights else Button)(self._ctx, 'blue')
-        if not self._ctx.is_simulating():
+        if self._simulation_log_lws or not self._ctx.is_simulating():
             self._request = StationRESTServerThread(ctx, station=self, **self._rest_server_kwargs)
             self._request.start()
+        
+        self.setup_opentrons_logger()
+        if self._wait_first_log:
+            self._waiting_first_log = True
+            self.pause("wait log", blink=False, home=False, color='yellow')
+            self._waiting_first_log = False
         
         self.logger.info(self.msg_format("protocol description"))
         self.logger.info(self.msg_format("num samples", self._num_samples))
@@ -344,9 +373,6 @@ class Station(metaclass=StationMeta):
         finally:
             self.status = "finished"
             if not self._ctx.is_simulating():
-                os.makedirs(os.path.dirname(self._log_filepath), exist_ok=True)
-                with open(self._log_filepath, "w") as f:
-                    f.write(self._request.log())
                 self._request.join(2, 0.5)
             self.track_tip()
             self._button.color = 'blue'
