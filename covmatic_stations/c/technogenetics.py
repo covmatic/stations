@@ -18,7 +18,8 @@ class StationCTechnogenetics(StationC):
     def __init__(
         self,
         mm_mix: dict = _MM_MIX,
-        mm_tube_capacity: float = 1950,
+        mm_strip_capacity: float = 180,
+        mm_tube_capacity: float = 1800,
         pause_on_mastermix_msg: bool = True,
         source_plate_name: str = 'chilled elution plate on block for Station B',
         tiprack_slots: Tuple[str, ...] = ('2', '3', '6', '7', '9', '11'),
@@ -28,7 +29,8 @@ class StationCTechnogenetics(StationC):
     ):
         """ Build a :py:class:`.StationCTechnogenetics`.
         :param mm_mix: Mastermix reagent quantities per sample in uL
-        :param mm_tube_capacity: Capacity of one strip of tubes for mastermix in uL
+        :param mm_strip_capacity: Capacity of one cell of the strip for mastermix in uL
+        :param mm_tube_capacity: Capacity of one tube for mastermix in uL
         :param pause_on_mastermix_msg: Pause when diplaying message with mastermix composition
         :param kwargs: other keyword arguments. See: StationC, Station
         """
@@ -40,6 +42,7 @@ class StationCTechnogenetics(StationC):
             **kwargs
         )
         self._mm_mix = copy.deepcopy(mm_mix)
+        self._mm_strip_capacity = mm_strip_capacity
         self._mm_tube_capacity = mm_tube_capacity
         self._pause_on_mastermix_msg = pause_on_mastermix_msg
     
@@ -64,8 +67,12 @@ class StationCTechnogenetics(StationC):
         pass
     
     @property
+    def mm_capacity(self) -> float:
+        return min(self._mm_tube_capacity, 8 * self._mm_strip_capacity)
+    
+    @property
     def num_mm_tubes(self) -> int:
-        return int(math.ceil(self.mm_per_sample * self._samples_this_cycle * self._mastermix_vol_headroom / self._mm_tube_capacity))
+        return int(math.ceil(self.mm_per_sample * self._samples_this_cycle * self._mastermix_vol_headroom / self.mm_capacity))
     
     @property
     def samples_per_mm_tube(self) -> Tuple[int, ...]:
