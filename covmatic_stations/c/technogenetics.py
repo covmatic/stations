@@ -1,3 +1,4 @@
+from ..station import instrument_loader, labware_loader
 from .c import StationC
 import math
 import copy
@@ -121,3 +122,18 @@ class StationCTechnogenetics(StationC):
                 while "  " in r:
                     r = r.replace("  ", "\u2007 ")
                 self.logger.info(r)
+
+
+class StationCTechnogeneticsM300(StationCTechnogenetics):
+    # variable names are kept as before for easy inheritance
+    # although pipette is now a m300 
+    @labware_loader(1, "_tips20")
+    def load_tips20(self):
+        self._tips20 = [
+            self._ctx.load_labware('opentrons_96_filtertiprack_200ul', slot)
+            for slot in self._tipracks_slots
+        ]
+    
+    @instrument_loader(0, "_m20")
+    def load_m20(self):
+        self._m20 = self._ctx.load_instrument('p300_multi_gen2', 'right', tip_racks=self._tips20)
