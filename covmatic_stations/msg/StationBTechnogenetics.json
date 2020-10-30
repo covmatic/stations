@@ -16,8 +16,8 @@
 	"ITA": "Spinnare la deepwell per 20 sec a RT.\nAl termine rimettere la deepwell nel modulo magnetico"
   },
   "deepwell incubation" : {
-	"ENG": "Move the deepwell plate on the temperature module at 55°C.\nIncubate for 40 minutes, at least. Set a timer.\nMeanwhile, prepare the PCR plate in Station C\nWhen beads have dried, please make the robot continue",
-	"ITA": "Spostare la deepwell sul modulo di temperatura a 55°C.\nIncubare per almeno 40 min, impostare timer.\nN.B. PREPARARE LA PCR PLATE NELLA STAZIONE C\nAd asciugatura completa, riattivare il robot"
+	"ENG": "Move the deepwell plate on the temperature module at 55°C.\nIncubate for 75 minutes, at least. Set a timer.\nMeanwhile, prepare the PCR plate in Station C\nWhen beads have dried, please make the robot continue",
+	"ITA": "Spostare la deepwell sul modulo di temperatura a 55°C.\nIncubare per almeno 75 min, impostare timer.\nN.B. PREPARARE LA PCR PLATE NELLA STAZIONE C\nAd asciugatura completa, riattivare il robot"
   },
   "seal the deepwell": {
 	"ENG": "Seal the deepwell plate with a sticker.\nPut the deepwell plate in the thermomixer at 700 rpm, 55°C for 5 minutes, at least.\nWhen the beads are re-suspended, place the deepwell plate onto the magnetic module",
