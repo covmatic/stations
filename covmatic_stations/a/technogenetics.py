@@ -1,7 +1,7 @@
 from .p1000 import StationAP1000
 from .reload import StationAReloadMixin
 from .copan_24 import Copan24Specs
-from .copan_48 import StaggeredCopan48Specs
+from .copan_48 import copan_48_corrected_specs
 from typing import Tuple, Optional
 
 
@@ -161,7 +161,7 @@ class StationATechnogenetics48(StationATechnogeneticsReload):
         )
     
     def _load_source_racks(self):
-        labware_def = StaggeredCopan48Specs().labware_definition()
+        labware_def = copan_48_corrected_specs.labware_definition()
         self._source_racks = [
             self._ctx.load_labware_from_definition(
                 labware_def, slot,
