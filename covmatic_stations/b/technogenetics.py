@@ -136,6 +136,7 @@ class StationBTechnogenetics(StationB):
             positions = self.temp_samples_m
         self._magdeck.disengage()
         super(StationBTechnogenetics, self).elute(positions=positions, transfer=transfer, stage=stage)
+        self._magdeck.disengage()
     
     def remove_wash(self, vol):
         self._magdeck.engage(height=self._magheight)
