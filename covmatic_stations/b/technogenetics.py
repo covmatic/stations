@@ -186,8 +186,10 @@ class StationBTechnogenetics(StationB):
         self.wash(self._wash_2_vol, self.wash2, self._wash_2_times, "wash 2")
         
         if self.run_stage("spin deepwell"):
+            self._magdeck.disengage()
             self.dual_pause("spin the deepwell", between=self.set_external)
             self.set_internal()
+            self._magdeck.engage(height=self._magheight)
         
         self.remove_wash(self._remove_wash_vol)
         
