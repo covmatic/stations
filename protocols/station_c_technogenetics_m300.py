@@ -1,16 +1,14 @@
 import logging
+from covmatic_stations.c.technogenetics import StationCTechnogeneticsM300
 
 
-__version__ = "1.0.1"
+logging.getLogger(StationCTechnogeneticsM300.__name__).setLevel(logging.INFO)
+metadata = {'apiLevel': '2.3'}
+station = StationCTechnogeneticsM300(num_samples=96)
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(name)-12s %(levelname)-8s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-)
-logging.getLogger("asyncio").setLevel(logging.WARNING)
-logging.getLogger("urllib3").setLevel(logging.WARNING)
+def run(ctx):
+    return station.run(ctx)
 
 
 # Copyright (c) 2020 Covmatic.

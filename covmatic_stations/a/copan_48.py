@@ -9,6 +9,10 @@ This file can be
 from covmatic_stations.a.copan_24 import Copan24Specs, json_property
 from opentrons.protocol_api import ProtocolContext
 from typing import Tuple
+import inspect
+import copy
+import os
+import json
 
 
 _a1_offset = (27.5, 12)
@@ -50,6 +54,30 @@ class StaggeredCopan48Specs(Copan24Specs):
         w = super(StaggeredCopan48Specs, self).well(r, c)
         w[1]["x"] += (+1 if r % 2 else -1) * self._tw * self._stagger
         return w
+
+
+class StaggeredCopan48SpecsCorrected(StaggeredCopan48Specs):
+    def __init__(self, **kwargs):
+        remaining_kwargs = copy.deepcopy(kwargs)
+        corrected_args = {}
+        for k, v in inspect.signature(super(StaggeredCopan48SpecsCorrected, self).__init__).parameters.items():
+            if k in remaining_kwargs:
+                remaining_kwargs.pop(k)
+                if hasattr(kwargs[k], "__iter__"):
+                    corrected_args[k] = tuple(a * d for a, d in zip(kwargs[k], v.default))
+                else:
+                    corrected_args[k] = kwargs[k] * v.default
+        super(StaggeredCopan48SpecsCorrected, self).__init__(**corrected_args, **remaining_kwargs)
+
+
+copan_48_correction_env_key = "OT_COPAN_48_CORRECT"
+copan_48_correction_file = os.path.join(os.path.dirname(__file__), "copan_48_correction.json")
+copan_48_correction_file = os.environ.get(copan_48_correction_env_key, copan_48_correction_file)
+with open(copan_48_correction_file, "r") as f:
+    copan_48_correction = json.load(f)
+
+
+copan_48_corrected_specs = StaggeredCopan48SpecsCorrected(**copan_48_correction)
 
 
 def run(ctx: ProtocolContext):

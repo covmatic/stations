@@ -1,3 +1,4 @@
+from ..station import instrument_loader, labware_loader
 from .c import StationC
 import math
 import copy
@@ -18,7 +19,8 @@ class StationCTechnogenetics(StationC):
     def __init__(
         self,
         mm_mix: dict = _MM_MIX,
-        mm_tube_capacity: float = 1950,
+        mm_strip_capacity: float = 180,
+        mm_tube_capacity: float = 1800,
         pause_on_mastermix_msg: bool = True,
         source_plate_name: str = 'chilled elution plate on block for Station B',
         tiprack_slots: Tuple[str, ...] = ('2', '3', '6', '7', '9', '11'),
@@ -28,7 +30,8 @@ class StationCTechnogenetics(StationC):
     ):
         """ Build a :py:class:`.StationCTechnogenetics`.
         :param mm_mix: Mastermix reagent quantities per sample in uL
-        :param mm_tube_capacity: Capacity of one strip of tubes for mastermix in uL
+        :param mm_strip_capacity: Capacity of one cell of the strip for mastermix in uL
+        :param mm_tube_capacity: Capacity of one tube for mastermix in uL
         :param pause_on_mastermix_msg: Pause when diplaying message with mastermix composition
         :param kwargs: other keyword arguments. See: StationC, Station
         """
@@ -40,6 +43,7 @@ class StationCTechnogenetics(StationC):
             **kwargs
         )
         self._mm_mix = copy.deepcopy(mm_mix)
+        self._mm_strip_capacity = mm_strip_capacity
         self._mm_tube_capacity = mm_tube_capacity
         self._pause_on_mastermix_msg = pause_on_mastermix_msg
     
@@ -64,8 +68,12 @@ class StationCTechnogenetics(StationC):
         pass
     
     @property
+    def mm_capacity(self) -> float:
+        return min(self._mm_tube_capacity, 8 * self._mm_strip_capacity)
+    
+    @property
     def num_mm_tubes(self) -> int:
-        return int(math.ceil(self.mm_per_sample * self._samples_this_cycle * self._mastermix_vol_headroom / self._mm_tube_capacity))
+        return int(math.ceil(self.mm_per_sample * self._samples_this_cycle * self._mastermix_vol_headroom / self.mm_capacity))
     
     @property
     def samples_per_mm_tube(self) -> Tuple[int, ...]:
@@ -114,3 +122,18 @@ class StationCTechnogenetics(StationC):
                 while "  " in r:
                     r = r.replace("  ", "\u2007 ")
                 self.logger.info(r)
+
+
+class StationCTechnogeneticsM300(StationCTechnogenetics):
+    # variable names are kept as before for easy inheritance
+    # although pipette is now a m300 
+    @labware_loader(1, "_tips20")
+    def load_tips20(self):
+        self._tips20 = [
+            self._ctx.load_labware('opentrons_96_filtertiprack_200ul', slot)
+            for slot in self._tipracks_slots
+        ]
+    
+    @instrument_loader(0, "_m20")
+    def load_m20(self):
+        self._m20 = self._ctx.load_instrument('p300_multi_gen2', 'right', tip_racks=self._tips20)

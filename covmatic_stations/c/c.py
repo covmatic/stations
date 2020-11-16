@@ -19,7 +19,7 @@ class StationC(Station):
         logger: Optional[logging.getLoggerClass()] = None,
         mastermix_vol: float = 12,
         mastermix_vol_headroom: float = 1.2,
-        mastermix_vol_headroom_aspirate: float = 1.1,
+        mastermix_vol_headroom_aspirate: float = 20/18,
         metadata: Optional[dict] = None,
         num_samples: int = 96,
         positive_control_well: str = 'A10',
@@ -176,7 +176,7 @@ class StationC(Station):
         return int(math.ceil(min(self._remaining_samples, self._samples_per_cycle) / self._m20.channels))
     
     def fill_mm_strips(self):
-        vol_per_strip_well = self.remaining_cols * self._mastermix_vol * self._mastermix_vol_headroom / len(self.mm_strips)
+        vol_per_strip_well = self.remaining_cols * self._mastermix_vol / len(self.mm_strips)
         
         has_tip = False        
         for j, (strip, tube) in enumerate(zip(self.mm_strips, self.mm_tubes)):

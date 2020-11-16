@@ -12,6 +12,7 @@ class StationBTechnogenetics(StationB):
                  elute_mix_times: int = 15,
                  elution_vol: float = 50,
                  elute_incubate: bool = False,
+                 external_deepwell_incubation: bool = True,
                  final_mix_height: float = 0.3,
                  final_mix_times: int = 5,
                  final_mix_vol: float = 20,
@@ -37,6 +38,7 @@ class StationBTechnogenetics(StationB):
                  **kwargs
                  ):
         """ Build a :py:class:`.StationBTechnogenetics`.
+        :param external_deepwell_incubation: whether or not to perform deepwell incubation outside the robot
         :param final_mix_height: Mixing height (from the bottom) for final transfer in mm
         :param final_mix_times: Mixing repetitions for final transfer
         :param final_mix_vol: Mixing volume for final transfer in uL
@@ -67,6 +69,7 @@ class StationBTechnogenetics(StationB):
             wash_mix_dispense_rate=wash_mix_dispense_rate,
             **kwargs
         )
+        self._external_deepwell_incubation = external_deepwell_incubation
         self._final_mix_height = final_mix_height
         self._final_mix_times = final_mix_times
         self._final_mix_vol = final_mix_vol
@@ -133,6 +136,7 @@ class StationBTechnogenetics(StationB):
             positions = self.temp_samples_m
         self._magdeck.disengage()
         super(StationBTechnogenetics, self).elute(positions=positions, transfer=transfer, stage=stage)
+        self._magdeck.disengage()
     
     def remove_wash(self, vol):
         self._magdeck.engage(height=self._magheight)
@@ -183,13 +187,16 @@ class StationBTechnogenetics(StationB):
         self.wash(self._wash_2_vol, self.wash2, self._wash_2_times, "wash 2")
         
         if self.run_stage("spin deepwell"):
+            self._magdeck.disengage()
             self.dual_pause("spin the deepwell", between=self.set_external)
             self.set_internal()
+            self._magdeck.engage(height=self._magheight)
         
         self.remove_wash(self._remove_wash_vol)
         
         if self.run_stage("deepwell incubation"):
-            self.dual_pause("deepwell incubation")
+            self.dual_pause("deepwell incubation", between=self.set_external if self._external_deepwell_incubation else None)
+            self.set_internal()
         
         self.elute()
         
