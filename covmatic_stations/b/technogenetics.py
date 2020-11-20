@@ -21,6 +21,7 @@ class StationBTechnogenetics(StationB):
                  final_vol: float = 20,
                  mix_incubate_on_time: float = 20,
                  mix_incubate_off_time: float = 5,
+                 postspin_incubation_time: float = 3,
                  remove_wash_vol: float = 50,
                  sample_mix_height: float = 0.3,
                  sample_mix_times: float = 10,
@@ -47,6 +48,7 @@ class StationBTechnogenetics(StationB):
         :param final_vol: Volume to transfer to the PCR plate in uL
         :param mix_incubate_on_time: Time for incubation on magnet after mix in minutes 
         :param mix_incubate_off_time: Time for incubation off magnet after mix in minutes
+        :param postspin_incubation_time: Post-spin incubation time in minutes
         :param remove_wash_vol: Volume to remove during wash removal in uL
         :param sample_mix_times: Mixing height for samples in mm from the bottom
         :param sample_mix_times: Mixing repetitions for samples
@@ -78,6 +80,7 @@ class StationBTechnogenetics(StationB):
         self._final_vol = final_vol
         self._mix_incubate_on_time = mix_incubate_on_time
         self._mix_incubate_off_time = mix_incubate_off_time
+        self._postspin_incubation_time = postspin_incubation_time
         self._remove_wash_vol = remove_wash_vol
         self._sample_mix_height = sample_mix_height
         self._sample_mix_times = sample_mix_times
@@ -191,6 +194,9 @@ class StationBTechnogenetics(StationB):
             self.dual_pause("spin the deepwell", between=self.set_external)
             self.set_internal()
             self._magdeck.engage(height=self._magheight)
+        
+        if self.run_stage("post spin incubation"):
+            self.delay(self._postspin_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         
         self.remove_wash(self._remove_wash_vol)
         
