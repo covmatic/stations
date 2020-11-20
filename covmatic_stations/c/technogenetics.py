@@ -137,3 +137,5 @@ class StationCTechnogeneticsM300(StationCTechnogenetics):
     @instrument_loader(0, "_m20")
     def load_m20(self):
         self._m20 = self._ctx.load_instrument('p300_multi_gen2', 'right', tip_racks=self._tips20)
+        self._m20.flow_rate.aspirate = self._aspirate_rate
+        self._m20.flow_rate.dispense = self._dispense_rate

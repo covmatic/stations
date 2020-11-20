@@ -11,7 +11,9 @@ class StationC(Station):
     
     def __init__(
         self,
+        aspirate_rate: float = 30,
         bottom_headroom_height: float = 0.5,
+        dispense_rate: float = 30,
         drop_loc_l: float = 0,
         drop_loc_r: float = 0,
         drop_threshold: int = 296,
@@ -40,7 +42,9 @@ class StationC(Station):
         **kwargs
     ):
         """ Build a :py:class:`.StationC`.
+        :param aspirate_rate: Aspiration rate in uL/s
         :param bottom_headroom_height: Height to keep from the bottom
+        :param dispense_rate: Dispensation rate in uL/s
         :param drop_loc_l: offset for dropping to the left side (should be positive) in mm
         :param drop_loc_r: offset for dropping to the right side (should be negative) in mm
         :param drop_threshold: the amount of dropped tips after which the run is paused for emptying the trash
@@ -77,7 +81,9 @@ class StationC(Station):
             skip_delay=skip_delay,
             **kwargs
         )
+        self._aspirate_rate = aspirate_rate
         self._bottom_headroom_height = bottom_headroom_height
+        self._dispense_rate = dispense_rate
         self._mastermix_vol = mastermix_vol
         self._mastermix_vol_headroom = mastermix_vol_headroom
         self._mastermix_vol_headroom_aspirate = mastermix_vol_headroom_aspirate
@@ -140,10 +146,14 @@ class StationC(Station):
     @instrument_loader(0, "_m20")
     def load_m20(self):
         self._m20 = self._ctx.load_instrument('p20_multi_gen2', 'right', tip_racks=self._tips20)
+        self._m20.flow_rate.aspirate = self._aspirate_rate
+        self._m20.flow_rate.dispense = self._dispense_rate
     
     @instrument_loader(0, "_p300")
     def load_p300(self):
         self._p300 = self._ctx.load_instrument('p300_single_gen2', 'left', tip_racks=self._tips300)
+        self._p300.flow_rate.aspirate = self._aspirate_rate
+        self._p300.flow_rate.dispense = self._dispense_rate
     
     @property
     def sources(self):
@@ -186,7 +196,7 @@ class StationC(Station):
                         self.pick_up(self._p300)
                         has_tip = True
                     self.logger.debug("filling mastermix at {}".format(well))
-                    self._p300.transfer(vol_per_strip_well, tube, well, new_tip='never')
+                    self._p300.transfer(vol_per_strip_well, tube.bottom(0.2), well, new_tip='never')
         if has_tip:
             self._p300.drop_tip()
     
@@ -195,16 +205,12 @@ class StationC(Station):
         return list(repeat(0, self._samples_per_cycle))
     
     def transfer_mm(self, stage="transfer mastermix {}/{}"):
-        has_tip = False
         n = len(list(zip(self.mm_indices[::self._m20.channels], self.sample_dests[:self.remaining_cols])))
         for i, (m_idx, s) in enumerate(zip(self.mm_indices[::self._m20.channels], self.sample_dests[:self.remaining_cols])):
             if self.run_stage(stage.format(i + 1, n)):
-                if not has_tip:
-                    self.pick_up(self._m20)
-                    has_tip = True
-            self._m20.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate, self.mm_strips[m_idx][0].bottom(0.5), s, new_tip='never')
-        if has_tip:
-            self._m20.drop_tip()
+                self.pick_up(self._m20)
+                self._m20.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate, self.mm_strips[m_idx][0].bottom(0.8), s, new_tip='never')
+                self._m20.drop_tip()
     
     def transfer_sample(self, vol: float, source, dest):
         self.logger.debug("transferring {:.0f} uL from {} to {}".format(vol, source, dest))
