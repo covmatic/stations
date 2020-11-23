@@ -148,7 +148,7 @@ class StationATechnogenetics48(StationATechnogeneticsReload):
     
     def __init__(
         self,
-        positive_control_well: str = 'A7',
+        positive_control_well: str = 'H12',
         source_racks_slots: Tuple[str, ...] = ('2',),
         *args,
         **kwargs
