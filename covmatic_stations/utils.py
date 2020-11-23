@@ -21,10 +21,11 @@ class ProtocolContextLoggingHandler(logging.Handler):
 
 
 class LocalWebServerLogger:
-    def __init__(self, ip: Optional[str] = None, endpoint: str = ":5002/log", *args, **kwargs):
+    def __init__(self, ip: Optional[str] = None, endpoint: str = ":5002/log", timeout: float = 2, *args, **kwargs):
         super(LocalWebServerLogger, self).__init__(*args, **kwargs)
         self.ip = ip
         self.endpoint = endpoint
+        self.timeout = timeout
         self.level = 0
         self.last_dollar = None
     
@@ -47,7 +48,12 @@ class LocalWebServerLogger:
         url = self.url
         if url and s:
             try:
-                requests.post(url, s.encode('utf-8'), headers={'Content-type': 'text/plain; charset=utf-8'})
+                requests.post(
+                    url,
+                    s.encode('utf-8'),
+                    headers={'Content-type': 'text/plain; charset=utf-8'},
+                    timeout=self.timeout,
+                )
             except Exception:
                 pass
 
