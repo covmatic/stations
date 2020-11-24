@@ -70,13 +70,19 @@ class StationRESTServer:
         tip_log = copy.deepcopy(getattr(self._station, "_tip_log", {}))
         if "tips" in tip_log:
             del tip_log["tips"]
+        
+        # try:
+        #     temp = getattr(getattr(self._station, "_tempdeck", None), "temperature", None)
+        # except Exception:
+        #     temp = None
+        
         return json.dumps({
             "status": status if status == "finished" or self._status is None else self._status,
             "stage": getattr(self._station, "stage", None),
             "msg": getattr(self._station, "msg", None),
             "external": getattr(self._station, "external", False),
             "time": datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S:%f"),
-            "temp": getattr(getattr(self._station, "_tempdeck", None), "temperature", None),
+            # "temp": temp,
             "tips": tip_log,
             "runlog": self._station._log_filepath,
         }, indent=2)
