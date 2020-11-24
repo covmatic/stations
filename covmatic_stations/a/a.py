@@ -1,7 +1,7 @@
 from ..station import Station, labware_loader, instrument_loader
 from ..geometry import LysisTube
 from ..utils import mix_bottom_top
-from itertools import chain, islice
+from itertools import chain, islice, repeat
 import math
 import logging
 from typing import Optional, Tuple
@@ -329,8 +329,9 @@ class StationA(Station):
         if self._lysis_first:
             self.pick_up(self._p_main)
         mix = {} if self._lysis_first else {'mix_after': (self._lys_mix_repeats, self._lys_mix_volume)}
-        n = len(list(self.non_control_positions()))
-        for i, (_, dest) in enumerate(self.non_control_positions()):
+        pos = list(self.non_control_positions(repeat(None)))
+        n = len(pos)
+        for i, (_, dest) in enumerate(pos):
             if self.run_stage("transfer lysis {}/{}".format(i + 1, n)):
                 if not self._lysis_first:
                     self.pick_up(self._p_main)
