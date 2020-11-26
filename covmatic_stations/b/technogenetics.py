@@ -31,7 +31,7 @@ class StationBTechnogenetics(StationB):
                  tempdeck_slot: str = '7',
                  tempdeck_temp: float = 55,
                  thermomixer_incubation_time: float = 5,
-                 tipracks_slots: Tuple[str, ...] = ('3', '6', '8', '9', '10'),
+                 tipracks_slots: Tuple[str, ...] = ('4', '6', '8', '9', '10'),
                  wash_1_vol: float = 680,
                  wash_2_vol: float = 680,
                  wash_mix_aspiration_rate: float = 150,
@@ -89,7 +89,7 @@ class StationBTechnogenetics(StationB):
     
     @labware_loader(5, "_flatplate")
     def load_flatplate(self):
-        self._flatplate = self._ctx.load_labware('opentrons_96_aluminumblock_nest_wellplate_100ul', '1', 'chilled elution plate on block for Station C')
+        self._flatplate = self._ctx.load_labware('opentrons_96_aluminumblock_nest_wellplate_100ul', '3', 'chilled elution plate on block for Station C')
     
     @labware_loader(5, "_tempplate")
     def load_tempplate(self):
