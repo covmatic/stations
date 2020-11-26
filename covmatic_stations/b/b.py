@@ -214,7 +214,7 @@ class StationB(Station):
     
     @labware_loader(2, "_magdeck")
     def load_magdeck(self):
-        self._magdeck = self._ctx.load_module('Magnetic Module Gen2', '4')
+        self._magdeck = self._ctx.load_module('Magnetic Module Gen2', '1')
         self._magdeck.disengage()
         if (self._magheight_load):
             self._magheight = magnets.height.by_serial.get(self._magdeck._module._driver.get_device_info()['serial'], self._magheight)
