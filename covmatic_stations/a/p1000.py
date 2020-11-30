@@ -55,7 +55,8 @@ class StationAP1000(StationA):
             new_tip='never'
         )
         self._p_main.air_gap(self._air_gap_sample)
-        self._p_main.drop_tip()
+        #self._p_main.drop_tip()
+        self.drop(self._p_main)
 
 
 if __name__ == "__main__":

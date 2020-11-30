@@ -10,6 +10,7 @@ class StationATechnogenetics(StationAP1000):
         beads_mix_repeats: int = 2,
         beads_mix_volume: float = 20,
         beads_vol: float = 10,
+        drop_threshold: int = 144,
         lysis_first: bool = False,
         lys_mix_repeats: int = 2,
         lys_mix_volume: float = 100,
@@ -60,6 +61,7 @@ class StationATechnogenetics(StationAP1000):
         self._beads_mix_repeats = beads_mix_repeats
         self._beads_mix_volume = beads_mix_volume
         self._beads_vol = beads_vol
+        self._drop_threshold = drop_threshold
         if self._lysis_first != lysis_first:
             self.logger.error("lysis_first=True is not supported for this protocol")
     

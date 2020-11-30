@@ -307,7 +307,8 @@ class StationA(Station):
         return dest == self._dest_plate[self._positive_control_well]
     
     def non_control_positions(self, sources=None, dests=None):
-        """Returns the iterator for the source/dest couples, excluding the couple where the destination is meant for the positive control.
+        """Returns the iterator for the source/dest couples,
+        excluding the couple where the destination is meant for the positive control.
         Sources and dests default to self._sources and self._dests"""
         sources = sources or self._sources
         dests = dests or self._dests_single
