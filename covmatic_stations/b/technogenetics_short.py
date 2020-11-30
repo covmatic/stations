@@ -14,7 +14,7 @@ class StationBTechnogeneticsShort(StationBTechnogenetics):
         elution_vol: float = 40,
         num_cycles: int = 1,
         tempdeck_temp = None,
-        tipracks_slots: Tuple[str, ...] = ('2', '3', '5', '6', '7', '8', '9'),
+        tipracks_slots: Tuple[str, ...] = ('2', '5', '6', '7', '8', '9'),
         *args,
         **kwargs
     ):
