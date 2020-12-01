@@ -34,8 +34,6 @@ class StationBTechnogenetics(StationB):
                  tipracks_slots: Tuple[str, ...] = ('4', '6', '8', '9', '10'),
                  wash_1_vol: float = 680,
                  wash_2_vol: float = 680,
-                 wash_mix_aspiration_rate: float = 150,
-                 wash_mix_dispense_rate: float = 150,
                  **kwargs
                  ):
         """ Build a :py:class:`.StationBTechnogenetics`.
@@ -67,8 +65,6 @@ class StationBTechnogenetics(StationB):
             tipracks_slots=tipracks_slots,
             wash_1_vol=wash_1_vol,
             wash_2_vol=wash_2_vol,
-            wash_mix_aspiration_rate=wash_mix_aspiration_rate,
-            wash_mix_dispense_rate=wash_mix_dispense_rate,
             **kwargs
         )
         self._external_deepwell_incubation = external_deepwell_incubation

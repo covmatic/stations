@@ -65,8 +65,6 @@ class StationB(Station):
         wash_etoh_vol: float = 800,
         wash_headroom: float = 1.1,
         wash_max_transfer_vol: float = 200,
-        wash_mix_aspiration_rate: float = 400,
-        wash_mix_dispense_rate: float = 400,
         wash_mix_speed: float = 20,
         wash_mix_vol: float = 150,
         wash_mix_walk: bool = False,
@@ -74,6 +72,10 @@ class StationB(Station):
         wash_1_vol: float = 500,
         wash_2_times: int = 20,
         wash_2_vol: float = 500,
+        wash_2_mix_aspiration_rate: float = 150,
+        wash_2_mix_dispense_rate: float = 150,
+        wash_1_mix_aspiration_rate: float = 75,
+        wash_1_mix_dispense_rate: float = 75,
         **kwargs
     ):
         """ Build a :py:class:`.StationB`.
@@ -149,6 +151,10 @@ class StationB(Station):
             num_samples=num_samples,
             samples_per_col=samples_per_col,
             skip_delay=skip_delay,
+            wash_2_mix_aspiration_rate=wash_2_mix_aspiration_rate,
+            wash_2_mix_dispense_rate=wash_2_mix_dispense_rate,
+            wash_1_mix_aspiration_rate=wash_1_mix_aspiration_rate,
+            wash_1_mix_dispense_rate=wash_1_mix_dispense_rate,
             **kwargs
         )
         self._bind_air_gap = bind_air_gap
@@ -195,8 +201,10 @@ class StationB(Station):
         self._wash_etoh_vol = wash_etoh_vol
         self._wash_headroom = wash_headroom
         self._wash_max_transfer_vol = wash_max_transfer_vol
-        self._wash_mix_aspiration_rate = wash_mix_aspiration_rate
-        self._wash_mix_dispense_rate = wash_mix_dispense_rate
+        self._wash_2_mix_aspiration_rate = wash_2_mix_aspiration_rate
+        self._wash_2_mix_dispense_rate = wash_2_mix_dispense_rate
+        self._wash_1_mix_aspiration_rate = wash_1_mix_aspiration_rate
+        self._wash_1_mix_dispense_rate = wash_1_mix_dispense_rate
         self._wash_mix_speed = wash_mix_speed
         self._wash_mix_vol = wash_mix_vol
         self._wash_mix_walk = wash_mix_walk
@@ -351,8 +359,16 @@ class StationB(Station):
     
     def wash(self, vol: float, source, mix_reps: int, wash_name: str = "wash"):
         self.logger.info(self.msg_format("wash info", vol, wash_name, mix_reps))
-        self._m300.flow_rate.aspirate = self._default_aspiration_rate
-        dispense_rate = self._m300.flow_rate.dispense
+        if wash_name == "wash 1":
+            self._default_aspiration_rate = self._wash_1_mix_aspiration_rate
+            dispense_rate = self._wash_1_mix_dispense_rate
+            self._m300.flow_rate.dispense = self._wash_1_mix_dispense_rate
+            self._m300.flow_rate.aspirate = self._wash_1_mix_aspiration_rate
+        else:
+            self._default_aspiration_rate = self._wash_2_mix_aspiration_rate
+            dispense_rate = self._wash_2_mix_dispense_rate
+            self._m300.flow_rate.dispense = self._wash_2_mix_dispense_rate
+            self._m300.flow_rate.aspirate = self._wash_2_mix_aspiration_rate
         self._magdeck.disengage()
         num_trans, vol_per_trans = uniform_divide(vol, self._wash_max_transfer_vol)
         
@@ -369,8 +385,6 @@ class StationB(Station):
                         self._m300.air_gap(self._wash_air_gap)
                 
                 # Mix
-                self._m300.flow_rate.aspirate = self._wash_mix_aspiration_rate
-                self._m300.flow_rate.dispense = self._wash_mix_dispense_rate
                 if self._wash_mix_walk:
                     a_locs = [m.bottom(self._bottom_headroom_height).move(Point(x=2*(-1 if i % 2 else +1), y=2*(2*j/(mix_reps - 1) - 1))) for j in range(mix_reps)]
                     mix_walk(self._m300, mix_reps, self._wash_mix_vol, a_locs, speed=self._wash_mix_speed, logger=self.logger)
@@ -382,7 +396,7 @@ class StationB(Station):
                 
                 self._m300.air_gap(self._wash_air_gap)
                 self.drop(self._m300)
-        
+
         self._magdeck.engage(height=self._magheight)
         if self.run_stage("{} incubate".format(wash_name)):
             self.delay(self._wait_time_wash_on, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
