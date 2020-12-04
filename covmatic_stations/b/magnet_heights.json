@@ -35,12 +35,12 @@
 	"height": 6.9
   },
   {
-	"serial": "MDV20P20200630A02",
+	"serial": "MDV20P20200618A06",
 	"station": "B8",
-	"height": 6.9
+	"height": 6.75
   },
   {
-	"serial": "MDV20P20200618A06",
+	"serial": "MDV20P20200616A01",
 	"station": "B9",
 	"height": 6.75
   },
@@ -50,13 +50,8 @@
 	"height": 7.10
   },
   {
-	"serial": "MDV20P20200616A01",
+	"serial": "MDV20P20200602A07",
 	"station": "B11",
-	"height": 6.75
-  },
-  {
-	"serial": "MDV20P20200702A07",
-	"station": "B12",
 	"height": 6.65
   }
 ]
