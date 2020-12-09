@@ -24,6 +24,7 @@ class StationATechnogenetics(StationAP1000):
         tempdeck_temp: Optional[float] = None,
         tipracks_slots: Tuple[str, ...] = ('8', '9'),
         tipracks_slots_20: Tuple[str, ...] = ('7', '11'),
+        touch_tip_height: float = -5,
         *args,
         **kwargs
     ):
@@ -62,6 +63,7 @@ class StationATechnogenetics(StationAP1000):
         self._beads_mix_volume = beads_mix_volume
         self._beads_vol = beads_vol
         self._drop_threshold = drop_threshold
+        self._touch_tip_height = touch_tip_height
         if self._lysis_first != lysis_first:
             self.logger.error("lysis_first=True is not supported for this protocol")
     
@@ -100,6 +102,7 @@ class StationATechnogenetics(StationAP1000):
             if self.run_stage("transfer proteinase {}/{}".format(i + 1, len(self._dests_multi))):
                 self.pick_up(self._m20)
                 self._m20.transfer(self._prot_k_volume, self._prot_k[i // self.cols_per_strip], d.bottom(self._ic_headroom_bottom), new_tip='never')
+                self._m20.touch_tip(v_offset=self._touch_tip_height)
                 self._m20.drop_tip()
     
     def transfer_beads(self):
