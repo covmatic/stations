@@ -10,7 +10,7 @@ class StationATechnogenetics(StationAP1000):
         beads_mix_repeats: int = 2,
         beads_mix_volume: float = 20,
         beads_vol: float = 10,
-        drop_threshold: int = 144,
+        drop_threshold: int = 95,
         lysis_first: bool = False,
         lys_mix_repeats: int = 2,
         lys_mix_volume: float = 100,
@@ -22,8 +22,9 @@ class StationATechnogenetics(StationAP1000):
         sample_aspirate: float = 100,
         sample_dispense: float = 100,
         tempdeck_temp: Optional[float] = None,
-        tipracks_slots: Tuple[str, ...] = ('8', '9'),
-        tipracks_slots_20: Tuple[str, ...] = ('7', '11'),
+        tempdeck_bool: bool = False,
+        tipracks_slots: Tuple[str, ...] = ('10', '11'),
+        tipracks_slots_20: Tuple[str, ...] = ('8', '9'),
         touch_tip_height: float = -5,
         *args,
         **kwargs
@@ -63,6 +64,7 @@ class StationATechnogenetics(StationAP1000):
         self._beads_mix_volume = beads_mix_volume
         self._beads_vol = beads_vol
         self._drop_threshold = drop_threshold
+        self._tempdeck_bool = tempdeck_bool
         self._touch_tip_height = touch_tip_height
         if self._lysis_first != lysis_first:
             self.logger.error("lysis_first=True is not supported for this protocol")

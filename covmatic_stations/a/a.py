@@ -57,6 +57,7 @@ class StationA(Station):
         source_racks_definition_filepath: str = "",
         source_racks_slots: Tuple[str, ...] = ('2', '3', '5', '6'),
         tempdeck_temp: float = 4,
+        tempdeck_bool: bool = True,
         tipracks_slots: Tuple[str, ...] = ('8', '9', '11'),
         tipracks_slots_20: Tuple[str, ...] = ('7',),
         **kwargs
@@ -163,14 +164,18 @@ class StationA(Station):
         self._source_racks_slots = source_racks_slots
         self._source_top_height = source_top_height
         self._tempdeck_temp = tempdeck_temp
+        self._tempdeck_bool = tempdeck_bool
         self._tipracks_slots = tipracks_slots
         self._tipracks_slots_20 = tipracks_slots_20
     
     @labware_loader(0, "_tempdeck")
     def load_tempdeck(self):
-        self._tempdeck = self._ctx.load_module('Temperature Module Gen2', '10')
-        if self._tempdeck_temp is not None:
-            self._tempdeck.set_temperature(self._tempdeck_temp)
+        if self._tempdeck_bool:
+            self._tempdeck = self._ctx.load_module('Temperature Module Gen2', '4')
+            if self._tempdeck_temp is not None:
+                self._tempdeck.set_temperature(self._tempdeck_temp)
+        else:
+            pass
     
     @property
     def chilled_tubeblock_content(self) -> str:
@@ -178,10 +183,15 @@ class StationA(Station):
     
     @labware_loader(0.1, "_strips_block")
     def load_strips_block(self):
-        self._strips_block = self._tempdeck.load_labware(
-            'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
-            "chilled tubeblock for {}".format(self.chilled_tubeblock_content.format(""))
-        )
+        if self._tempdeck_bool:
+            self._strips_block = self._tempdeck.load_labware(
+                'opentrons_96_aluminumblock_generic_pcr_strip_200ul',
+                "chilled tubeblock for {}".format(self.chilled_tubeblock_content.format(""))
+            )
+        else:
+            self._strips_block = self._ctx.load_labware('opentrons_96_aluminumblock_generic_pcr_strip_200ul', '4',
+                "chilled tubeblock for {}".format(self.chilled_tubeblock_content.format("")))
+
         self.logger.info("{} {}".format(
             type(self).get_message("using", self._language),
             self.chilled_tubeblock_content.format(self.get_msg_format("chilled tubeblock content with", self.cols_per_strip * self._iec_volume * self._ic_lys_headroom))
@@ -211,7 +221,7 @@ class StationA(Station):
     @labware_loader(3, "_lys_buff")
     def load_lys_buf(self):
         self._lys_buff = self._ctx.load_labware(
-            'opentrons_6_tuberack_falcon_50ml_conical', '4',
+            'opentrons_6_tuberack_falcon_50ml_conical', '7',
             self._lys_buf_name,
         ).wells()[0]
     
