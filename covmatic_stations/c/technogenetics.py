@@ -23,7 +23,8 @@ class StationCTechnogenetics(StationC):
         mm_tube_capacity: float = 1800,
         pause_on_mastermix_msg: bool = True,
         source_plate_name: str = 'chilled elution plate on block for Station B',
-        tiprack_slots: Tuple[str, ...] = ('2', '3', '6', '7', '9', '11'),
+        tempdeck_bool: bool = False,
+        tiprack_slots: Tuple[str, ...] = ('2', '3', '5', '6', '8', '9', '11'),
         transfer_samples: bool = False,
         tube_block_model: str = "opentrons_24_aluminumblock_nest_2ml_screwcap",
         **kwargs
@@ -46,6 +47,8 @@ class StationCTechnogenetics(StationC):
         self._mm_strip_capacity = mm_strip_capacity
         self._mm_tube_capacity = mm_tube_capacity
         self._pause_on_mastermix_msg = pause_on_mastermix_msg
+        self._tempdeck_bool = tempdeck_bool
+        self._transfer_samples = transfer_samples
     
     def _tipracks(self) -> dict:
         return {

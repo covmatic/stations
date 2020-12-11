@@ -36,6 +36,7 @@ class StationC(Station):
         source_plate_name: str = 'chilled elution plate on block from Station B',
         suck_height: float = 2,
         suck_vol: float = 5,
+        tempdeck_bool: bool = True,
         tipracks_slots: Tuple[str, ...] = ('2', '3', '6', '7', '9'),
         transfer_samples: bool = True,
         tube_block_model: str = "opentrons_24_aluminumblock_nest_1.5ml_snapcap",
@@ -97,6 +98,7 @@ class StationC(Station):
         self._source_plate_name = source_plate_name
         self._suck_height = suck_height
         self._suck_vol = suck_vol
+        self._tempdeck_bool = tempdeck_bool
         self._tipracks_slots = tipracks_slots
         self._transfer_samples = transfer_samples
         self._tube_block_model = tube_block_model
@@ -110,7 +112,10 @@ class StationC(Station):
     
     @labware_loader(0, "_source_plate")
     def load_source_plate(self):
-        self._source_plate = self._ctx.load_labware('opentrons_96_aluminumblock_nest_wellplate_100ul', '1', self._source_plate_name)
+        if self._transfer_samples:
+            self._source_plate = self._ctx.load_labware('opentrons_96_aluminumblock_nest_wellplate_100ul', '5', self._source_plate_name)
+        else:
+            pass
     
     @labware_loader(1, "_tips20")
     def load_tips20(self):
@@ -129,19 +134,25 @@ class StationC(Station):
     
     @labware_loader(4, "_tempdeck")
     def load_tempdeck(self):
-        self._tempdeck = self._ctx.load_module('Temperature Module Gen2', '4')
+        if self._tempdeck_bool:
+            self._tempdeck = self._ctx.load_module('Temperature Module Gen2', '1')
+        else:
+            pass
 
     @labware_loader(5, "_pcr_plate")
     def load_pcr_plate(self):
-        self._pcr_plate = self._tempdeck.load_labware('opentrons_96_aluminumblock_biorad_wellplate_200ul', 'PCR plate')
+        if self._tempdeck_bool:
+            self._pcr_plate = self._tempdeck.load_labware('opentrons_96_aluminumblock_biorad_wellplate_200ul', 'PCR plate')
+        else:
+            self._pcr_plate = self._ctx.load_labware('opentrons_96_aluminumblock_biorad_wellplate_200ul', '1', 'PCR plate')
         
     @labware_loader(6, "_mm_strips")
     def load_mm_strips(self):
-        self._mm_strips = self._ctx.load_labware('opentrons_96_aluminumblock_generic_pcr_strip_200ul', '8', 'mastermix strips')
+        self._mm_strips = self._ctx.load_labware('opentrons_96_aluminumblock_generic_pcr_strip_200ul', '4', 'mastermix strips')
     
     @labware_loader(7, "_tube_block")
     def load_tube_block(self):
-        self._tube_block = self._ctx.load_labware(self._tube_block_model, '5', 'screw tube aluminum block for mastermix + controls')
+        self._tube_block = self._ctx.load_labware(self._tube_block_model, '7', 'screw tube aluminum block for mastermix + controls')
     
     @instrument_loader(0, "_m20")
     def load_m20(self):
@@ -157,7 +168,10 @@ class StationC(Station):
     
     @property
     def sources(self):
-        return self._source_plate.rows()[0][:self.num_cols]
+        if self._transfer_samples:
+            return self._source_plate.rows()[0][:self.num_cols]
+        else:
+            return None
     
     @property
     def sample_dests(self):
@@ -234,16 +248,19 @@ class StationC(Station):
         
         self.fill_mm_strips()
         self.transfer_mm(stage="transfer mastermix to plate {}{}{}".format("{}/{}", " " if self.num_cycles > 1 else "", self._cycle))
-        for i, (s, d) in enumerate(zip(self.sources, self.sample_dests)):
-            if self._transfer_samples and self.run_stage("transfer samples {}/{}".format(self._num_samples + min(self._m20.channels - self._remaining_samples, 0), self._num_samples)):
-                if self.num_cycles > 1:
-                    self.msg_format("sample per cycle", (i + 1) * self._m20.channels, self._samples_this_cycle, self._cycle.split(" ")[-1])
-                    self.logger.info(self.msg)
-                self.transfer_sample(self._sample_vol, s, d)
-                self.msg = ""
-            self._remaining_samples -= self._m20.channels
-            if self._remaining_samples <= 0 or n - self._remaining_samples >= self._samples_this_cycle:
-                break 
+        if self.sources is not None:
+            for i, (s, d) in enumerate(zip(self.sources, self.sample_dests)):
+                if self._transfer_samples and self.run_stage("transfer samples {}/{}".format(self._num_samples + min(self._m20.channels - self._remaining_samples, 0), self._num_samples)):
+                    if self.num_cycles > 1:
+                        self.msg_format("sample per cycle", (i + 1) * self._m20.channels, self._samples_this_cycle, self._cycle.split(" ")[-1])
+                        self.logger.info(self.msg)
+                    self.transfer_sample(self._sample_vol, s, d)
+                    self.msg = ""
+                self._remaining_samples -= self._m20.channels
+                if self._remaining_samples <= 0 or n - self._remaining_samples >= self._samples_this_cycle:
+                    break
+        else:
+            pass
     
     def body(self):
         self.logger.info(self.get_msg_format("number of cycles", self._num_samples, self.num_cycles))
