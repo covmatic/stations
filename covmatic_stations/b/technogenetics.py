@@ -19,6 +19,7 @@ class StationBTechnogenetics(StationB):
                  final_transfer_rate_aspirate: float = 30,
                  final_transfer_rate_dispense: float = 30,
                  final_vol: float = 20,
+                 flatplate_slot: str = '3',
                  mix_incubate_on_time: float = 20,
                  mix_incubate_off_time: float = 5,
                  postspin_incubation_time: float = 3,
@@ -58,6 +59,7 @@ class StationBTechnogenetics(StationB):
             elute_mix_times=elute_mix_times,
             elution_vol=elution_vol,
             elute_incubate=elute_incubate,
+            flatplate_slot=flatplate_slot,
             starting_vol=starting_vol,
             supernatant_removal_height=supernatant_removal_height,
             tempdeck_slot=tempdeck_slot,
@@ -74,6 +76,7 @@ class StationBTechnogenetics(StationB):
         self._final_transfer_rate_aspirate = final_transfer_rate_aspirate
         self._final_transfer_rate_dispense = final_transfer_rate_dispense
         self._final_vol = final_vol
+        self._flatplate_slot = flatplate_slot
         self._mix_incubate_on_time = mix_incubate_on_time
         self._mix_incubate_off_time = mix_incubate_off_time
         self._postspin_incubation_time = postspin_incubation_time
@@ -85,7 +88,7 @@ class StationBTechnogenetics(StationB):
     
     @labware_loader(5, "_flatplate")
     def load_flatplate(self):
-        self._flatplate = self._ctx.load_labware('opentrons_96_aluminumblock_nest_wellplate_100ul', '3', 'chilled elution plate on block for Station C')
+        self._flatplate = self._ctx.load_labware('opentrons_96_aluminumblock_nest_wellplate_100ul', self._flatplate_slot, 'chilled elution plate on block for Station C')
     
     @labware_loader(5, "_tempplate")
     def load_tempplate(self):

@@ -39,6 +39,7 @@ class StationB(Station):
         elution_vol: float = 40,
         jupyter: bool = True,
         logger: Optional[logging.getLoggerClass()] = None,
+        magdeck_slot: str = '1',
         magheight: float = 6.65,
         magheight_load: bool = True,
         magplate_model: str = 'nest_96_wellplate_2ml_deep',
@@ -151,6 +152,7 @@ class StationB(Station):
             num_samples=num_samples,
             samples_per_col=samples_per_col,
             skip_delay=skip_delay,
+            magdeck_slot=magdeck_slot,
             wash_2_mix_aspiration_rate=wash_2_mix_aspiration_rate,
             wash_2_mix_dispense_rate=wash_2_mix_dispense_rate,
             wash_1_mix_aspiration_rate=wash_1_mix_aspiration_rate,
@@ -179,6 +181,7 @@ class StationB(Station):
         self._elute_mix_vol = elute_mix_vol
         self._elution_height = elution_height
         self._elution_vol = elution_vol
+        self._magdeck_slot = magdeck_slot
         self._magheight = magheight
         self._magheight_load = magheight_load
         self._magplate_model = magplate_model
@@ -222,7 +225,7 @@ class StationB(Station):
     
     @labware_loader(2, "_magdeck")
     def load_magdeck(self):
-        self._magdeck = self._ctx.load_module('Magnetic Module Gen2', '1')
+        self._magdeck = self._ctx.load_module('Magnetic Module Gen2', self._magdeck_slot)
         self._magdeck.disengage()
         if (self._magheight_load):
             self._magheight = magnets.height.by_serial.get(self._magdeck._module._driver.get_device_info()['serial'], self._magheight)

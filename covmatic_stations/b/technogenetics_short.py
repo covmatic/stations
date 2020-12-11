@@ -12,9 +12,11 @@ class StationBTechnogeneticsShort(StationBTechnogenetics):
         bind_blowout_rate=None,
         bottom_headroom_height: float = 0.1,
         elution_vol: float = 40,
+        flatplate_slot: str = '1',
+        magdeck_slot: str = '4',
         num_cycles: int = 1,
         tempdeck_temp = None,
-        tipracks_slots: Tuple[str, ...] = ('2', '5', '6', '7', '8', '9'),
+        tipracks_slots: Tuple[str, ...] = ('2', '3', '5', '6', '7', '8', '9', '10'),
         *args,
         **kwargs
     ):
@@ -25,13 +27,15 @@ class StationBTechnogeneticsShort(StationBTechnogenetics):
             bind_blowout_rate=bind_blowout_rate,
             bottom_headroom_height=bottom_headroom_height,
             elution_vol=elution_vol,
+            flatplate_slot=flatplate_slot,
+            magdeck_slot=magdeck_slot,
             tempdeck_temp=tempdeck_temp,
             tipracks_slots=tipracks_slots,
             **kwargs
         )
         self._air_gap_drop = air_gap_drop
         self._num_cycles = num_cycles
-    
+
     def load_tempdeck(self):
         pass
     
