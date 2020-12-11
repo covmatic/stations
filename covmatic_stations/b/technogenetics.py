@@ -28,10 +28,10 @@ class StationBTechnogenetics(StationB):
                  sample_mix_vol: float = 180,
                  starting_vol: float = 650,
                  supernatant_removal_height: float = 0.2,
-                 tempdeck_slot: str = '7',
+                 tempdeck_slot: str = '10',
                  tempdeck_temp: float = 55,
                  thermomixer_incubation_time: float = 5,
-                 tipracks_slots: Tuple[str, ...] = ('4', '6', '8', '9', '10'),
+                 tipracks_slots: Tuple[str, ...] = ('4', '6', '7', '8', '9'),
                  wash_1_vol: float = 680,
                  wash_2_vol: float = 680,
                  **kwargs
