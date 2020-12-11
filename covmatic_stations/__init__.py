@@ -1,7 +1,7 @@
 import logging
 
 
-__version__ = "2.0.0"
+__version__ = "2.0.3"
 
 
 logging.basicConfig(
