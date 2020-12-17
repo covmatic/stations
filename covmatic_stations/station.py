@@ -305,6 +305,7 @@ class Station(metaclass=StationMeta):
             lt = (BlinkingLightHTTP if self._dummy_lights else BlinkingLight)(self._ctx, t=blink_period/2)
             lt.start()
         if delay_time > 0:
+            self.status = "delay"
             self._ctx.delay(delay_time)
         if pause:
             self._ctx.pause()
