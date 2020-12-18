@@ -70,6 +70,7 @@ class Station(metaclass=StationMeta):
     _protocol_description = "[BRIEFLY DESCRIBE YOUR PROTOCOL]"
     
     def __init__(self,
+        drop_height: float = -2,
         drop_loc_l: float = 0,
         drop_loc_r: float = 0,
         drop_loc_y: float = 0,
@@ -95,6 +96,7 @@ class Station(metaclass=StationMeta):
         wait_first_log: bool = False,
         **kwargs,
     ):
+        self._drop_height = drop_height
         self._drop_loc_l = drop_loc_l
         self._drop_loc_r = drop_loc_r
         self._drop_loc_y = drop_loc_y
@@ -275,7 +277,7 @@ class Station(metaclass=StationMeta):
     
     def drop(self, pip):
         # Drop in the Fixed Trash (on 12) at different positions to avoid making a tall heap of tips
-        drop_loc = self._ctx.loaded_labwares[12].wells()[0].top().move(Point(x=self._drop_loc_r if self._side_switch else self._drop_loc_l, y=self._drop_loc_y))
+        drop_loc = self._ctx.loaded_labwares[12].wells()[0].top(self._drop_height).move(Point(x=self._drop_loc_r if self._side_switch else self._drop_loc_l, y=self._drop_loc_y))
         self._side_switch = not self._side_switch
         pip.drop_tip(drop_loc)
         self._drop_count += pip.channels

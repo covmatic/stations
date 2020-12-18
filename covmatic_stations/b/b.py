@@ -26,6 +26,7 @@ class StationB(Station):
         bind_vol: float = 210,
         bottom_headroom_height: float = 0.5,
         default_aspiration_rate: float = 150,
+        drop_height: float = 0,
         drop_loc_l: float = -10,
         drop_loc_r: float = 30,
         drop_loc_y: float = 0,
@@ -173,6 +174,7 @@ class StationB(Station):
         self._bind_vol = bind_vol
         self._bottom_headroom_height = bottom_headroom_height
         self._default_aspiration_rate = default_aspiration_rate
+        self._drop_height = drop_height
         self._drop_threshold = drop_threshold
         self._elute_air_gap = elute_air_gap
         self._elute_aspiration_rate = elute_aspiration_rate
