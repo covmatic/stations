@@ -30,7 +30,7 @@ class StationA(Station):
         logger: Optional[logging.getLoggerClass()] = None,
         lysis_cone_height: float = 16,
         lysis_first: bool = False,
-        lysis_headroom_height: float = 5,
+        lysis_headroom_height: float = 4,
         lysis_rate_aspirate: float = 100,
         lysis_rate_dispense: float = 100,
         lysis_volume: float = 160,
