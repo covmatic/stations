@@ -260,8 +260,8 @@ class StationA(Station):
     
     @property
     def initlial_volume_lys(self) -> float:
-        return self._num_samples * self._lysis_volume * self._ic_lys_headroom
-    
+        return len(list(self.non_control_positions(repeat(None)))) * self._lysis_volume * self._ic_lys_headroom
+
     def setup_samples(self):
         self._sources = list(islice(chain.from_iterable(rack.wells() for rack in self._source_racks), self._num_samples))
         self._dests_single = self._dest_plate.wells()[:self._num_samples]
@@ -273,8 +273,10 @@ class StationA(Station):
         self.logger.debug("%s", self._lysis_tube)
         self._lysis_tube.height = self._lysis_headroom_height
         self._lysis_tube.fill(self.initlial_volume_lys)
+        self._lysis_tube.height += self._ic_lys_headroom
         self.logger.info(self.msg_format("lysis geometry", math.ceil(self._lysis_tube.volume), self._lysis_tube.height))
-    
+        self._lysis_tube.height -= self._ic_lys_headroom
+
     def transfer_sample(self, source, dest):
         self.logger.debug("transferring from {} to {}".format(source, dest))
         self.pick_up(self._p_main)
@@ -324,31 +326,34 @@ class StationA(Station):
         sources = sources or self._sources
         dests = dests or self._dests_single
         return filter(lambda t: not self.is_positive_control_well(t[1]), zip(sources, dests))
-    
+
     def transfer_samples(self):
         self._p_main.flow_rate.aspirate = self._sample_aspirate
         self._p_main.flow_rate.dispense = self._sample_dispense
-        
+
         n = len(list(self.non_control_positions()))
         for i, (s, d) in enumerate(self.non_control_positions()):
             if self.run_stage("transfer sample {}/{}".format(i + 1, n)):
                 self.transfer_sample(s, d)
-    
+
     def transfer_lys(self):
         self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
         self._p_main.flow_rate.dispense = self._lysis_rate_dispense
-        
+
         if self._lysis_first:
             self.pick_up(self._p_main)
         mix = {} if self._lysis_first else {'mix_after': (self._lys_mix_repeats, self._lys_mix_volume)}
         pos = list(self.non_control_positions(repeat(None)))
         n = len(pos)
         for i, (_, dest) in enumerate(pos):
+            h = max(
+                self._lysis_tube.extract(self._lysis_volume * self._ic_lys_headroom),
+                self._lysis_headroom_height
+            )
             if self.run_stage("transfer lysis {}/{}".format(i + 1, n)):
                 if not self._lysis_first:
                     self.pick_up(self._p_main)
                 self.logger.debug("transferring lysis to {}".format(dest))
-                h = max(self._lysis_tube.extract(self._lysis_volume), self._lysis_headroom_height)
                 self.logger.debug("going {} mm deep".format(h))
                 self._p_main.transfer(
                     self._lysis_volume,
