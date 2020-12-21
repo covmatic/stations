@@ -270,6 +270,7 @@ class StationA(Station):
     
     def setup_lys_tube(self):
         self._lysis_tube = LysisTube(self._lys_buff.diameter / 2, self._lysis_cone_height)
+        self.logger.debug("%s", self._lysis_tube)
         self._lysis_tube.height = self._lysis_headroom_height
         self._lysis_tube.fill(self.initlial_volume_lys)
         self.logger.info(self.msg_format("lysis geometry", math.ceil(self._lysis_tube.volume), self._lysis_tube.height))
