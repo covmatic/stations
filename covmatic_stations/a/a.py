@@ -12,6 +12,7 @@ class StationA(Station):
         self,
         air_gap_dest_multi: float = 5,
         air_gap_sample: float = 20,
+        air_gap_lys: float = 10,
         dest_headroom_height: float = 2,
         dest_top_height: float = 5,
         dest_multi_headroom_height: float = 2,
@@ -127,6 +128,7 @@ class StationA(Station):
         )
         self._air_gap_dest_multi = air_gap_dest_multi
         self._air_gap_sample = air_gap_sample
+        self._air_gap_lys = air_gap_lys
         self._dest_headroom_height = dest_headroom_height
         self._dest_multi_headroom_height = dest_multi_headroom_height
         self._dest_top_height = dest_top_height
@@ -359,7 +361,7 @@ class StationA(Station):
                     self._lysis_volume,
                     self._lys_buff.bottom(h),
                     dest.bottom(self._lysis_headroom_height),
-                    air_gap=self._air_gap_sample,
+                    air_gap=self._air_gap_lys,
                     new_tip='never',
                     **mix
                 )
