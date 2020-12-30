@@ -122,6 +122,8 @@ class StationATechnogenetics(StationAP1000):
         self.msg = ""
         
         self.transfer_proteinase()
+        if self.run_stage("check proteinase"):
+            self.dual_pause("proteinase check")
         self.transfer_samples()
         self.transfer_lys()
         

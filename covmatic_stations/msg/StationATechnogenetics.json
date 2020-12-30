@@ -10,6 +10,10 @@
 	"ENG": " with {:.0f} uL each",
 	"ITA": " con {:.0f} uL ciascuna"
   },
+  "check proteinase": {
+    "ENG": "check the quantity of proteinase K in the deepwell",
+    "ITA": "controllare la quantità di proteinasi K nella deepwell"
+  },
   "move to B": {
     "ENG": "move deepwell plate to Station B for RNA extraction",
     "ITA": "sposta la deepwell nella Stazione B per procedere con l'estrazione"
