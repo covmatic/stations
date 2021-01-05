@@ -5,7 +5,7 @@
 	"height": 6.20
   },
   {
-	"serial": "MDV20P20200511A10",
+	"serial": "MDV20P20200707A03",
 	"station": "B2",
 	"height": 6.20
   },
@@ -22,7 +22,7 @@
   {
 	"serial": "MDV20P20200608A06",
 	"station": "B5",
-	"height": 6.60
+	"height": 6.55
   },
   {
 	"serial": "MDV20P20200512A05",
@@ -30,19 +30,19 @@
 	"height": 6.55
   },
   {
-	"serial": "MDV20P20200707A03",
+	"serial": "MDV20P20200511A10",
 	"station": "B7",
-	"height": 6.9
+	"height": 7.20
   },
   {
 	"serial": "MDV20P20200618A06",
 	"station": "B8",
-	"height": 6.75
+	"height": 6.70
   },
   {
 	"serial": "MDV20P20200616A01",
 	"station": "B9",
-	"height": 6.75
+	"height": 6.85
   },
   {
 	"serial": "MDV20P20200706A05",
@@ -52,6 +52,6 @@
   {
 	"serial": "MDV20P20200602A07",
 	"station": "B11",
-	"height": 6.65
+	"height": 6.60
   }
 ]
