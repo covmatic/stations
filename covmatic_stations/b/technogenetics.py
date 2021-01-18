@@ -30,7 +30,7 @@ class StationBTechnogenetics(StationB):
                  starting_vol: float = 650,
                  supernatant_removal_height: float = 0.2,
                  tempdeck_slot: str = '10',
-                 tempdeck_temp: float = 55,
+                 tempdeck_temp: float = 60,
                  thermomixer_incubation_time: float = 5,
                  tipracks_slots: Tuple[str, ...] = ('4', '6', '7', '8', '9'),
                  wash_1_vol: float = 680,
