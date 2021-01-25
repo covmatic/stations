@@ -75,9 +75,9 @@ class StationB(Station):
         wash_2_times: int = 20,
         wash_2_vol: float = 500,
         wash_2_mix_aspiration_rate: float = 150,
-        wash_2_mix_dispense_rate: float = 150,
-        wash_1_mix_aspiration_rate: float = 100,
-        wash_1_mix_dispense_rate: float = 100,
+        wash_2_mix_dispense_rate: float = 160,
+        wash_1_mix_aspiration_rate: float = 120,
+        wash_1_mix_dispense_rate: float = 120,
         **kwargs
     ):
         """ Build a :py:class:`.StationB`.
