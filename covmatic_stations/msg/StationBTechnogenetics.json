@@ -11,6 +11,10 @@
 	"ENG": "{} volume: {:.3f} mL",
 	"ITA": "volume {}: {:.3f} mL"
   },
+  "remove wash A": {
+    "ENG": "Check that Wash A was remove correctly",
+    "ITA": "Controllare che il Wash A sia stato rimosso correttamente"
+  },
   "spin the deepwell": {
 	"ENG": "Spin the deepwell plate for 20 seconds at room temperature.\nThen, put the deepwell plate back onto the magnetic module",
 	"ITA": "Spinnare la deepwell per 20 sec a RT.\nAl termine rimettere la deepwell nel modulo magnetico"

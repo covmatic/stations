@@ -186,6 +186,8 @@ class StationBTechnogenetics(StationB):
         
         self.remove_supernatant(self._starting_vol)
         self.wash(self._wash_1_vol, self.wash1, self._wash_1_times, "wash 1")
+        if self.run_stage("remove wash A"):
+            self.dual_pause("Check Wash A removal")
         self.wash(self._wash_2_vol, self.wash2, self._wash_2_times, "wash 2")
         
         if self.run_stage("spin deepwell"):
