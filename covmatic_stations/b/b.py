@@ -247,6 +247,7 @@ class StationB(Station):
     def load_tempdeck(self):
         self._tempdeck = self._ctx.load_module('Temperature Module Gen2', self._tempdeck_slot)
         if self._tempdeck_temp is not None:
+            self.msg = "set temperature"
             self._tempdeck.set_temperature(self._tempdeck_temp)
     
     @labware_loader(5, "_flatplate")
