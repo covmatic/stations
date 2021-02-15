@@ -48,12 +48,13 @@ class BlinkingLight(Thread, metaclass=Dummyable):
 
 class BlinkingLightHTTP(BlinkingLight):
     _URL = "http://127.0.0.1:31950/robot/lights"
-    
+    _OT_request_headers = {"Opentrons-Version":  "2"}
+
     def initial_state(self) -> bool:
-        return requests.get(self._URL).json().get('on', False)
+        return requests.get(self._URL, headers=self._OT_request_headers).json().get('on', False)
     
     def set_light(self, s: bool):
-        requests.post(self._URL, json={'on': s})
+        requests.post(self._URL, headers=self._OT_request_headers, json={'on': s})
 
 
 class Button(metaclass=Dummyable):
