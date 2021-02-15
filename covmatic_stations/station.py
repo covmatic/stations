@@ -4,7 +4,7 @@ from .utils import ProtocolContextLoggingHandler, LocalWebServerLogger
 from .lights import Button, BlinkingLightHTTP, BlinkingLight
 from opentrons.protocol_api import ProtocolContext
 from opentrons.types import Point
-from opentrons import commands
+import opentrons.commands.types
 from abc import ABCMeta, abstractmethod
 from functools import wraps, partialmethod
 from itertools import chain
@@ -176,7 +176,7 @@ class Station(metaclass=StationMeta):
             stack_logger.addHandler(logging.FileHandler(self._log_filepath))
         self._lws_logger = LocalWebServerLogger(self._log_lws_ip, self._log_lws_endpoint)
         if self._simulation_log_lws or not self._ctx.is_simulating():
-            self._ctx.broker.subscribe(commands.command_types.COMMAND, self._lws_logger)
+            self._ctx.broker.subscribe(opentrons.commands.types.COMMAND, self._lws_logger)
     
     @property
     def logger_name(self) -> str:
