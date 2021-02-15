@@ -8,7 +8,6 @@ class StationBTechnogenetics(StationB):
     _protocol_description = "station B protocol for Technogenetics kit"
 
     def __init__(self,
-                 bind_max_transfer_vol: float = 200,
                  elute_mix_times: int = 15,
                  elution_vol: float = 50,
                  elute_incubate: bool = False,
@@ -55,7 +54,6 @@ class StationBTechnogenetics(StationB):
         :param thermomixer_incubation_time: Time for incubation after thermomixer in minutes 
         """
         super(StationBTechnogenetics, self).__init__(
-            bind_max_transfer_vol=bind_max_transfer_vol,
             elute_mix_times=elute_mix_times,
             elution_vol=elution_vol,
             elute_incubate=elute_incubate,
