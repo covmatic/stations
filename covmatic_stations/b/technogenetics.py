@@ -27,7 +27,7 @@ class StationBTechnogenetics(StationB):
                  sample_mix_times: float = 10,
                  sample_mix_vol: float = 180,
                  starting_vol: float = 650,
-                 supernatant_removal_height: float = 0.2,
+                 wash_removal_height: float = 0.2,
                  tempdeck_slot: str = '10',
                  tempdeck_temp: float = 60,
                  thermomixer_incubation_time: float = 5,
@@ -59,7 +59,6 @@ class StationBTechnogenetics(StationB):
             elute_incubate=elute_incubate,
             flatplate_slot=flatplate_slot,
             starting_vol=starting_vol,
-            supernatant_removal_height=supernatant_removal_height,
             tempdeck_slot=tempdeck_slot,
             tempdeck_temp=tempdeck_temp,
             tipracks_slots=tipracks_slots,
@@ -82,6 +81,7 @@ class StationBTechnogenetics(StationB):
         self._sample_mix_height = sample_mix_height
         self._sample_mix_times = sample_mix_times
         self._sample_mix_vol = sample_mix_vol
+        self._wash_removal_height = wash_removal_height
         self._thermomixer_incubation_time = thermomixer_incubation_time
     
     @labware_loader(5, "_flatplate")
@@ -150,7 +150,7 @@ class StationBTechnogenetics(StationB):
                     if self._m300.current_volume > 0:
                         self._m300.dispense(self._m300.current_volume, m.top())  # void air gap if necessary
                     self._m300.move_to(m.center())
-                    self._m300.transfer(vol_per_trans, m.bottom(self._supernatant_removal_height), self._waste, air_gap=self._supernatant_removal_air_gap, new_tip='never')
+                    self._m300.transfer(vol_per_trans, m.bottom(self._wash_removal_height), self._waste, air_gap=self._supernatant_removal_air_gap, new_tip='never')
                     self._m300.air_gap(self._supernatant_removal_air_gap)
                 self.drop(self._m300)
         self._m300.flow_rate.aspirate = self._default_aspiration_rate
