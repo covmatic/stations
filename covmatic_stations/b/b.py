@@ -341,7 +341,7 @@ class StationB(Station):
                 # dispensing the air gap present in the tip
                 if self._m300.current_volume > 0:
                     self._m300.dispense(self._m300.current_volume, m.top())
-                    #self._m300.move_to(m.center())         ## Gia' incluso in m.top()
+                #self._m300.move_to(m.center())         ## Dovrebbe essere già fatto da m.bottom() seguente
 
                 for j in range(self._n_bottom):
                     aspirate_height = self._h_bottom - (j+1)*(self._h_bottom/self._n_bottom) # expecting aspirated height
