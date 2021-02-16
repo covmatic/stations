@@ -323,8 +323,7 @@ class StationB(Station):
                 if self._magdeck.status == 'engaged':
                     self._ctx.comment("Engaged module: {} attempt".format(j+1))
         if self._magdeck.status == 'disengaged':
-            if self.run_stage("check module"):
-                self.dual_pause("Check the module status")
+            self.dual_pause("check module")
 
     def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
         self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
