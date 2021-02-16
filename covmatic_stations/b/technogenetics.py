@@ -140,6 +140,7 @@ class StationBTechnogenetics(StationB):
     
     def remove_wash(self, vol):
         self._magdeck.engage(height=self._magheight)
+        self.check()
         self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
         num_trans, vol_per_trans = uniform_divide(vol, self._wash_max_transfer_vol)
         
@@ -179,6 +180,7 @@ class StationBTechnogenetics(StationB):
         if self.run_stage("mix incubate on"):
             self.delay(self._mix_incubate_on_time, self.get_msg_format("incubate on magdeck", self.get_msg("off")))
         self._magdeck.engage(height=self._magheight)
+        self.check()
         if self.run_stage("mix incubate off"):
             self.delay(self._mix_incubate_off_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         
@@ -193,6 +195,7 @@ class StationBTechnogenetics(StationB):
             self.dual_pause("spin the deepwell", between=self.set_external)
             self.set_internal()
             self._magdeck.engage(height=self._magheight)
+            self.check()
         
         if self.run_stage("post spin incubation"):
             self.delay(self._postspin_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
@@ -210,6 +213,7 @@ class StationBTechnogenetics(StationB):
             self.set_internal()
         
         self._magdeck.engage(height=self._magheight)
+        self.check()
         if self.run_stage("post thermomixer incubation"):
             self.delay(self._thermomixer_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         

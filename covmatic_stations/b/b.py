@@ -314,7 +314,18 @@ class StationB(Station):
     
     def _tipracks(self) -> dict:
         return {"_tips300": "_m300",}
-    
+
+    def check(self):
+        self._ctx.comment("Check module status")
+        for j in range(3):
+            if self._magdeck.status == 'disengaged':
+                self._magdeck.engage(height=self._magheight)
+                if self._magdeck.status == 'engaged':
+                    self._ctx.comment("Engaged module: {} attempt".format(j+1))
+        if self._magdeck.status == 'disengaged':
+            if self.run_stage("check module"):
+                self.dual_pause("Check the module status")
+
     def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
         self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
         
@@ -329,7 +340,7 @@ class StationB(Station):
                 self._ctx.comment("Supernatant removal: {} transfer with {}ul each.".format(num_trans, vol_per_trans))
                 for _ in range(num_trans):
                     # num_trans = num_trans - 1
-                    # aspirate_height = self.h_bottom + (num_trans * h_num_trans) # expecting aspirated height 
+                    # aspirate_height = self.h_bottom + (num_trans * h_num_trans) # expecting aspirated height
                     # ctx.comment('Aspirating at {}'.format(aspirate_height))
                     if self._m300.current_volume > 0:
                         self._m300.dispense(self._m300.current_volume, m.top())                   
@@ -347,6 +358,7 @@ class StationB(Station):
                     aspirate_height = self._h_bottom - (j+1)*(self._h_bottom/self._n_bottom) # expecting aspirated height
                     loc = m.bottom(aspirate_height)
                     self._m300.aspirate(self._supernatant_removal_last_transfer_max_vol/self._n_bottom, loc)
+                    self._ctx.comment("Aspirating at {}".format(aspirate_height))
 
                 self._m300.air_gap(self._supernatant_removal_air_gap)
                 self._m300.dispense(self._m300.current_volume, self._waste)
@@ -389,6 +401,7 @@ class StationB(Station):
             # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
             self.delay(self._wait_time_bind_off, 'magnet wait')
         self._magdeck.engage(height=self._magheight)
+        self.check()
         
         if self.run_stage("bind incubate"):
             # Time Issue in Station B After the waiting time of 5 min the magnetic module should run for 6 min.
@@ -442,6 +455,7 @@ class StationB(Station):
                 self.drop(self._m300)
 
         self._magdeck.engage(height=self._magheight)
+        self.check()
         if self.run_stage("{} incubate".format(wash_name)):
             self.delay(self._wait_time_wash_on, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         self.remove_supernatant(vol, stage="remove {}".format(wash_name))
@@ -468,6 +482,7 @@ class StationB(Station):
         if self._elute_incubate and self.run_stage("{} incubate off".format(stage)):
             self.delay(self._wait_time_elute_off, self.get_msg_format("incubate on magdeck", self.get_msg("off")))
         self._magdeck.engage(height=self._magheight)
+        self.check()
         if self._elute_incubate and self.run_stage("{} incubate on".format(stage)):
             self.delay(self._wait_time_elute_on, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         

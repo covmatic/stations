@@ -28,5 +28,9 @@
   "airdry": {
 	"ENG": "airdrying beads at room temperature",
 	"ITA": "asciugatura delle beads a RT"
+  },
+  "check module": {
+    "ENG": "the magnetic module is not engaged. DON'T GO ON",
+    "ITA": "il modulo magnetico non si ingaggia. NON CONTINUARE"
   }
 }
