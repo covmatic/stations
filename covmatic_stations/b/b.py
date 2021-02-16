@@ -40,6 +40,10 @@ class StationB(Station):
         elution_vol: float = 40,
         jupyter: bool = True,
         logger: Optional[logging.getLoggerClass()] = None,
+        h_trans: float = 10,
+        h_bottom: float = 0.5,
+        n_bottom: int = 3,
+        vol_last_trans: float = 100, 
         magdeck_slot: str = '1',
         magheight: float = 6.65,
         magheight_load: bool = True,
@@ -48,9 +52,10 @@ class StationB(Station):
         num_samples: int = 96,
         samples_per_col: int = 8,
         skip_delay: bool = False,
-        supernatant_removal_air_gap: float = 20,
+        supernatant_removal_air_gap: float = 5,
         supernatant_removal_aspiration_rate: float = 25,
         supernatant_removal_height: float = 0.5,
+        supernatant_removal_last_transfer_max_vol: float = 190,
         starting_vol: float = 380,
         tempdeck_slot: str = '1',
         tempdeck_temp: float = 4,
@@ -107,6 +112,10 @@ class StationB(Station):
         :param elution_height: Height at which to sample after elution in mm
         :param elution_vol: The volume of elution buffer to aspirate in uL
         :param logger: logger object. If not specified, the default logger is used that logs through the ProtocolContext comment method
+        :param h_trans: total liquid height expected starting on B
+        :param h_bottom: height offset from the bottom 
+        :param n_bottom: number of aspirating phases done in the last phase 
+        :param vol_last_trans: volume left for the last section phase
         :param magheight: Height of the magnet, in mm
         :param magheight_load: Load magheight from JSON, by serial (if no serial number is found, fall back onto magheight parameter)
         :param magplate_model: Magnetic plate model
@@ -117,6 +126,7 @@ class StationB(Station):
         :param supernatant_removal_air_gap: Air gap when removing the supernatant in uL
         :param supernatant_removal_aspiration_rate: Aspiration flow rate when removing the supernatant in uL/s
         :param supernatant_removal_height: Height from the bottom when removing the supernatant in mm
+        :param supernatant_removal_last_transfer_max_vol: maximum volume to load into tip during supernatant last transfer
         :param starting_vol: Sample volume at start (volume coming from Station A)
         :param tempdeck_slot: Slot where the tempdeck is positioned 
         :param tempdeck_temp: tempdeck temperature in Celsius degrees 
@@ -183,6 +193,10 @@ class StationB(Station):
         self._elute_mix_vol = elute_mix_vol
         self._elution_height = elution_height
         self._elution_vol = elution_vol
+        self._h_trans = h_trans
+        self._h_bottom = h_bottom
+        self._n_bottom = n_bottom
+        self._vol_last_trans = vol_last_trans
         self._magdeck_slot = magdeck_slot
         self._magheight = magheight
         self._magheight_load = magheight_load
@@ -190,6 +204,7 @@ class StationB(Station):
         self._supernatant_removal_air_gap = supernatant_removal_air_gap
         self._supernatant_removal_aspiration_rate = supernatant_removal_aspiration_rate
         self._supernatant_removal_height = supernatant_removal_height
+        self._supernatant_removal_last_transfer_max_vol = supernatant_removal_last_transfer_max_vol
         self._starting_vol = starting_vol
         self._tempdeck_slot = tempdeck_slot
         self._tempdeck_temp = tempdeck_temp
@@ -230,7 +245,9 @@ class StationB(Station):
         self._magdeck = self._ctx.load_module('Magnetic Module Gen2', self._magdeck_slot)
         self._magdeck.disengage()
         if (self._magheight_load):
-            self._magheight = magnets.height.by_serial.get(self._magdeck._module._driver.get_device_info()['serial'], self._magheight)
+            mag_deck_serial = self._magdeck._module._driver.get_device_info()['serial']
+            self._magheight = magnets.height.by_serial.get(mag_deck_serial, self._magheight)
+            self.logger.info("Found MagDeck with serial {}. Engage height is {}mm".format(mag_deck_serial, self._magheight))
     
     @labware_loader(3, "_magplate")
     def load_magplate(self):
@@ -245,6 +262,7 @@ class StationB(Station):
     def load_tempdeck(self):
         self._tempdeck = self._ctx.load_module('Temperature Module Gen2', self._tempdeck_slot)
         if self._tempdeck_temp is not None:
+            self.msg = "set temperature"
             self._tempdeck.set_temperature(self._tempdeck_temp)
     
     @labware_loader(5, "_flatplate")
@@ -299,19 +317,40 @@ class StationB(Station):
     
     def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
         self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
-        num_trans = math.ceil(vol / self._bind_max_transfer_vol)
-        vol_per_trans = vol / num_trans
         
+        num_trans = math.ceil((vol - self._vol_last_trans) / self._bind_max_transfer_vol)
+        vol_per_trans = (vol - self._vol_last_trans) / num_trans
+        # h_num_trans = self._h_trans/num_trans
+
         for i, m in enumerate(self.mag_samples_m):
             if self.run_stage("{} {}/{}".format(stage, i + 1, len(self.mag_samples_m))):
                 self.pick_up(self._m300)
-                loc = m.bottom(self._supernatant_removal_height).move(Point(x=(-1 if i % 2 == 0 else 1)*2))
+                loc = m.bottom(self._supernatant_removal_height)
+                self._ctx.comment("Supernatant removal: {} transfer with {}ul each.".format(num_trans, vol_per_trans))
                 for _ in range(num_trans):
+                    # num_trans = num_trans - 1
+                    # aspirate_height = self.h_bottom + (num_trans * h_num_trans) # expecting aspirated height 
+                    # ctx.comment('Aspirating at {}'.format(aspirate_height))
                     if self._m300.current_volume > 0:
-                        self._m300.dispense(self._m300.current_volume, m.top())
+                        self._m300.dispense(self._m300.current_volume, m.top())                   
                     self._m300.move_to(m.center())
                     self._m300.transfer(vol_per_trans, loc, self._waste, new_tip='never', air_gap=self._supernatant_removal_air_gap)
                     self._m300.air_gap(self._supernatant_removal_air_gap)
+
+                self._ctx.comment("Supernatant removal: last transfer in {} step".format(self._n_bottom))
+                # dispensing the air gap present in the tip
+                if self._m300.current_volume > 0:
+                    self._m300.dispense(self._m300.current_volume, m.top())
+                #self._m300.move_to(m.center())         ## Dovrebbe essere già fatto da m.bottom() seguente
+
+                for j in range(self._n_bottom):
+                    aspirate_height = self._h_bottom - (j+1)*(self._h_bottom/self._n_bottom) # expecting aspirated height
+                    loc = m.bottom(aspirate_height)
+                    self._m300.aspirate(self._supernatant_removal_last_transfer_max_vol/self._n_bottom, loc)
+
+                self._m300.air_gap(self._supernatant_removal_air_gap)
+                self._m300.dispense(self._m300.current_volume, self._waste)
+                self._m300.air_gap(self._supernatant_removal_air_gap)
                 self.drop(self._m300)
         self._m300.flow_rate.aspirate = self._default_aspiration_rate
         

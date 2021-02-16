@@ -3,6 +3,10 @@
 	"ENG": "station B protocol",
 	"ITA": "protocollo stazione B"
   },
+  "set temperature": {
+	"ENG": "waiting for temperature module",
+	"ITA": "attivazione modulo di temperatura"
+  },
   "magnet wait": {
 	"ENG": "waiting before magnetic module activation",
 	"ITA": "attesa prima dell'attivazione del modulo magnetico"
