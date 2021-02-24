@@ -186,8 +186,22 @@ class StationBTechnogenetics(StationB):
         
         self.remove_supernatant(self._starting_vol)
         self.wash(self._wash_1_vol, self.wash1, self._wash_1_times, "wash 1")
+
+        if self.run_stage("spin deepwell"):
+            self._magdeck.disengage()
+            self.dual_pause("spin the deepwell", between=self.set_external)
+            self.set_internal()
+            self._magdeck.engage(height=self._magheight)
+            self.check()
+
+        if self.run_stage("post spin incubation"):
+            self.delay(self._postspin_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
+
+        self.remove_wash(self._remove_wash_vol)
+
         if self.run_stage("remove wash A"):
             self.dual_pause("Check Wash A removal")
+
         self.wash(self._wash_2_vol, self.wash2, self._wash_2_times, "wash 2")
         
         if self.run_stage("spin deepwell"):
