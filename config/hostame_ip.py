@@ -13,7 +13,7 @@ def write_to_file(v: str, f: str) -> str:
 
 
 def comment(msg: str, *vars: str) -> str:
-    return "robot.comment(\"{}\".format({}))".format(msg, ", ".join(vars))
+    return "ctx.comment(\"{}\".format({}))".format(msg, ", ".join(vars))
 
 
 class HostnameIPProtocol:
@@ -89,7 +89,7 @@ NTP={ntp}
     def set_hostname(self) -> str:
         return "" if self.hostname is None else "echo {} > /etc/hostname".format(self.hostname)
     
-    imports = "from opentrons import robot", "import os"
+    imports = "import os", ""
     
     @property
     def var_inits(self) -> List[str]:
@@ -150,12 +150,18 @@ NTP={ntp}
     
     def import_section(self, spacing: int = 2) -> str:
         return "\n".join(self.imports) + "\n" * spacing
+	
+    def metadata_section(self) -> str:
+        return "\nmetadata = {\"apiLevel\": \"2.0\"}\n"
+	
+    def run_section(self):
+        return "\n\ndef run(ctx):"
     
-    def init_section(self) -> str:
-        return "".join(map("\n{}".format, self.var_inits))
+    def init_section(self, indent: int = 4) -> str:
+        return "".join(map(("\n" + " " * indent + "{}").format, self.var_inits))
     
-    def comment_section(self) -> str:
-        return "".join("\n{}".format(comment(*c)) for c in self.comments)
+    def comment_section(self, indent: int = 4) -> str:
+        return "".join(("\n" + " " * indent + "{}").format(comment(*c)) for c in self.comments)
     
     def command_section(self, indent: int = 4) -> str:
         if not self.commands:
@@ -163,10 +169,10 @@ NTP={ntp}
         if self.exec_simul:
             return "".join(map("\n{}".format, self.commands))
         else:
-            return "\nif not robot.is_simulating():" + "".join(map(("\n" + " " * indent + "{}").format, self.commands))
+            return "\n" + " " * indent + "if not ctx.is_simulating():" + "".join(map(("\n" + " " * 2 * indent + "{}").format, self.commands))
     
     def __str__(self) -> str:
-        return self.import_section() + self.init_section() + self.comment_section() + self.command_section()
+        return self.import_section() + self.metadata_section() + self.run_section()  + self.init_section() + self.comment_section() + self.command_section()
     
     def save(self):
         logging.info(" writing protocol to {}".format(self.filepath))
