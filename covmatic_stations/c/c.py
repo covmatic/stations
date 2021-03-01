@@ -176,6 +176,10 @@ class StationC(Station):
     @property
     def sample_dests(self):
         return self._pcr_plate.rows()[0][:self.num_cols]
+
+    @property
+    def control_dests(self):
+        return self._pcr_plate.wells()[95]
     
     def _tipracks(self) -> dict:
         return {
@@ -190,6 +194,10 @@ class StationC(Station):
     @property
     def mm_tubes(self):
         return self._tube_block.wells()[:1]
+
+    @property
+    def mm_tube_con(self):
+        return self._tube_block.wells()[0]
     
     @property
     def mm_strips(self):
@@ -211,9 +219,15 @@ class StationC(Station):
                         has_tip = True
                     self.logger.debug("filling mastermix at {}".format(well))
                     self._p300.transfer(vol_per_strip_well, tube.bottom(0.2), well, new_tip='never')
-        if has_tip:
-            self._p300.drop_tip()
-    
+
+    def fill_control(self):
+        if self.run_stage("Transfer mastermix to positive control hole in H12"):
+            has_tip = True
+            self._p300.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate, self.mm_tube_con,
+                                self.control_dests, new_tip='never')
+            if has_tip:
+                self._p300.drop_tip()
+
     @property
     def mm_indices(self):
         return list(repeat(0, self._samples_per_cycle))
@@ -247,6 +261,7 @@ class StationC(Station):
         self.cycle_begin()
         
         self.fill_mm_strips()
+        self.fill_control()
         self.transfer_mm(stage="transfer mastermix to plate {}{}{}".format("{}/{}", " " if self.num_cycles > 1 else "", self._cycle))
         if self.sources is not None:
             for i, (s, d) in enumerate(zip(self.sources, self.sample_dests)):
