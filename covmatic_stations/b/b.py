@@ -28,7 +28,7 @@ class StationB(Station):
         default_aspiration_rate: float = 150,
         drop_height: float = 0,
         drop_loc_l: float = -10,
-        drop_loc_r: float = 30,
+        drop_loc_r: float = 20,
         drop_loc_y: float = 0,
         drop_threshold: int = 296,
         elute_air_gap: float = 20,
