@@ -223,7 +223,7 @@ class StationC(Station):
     def fill_control(self):
         if self.run_stage("Transfer mastermix to positive control hole in H12"):
             has_tip = True
-            self._p300.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate, self.mm_tube_con,
+            self._p300.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate, self.mm_tube_con.bottom(0.2),
                                 self.control_dests, new_tip='never')
             if has_tip:
                 self._p300.drop_tip()
