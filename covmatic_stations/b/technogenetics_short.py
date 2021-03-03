@@ -12,11 +12,11 @@ class StationBTechnogeneticsShort(StationBTechnogenetics):
         bind_blowout_rate=None,
         bottom_headroom_height: float = 0.1,
         elution_vol: float = 40,
-        flatplate_slot: str = '1',
-        magdeck_slot: str = '4',
+        flatplate_slot: str = '3',
+        magdeck_slot: str = '1',
         num_cycles: int = 1,
         tempdeck_temp = None,
-        tipracks_slots: Tuple[str, ...] = ('2', '3', '5', '6', '7', '8', '9', '10'),
+        tipracks_slots: Tuple[str, ...] = ('4', '6', '7', '8', '9'),
         *args,
         **kwargs
     ):
