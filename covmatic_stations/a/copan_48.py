@@ -47,7 +47,7 @@ class StaggeredCopan48Specs(Copan24Specs):
     @json_property
     def metadata(self) -> dict:
         d = super(StaggeredCopan48Specs, self).metadata
-        d["displayName"] = "COPAN {} Staggered Tube Rack 14000 µL".format(self.n)
+        d["displayName"] = "COPAN {} Staggered Tube Rack 14000 uL".format(self.n)
         return d
         
     def well(self, r: int, c: int) -> Tuple[str, dict]:
