@@ -24,7 +24,7 @@ class StationB(Station):
         bind_sample_mix_times: int = 5,
         bind_sample_mix_vol: float = 20,
         bind_vol: float = 210,
-        bottom_headroom_height: float = 0.5,
+        bottom_headroom_height: float = 1,
         default_aspiration_rate: float = 150,
         drop_height: float = 0,
         drop_loc_l: float = -10,
@@ -358,6 +358,14 @@ class StationB(Station):
                     loc = m.bottom(aspirate_height)
                     self._m300.aspirate(self._supernatant_removal_last_transfer_max_vol/self._n_bottom, loc)
                     self._ctx.comment("Aspirating at {}".format(aspirate_height))
+
+                back_step = 0.1
+                n_back_step = 3
+                for _ in range(n_back_step):
+                    aspirate_height = aspirate_height + back_step
+                    self._ctx.comment("Moving up at {}".format(aspirate_height))
+                    loc = m.bottom(aspirate_height)
+                    self._m300.move_to(loc)
 
                 self._m300.air_gap(self._supernatant_removal_air_gap)
                 self._m300.dispense(self._m300.current_volume, self._waste)

@@ -19,6 +19,9 @@ class StationBTechnogenetics(StationB):
                  final_transfer_rate_dispense: float = 30,
                  final_vol: float = 20,
                  flatplate_slot: str = '3',
+                 h_bottom: float = 0.3,
+                 n_bottom: float = 2,
+                 w_bottom: float = 0.2,
                  mix_incubate_on_time: float = 20,
                  mix_incubate_off_time: float = 5,
                  postspin_incubation_time: float = 3,
@@ -74,6 +77,9 @@ class StationBTechnogenetics(StationB):
         self._final_transfer_rate_dispense = final_transfer_rate_dispense
         self._final_vol = final_vol
         self._flatplate_slot = flatplate_slot
+        self._h_bottom = h_bottom
+        self._n_bottom = n_bottom
+        self._w_bottom = w_bottom
         self._mix_incubate_on_time = mix_incubate_on_time
         self._mix_incubate_off_time = mix_incubate_off_time
         self._postspin_incubation_time = postspin_incubation_time
@@ -151,7 +157,20 @@ class StationBTechnogenetics(StationB):
                     if self._m300.current_volume > 0:
                         self._m300.dispense(self._m300.current_volume, m.top())  # void air gap if necessary
                     self._m300.move_to(m.center())
-                    self._m300.transfer(vol_per_trans, m.bottom(self._wash_removal_height), self._waste, air_gap=self._supernatant_removal_air_gap, new_tip='never')
+
+                    aspirate_height = self._w_bottom - (i + 1) * (self._w_bottom / self._n_bottom)
+                    back_step = 0.1
+                    n_back_step = 3
+                    self._m300.aspirate(vol_per_trans, m.bottom(self._wash_removal_height))
+                    for _ in range(n_back_step):
+                        aspirate_height = aspirate_height + back_step
+                        self._ctx.comment("Moving up at {}".format(aspirate_height))
+                        loc = m.bottom(aspirate_height)
+                        self._m300.move_to(loc)
+                    self._m300.air_gap(self._supernatant_removal_air_gap)
+                    #self._m300.transfer(vol_per_trans, m.bottom(self._wash_removal_height), self._waste, air_gap=self._supernatant_removal_air_gap, new_tip='never')
+
+                    self._m300.dispense(self._m300.current_volume, self._waste)
                     self._m300.air_gap(self._supernatant_removal_air_gap)
                 self.drop(self._m300)
         self._m300.flow_rate.aspirate = self._default_aspiration_rate
@@ -161,12 +180,25 @@ class StationBTechnogenetics(StationB):
         self._m300.flow_rate.aspirate = self._final_transfer_rate_aspirate
         self._m300.flow_rate.dispense = self._final_transfer_rate_dispense
         n = len(list(zip(self.mag_samples_m, self.pcr_samples_m)))
+
         for i, (m, e) in enumerate(zip(self.mag_samples_m, self.pcr_samples_m)):
             if self.run_stage("final transfer {}/{}".format(i + 1, n)):
                 self.pick_up(self._m300)
                 side = -1 if i % 2 == 0 else 1
                 loc = m.bottom(0.3).move(Point(x=side*2))
-                self._m300.transfer(self._final_vol, loc, e.bottom(self._elution_height), air_gap=self._elute_air_gap, new_tip='never')
+                self._m300.aspirate(self._final_vol, loc)
+                self._m300.air_gap(self._elute_air_gap)
+
+                aspirate_height = self._h_bottom - (i + 1) * (self._h_bottom / self._n_bottom)
+                back_step = 0.1
+                n_back_step = 2
+                for _ in range(n_back_step):
+                    aspirate_height = aspirate_height + back_step
+                    self._ctx.comment("Moving up at {}".format(aspirate_height))
+                    des = e.bottom(aspirate_height)
+                    self._m300.dispense(self._m300.current_volume, des)
+
+                #self._m300.transfer(self._final_vol, loc, e.bottom(self._elution_height), air_gap=self._elute_air_gap, new_tip='never')
                 self._m300.mix(self._final_mix_times, self._final_mix_vol, e.bottom(self._final_mix_height))
                 self._m300.air_gap(self._elute_air_gap)
                 self.drop(self._m300)
