@@ -8,7 +8,8 @@ This file can be
     This script generates the json file for the custom labware"""
 from covmatic_stations.a.copan_24 import Copan24Specs, json_property
 from opentrons.protocol_api import ProtocolContext
-from typing import Tuple
+from itertools import product
+from typing import List, Tuple
 import inspect
 import copy
 import os
@@ -69,6 +70,25 @@ class StaggeredCopan48SpecsCorrected(StaggeredCopan48Specs):
                     corrected_args[k] = kwargs[k] * v.default
         super(StaggeredCopan48SpecsCorrected, self).__init__(**corrected_args, **remaining_kwargs)
 
+class StaggeredCopan48SpecsCorrectedWithoutA1(StaggeredCopan48SpecsCorrected):
+    def __init__(self, **kwargs):
+        super(StaggeredCopan48SpecsCorrectedWithoutA1, self).__init__(**kwargs)
+
+    @json_property
+    def metadata(self) -> dict:
+        d = super(StaggeredCopan48Specs, self).metadata
+        d["displayName"] = "COPAN {} Staggered Tube Rack 14000 uL without A1 well".format(self.n)
+        return d
+
+    @json_property
+    def ordering(self) -> List[List[str]]:
+        ordering_list = [[chr(r + ord("A")) + str(c + 1) for r in range(self.nrows)] for c in range(self.ncols)]
+        ordering_list[0].pop(0)
+        return ordering_list
+
+    @json_property
+    def wells(self) -> dict:
+        return dict(self.well(r, c) for c, r in filter(lambda x: x != (0, 0), product(range(self.ncols), range(self.nrows))))
 
 copan_48_correction_env_key = "OT_COPAN_48_CORRECT"
 copan_48_correction_file = os.path.join(os.path.dirname(__file__), "copan_48_correction.json")
@@ -77,11 +97,11 @@ with open(copan_48_correction_file, "r") as f:
     copan_48_correction = json.load(f)
 
 
-copan_48_corrected_specs = StaggeredCopan48SpecsCorrected(**copan_48_correction)
+copan_48_corrected_specs = StaggeredCopan48SpecsCorrectedWithoutA1(**copan_48_correction)
 
 
 def run(ctx: ProtocolContext):
-    StaggeredCopan48Specs().run_test(ctx)
+    StaggeredCopan48SpecsCorrectedWithoutA1().run_test(ctx)
 
 
 metadata = {"apiLevel": "2.3"}
@@ -93,7 +113,7 @@ if __name__ == "__main__":
     parser.add_argument('file', metavar='F', type=str, help='The file path where to save the custom labware JSON')
     args = parser.parse_args()
     with open(args.file, "w") as f:
-        f.write(str(StaggeredCopan48Specs()))
+        f.write(str(StaggeredCopan48SpecsCorrectedWithoutA1()))
 
 
 # Copyright (c) 2020 Covmatic.
