@@ -12,7 +12,9 @@ class StationC(Station):
     def __init__(
         self,
         aspirate_rate: float = 30,
-        bottom_headroom_height: float = 0.5,
+        tube_bottom_headroom_height: float = 3,
+        strip_bottom_headroom_height: float = 3.5,
+        pcr_bottom_headroom_height: float = 3.5,
         dispense_rate: float = 30,
         drop_loc_l: float = 0,
         drop_loc_r: float = 0,
@@ -44,7 +46,9 @@ class StationC(Station):
     ):
         """ Build a :py:class:`.StationC`.
         :param aspirate_rate: Aspiration rate in uL/s
-        :param bottom_headroom_height: Height to keep from the bottom
+        :param tube_bottom_headroom_height: Height to keep from the bottom for mastermix tubes
+        :param strip_bottom_headroom_height: Height to keep from the bottom for the strips
+        :param pcr_bottom_headroom_height: Height to keep from the bottom for the output pcr plate
         :param dispense_rate: Dispensation rate in uL/s
         :param drop_loc_l: offset for dropping to the left side (should be positive) in mm
         :param drop_loc_r: offset for dropping to the right side (should be negative) in mm
@@ -83,7 +87,9 @@ class StationC(Station):
             **kwargs
         )
         self._aspirate_rate = aspirate_rate
-        self._bottom_headroom_height = bottom_headroom_height
+        self._tube_bottom_headroom_height = tube_bottom_headroom_height
+        self._strip_bottom_headroom_height = strip_bottom_headroom_height
+        self._pcr_bottom_headroom_height = pcr_bottom_headroom_height
         self._dispense_rate = dispense_rate
         self._mastermix_vol = mastermix_vol
         self._mastermix_vol_headroom = mastermix_vol_headroom
@@ -218,13 +224,13 @@ class StationC(Station):
                         self.pick_up(self._p300)
                         has_tip = True
                     self.logger.debug("filling mastermix at {}".format(well))
-                    self._p300.transfer(vol_per_strip_well, tube.bottom(0.2), well, new_tip='never')
+                    self._p300.transfer(vol_per_strip_well, tube.bottom(self._tube_bottom_headroom_height), well.bottom(self._strip_bottom_headroom_height), new_tip='never')
 
     def fill_control(self):
         if self.run_stage("Transfer mastermix to positive control hole in H12"):
             has_tip = True
-            self._p300.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate, self.mm_tube_con.bottom(0.2),
-                                self.control_dests, new_tip='never')
+            self._p300.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate, self.mm_tube_con.bottom(self._tube_bottom_headroom_height),
+                                self.control_dests.bottom(self._pcr_bottom_headroom_height), new_tip='never')
             if has_tip:
                 self._p300.drop_tip()
 
@@ -237,7 +243,7 @@ class StationC(Station):
         for i, (m_idx, s) in enumerate(zip(self.mm_indices[::self._m20.channels], self.sample_dests[:self.remaining_cols])):
             if self.run_stage(stage.format(i + 1, n)):
                 self.pick_up(self._m20)
-                self._m20.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate, self.mm_strips[m_idx][0].bottom(0.8), s, new_tip='never')
+                self._m20.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate, self.mm_strips[m_idx][0].bottom(self._strip_bottom_headroom_height), s.bottom(self._pcr_bottom_headroom_height), new_tip='never')
                 self._m20.drop_tip()
     
     def transfer_sample(self, vol: float, source, dest):
