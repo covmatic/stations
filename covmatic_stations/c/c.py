@@ -8,43 +8,47 @@ from typing import Optional, Tuple
 
 class StationC(Station):
     _protocol_description = "station C protocol"
-    
+
     def __init__(
-        self,
-        aspirate_rate: float = 30,
-        bottom_headroom_height: float = 0.5,
-        dispense_rate: float = 30,
-        drop_loc_l: float = 0,
-        drop_loc_r: float = 0,
-        drop_threshold: int = 296,
-        jupyter: bool = True,
-        logger: Optional[logging.getLoggerClass()] = None,
-        mastermix_vol: float = 12,
-        mastermix_vol_headroom: float = 1.2,
-        mastermix_vol_headroom_aspirate: float = 20/18,
-        metadata: Optional[dict] = None,
-        num_samples: int = 96,
-        positive_control_well: str = 'A10',
-        sample_blow_height: float = -2,
-        sample_bottom_height: float = 2,
-        sample_mix_vol: float = 10,
-        sample_mix_reps: int = 1,
-        sample_vol: float = 8,
-        samples_per_col: int = 8,
-        samples_per_cycle: int = 96,
-        skip_delay: bool = False,
-        source_plate_name: str = 'chilled elution plate on block from Station B',
-        suck_height: float = 2,
-        suck_vol: float = 5,
-        tempdeck_bool: bool = True,
-        tipracks_slots: Tuple[str, ...] = ('2', '3', '6', '7', '9'),
-        transfer_samples: bool = True,
-        tube_block_model: str = "opentrons_24_aluminumblock_nest_1.5ml_snapcap",
-        **kwargs
+            self,
+            aspirate_rate: float = 30,
+            tube_bottom_headroom_height: float = 3,
+            strip_bottom_headroom_height: float = 3.5,
+            pcr_bottom_headroom_height: float = 3.5,
+            dispense_rate: float = 30,
+            drop_loc_l: float = 0,
+            drop_loc_r: float = 0,
+            drop_threshold: int = 296,
+            jupyter: bool = True,
+            logger: Optional[logging.getLoggerClass()] = None,
+            mastermix_vol: float = 12,
+            mastermix_vol_headroom: float = 1.2,
+            mastermix_vol_headroom_aspirate: float = 20 / 18,
+            metadata: Optional[dict] = None,
+            num_samples: int = 96,
+            positive_control_well: str = 'A10',
+            sample_blow_height: float = -2,
+            sample_bottom_height: float = 2,
+            sample_mix_vol: float = 10,
+            sample_mix_reps: int = 1,
+            sample_vol: float = 8,
+            samples_per_col: int = 8,
+            samples_per_cycle: int = 96,
+            skip_delay: bool = False,
+            source_plate_name: str = 'chilled elution plate on block from Station B',
+            suck_height: float = 2,
+            suck_vol: float = 5,
+            tempdeck_bool: bool = True,
+            tipracks_slots: Tuple[str, ...] = ('2', '3', '6', '7', '9'),
+            transfer_samples: bool = True,
+            tube_block_model: str = "opentrons_24_aluminumblock_nest_1.5ml_snapcap",
+            **kwargs
     ):
         """ Build a :py:class:`.StationC`.
         :param aspirate_rate: Aspiration rate in uL/s
-        :param bottom_headroom_height: Height to keep from the bottom
+        :param tube_bottom_headroom_height: Height to keep from the bottom for mastermix tubes
+        :param strip_bottom_headroom_height: Height to keep from the bottom for the strips
+        :param pcr_bottom_headroom_height: Height to keep from the bottom for the output pcr plate
         :param dispense_rate: Dispensation rate in uL/s
         :param drop_loc_l: offset for dropping to the left side (should be positive) in mm
         :param drop_loc_r: offset for dropping to the right side (should be negative) in mm
@@ -59,7 +63,7 @@ class StationC(Station):
         :param sample_blow_height: Height from the top when blowing out in mm (should be negative)
         :param sample_bottom_height: Height to keep from the bottom in mm when dealing with samples
         :param sample_mix_vol: Samples mixing volume in uL
-        :param sample_mix_reps: Samples mixing repetitions 
+        :param sample_mix_reps: Samples mixing repetitions
         :param sample_vol: Sample volume
         :param samples_per_col: The number of samples in a column of the destination plate
         :param samples_per_cycle: The number of samples processable in one cycle
@@ -83,7 +87,9 @@ class StationC(Station):
             **kwargs
         )
         self._aspirate_rate = aspirate_rate
-        self._bottom_headroom_height = bottom_headroom_height
+        self._tube_bottom_headroom_height = tube_bottom_headroom_height
+        self._strip_bottom_headroom_height = strip_bottom_headroom_height
+        self._pcr_bottom_headroom_height = pcr_bottom_headroom_height
         self._dispense_rate = dispense_rate
         self._mastermix_vol = mastermix_vol
         self._mastermix_vol_headroom = mastermix_vol_headroom
@@ -102,36 +108,38 @@ class StationC(Station):
         self._tipracks_slots = tipracks_slots
         self._transfer_samples = transfer_samples
         self._tube_block_model = tube_block_model
-        
+
         self._remaining_samples = self._num_samples
         self._samples_this_cycle = min(self._remaining_samples, self._samples_per_cycle)
-    
+
     @property
     def num_cycles(self) -> int:
         return int(math.ceil(self._num_samples / self._samples_per_cycle))
-    
+
     @labware_loader(0, "_source_plate")
     def load_source_plate(self):
         if self._transfer_samples:
-            self._source_plate = self._ctx.load_labware('opentrons_96_aluminumblock_nest_wellplate_100ul', '5', self._source_plate_name)
+            self._source_plate = self._ctx.load_labware('opentrons_96_aluminumblock_nest_wellplate_100ul', '5',
+                                                        self._source_plate_name)
         else:
             pass
-    
+
     @labware_loader(1, "_tips20")
     def load_tips20(self):
         self._tips20 = [
             self._ctx.load_labware('opentrons_96_filtertiprack_20ul', slot)
             for slot in self._tipracks_slots
         ]
-    
+
     @labware_loader(2, "_tips20_no_a")
     def load_tips20_no_a(self):
-        self._tips20_no_a = [self._ctx.load_labware('opentrons_96_filtertiprack_20ul', '11', '20ul tiprack - no tips in row A')]
-    
+        self._tips20_no_a = [
+            self._ctx.load_labware('opentrons_96_filtertiprack_20ul', '11', '20ul tiprack - no tips in row A')]
+
     @labware_loader(3, "_tips300")
     def loadtips300(self):
         self._tips300 = [self._ctx.load_labware('opentrons_96_filtertiprack_200ul', '10')]
-    
+
     @labware_loader(4, "_tempdeck")
     def load_tempdeck(self):
         if self._tempdeck_bool:
@@ -142,37 +150,41 @@ class StationC(Station):
     @labware_loader(5, "_pcr_plate")
     def load_pcr_plate(self):
         if self._tempdeck_bool:
-            self._pcr_plate = self._tempdeck.load_labware('opentrons_96_aluminumblock_biorad_wellplate_200ul', 'PCR plate')
+            self._pcr_plate = self._tempdeck.load_labware('opentrons_96_aluminumblock_biorad_wellplate_200ul',
+                                                          'PCR plate')
         else:
-            self._pcr_plate = self._ctx.load_labware('opentrons_96_aluminumblock_biorad_wellplate_200ul', '1', 'PCR plate')
-        
+            self._pcr_plate = self._ctx.load_labware('opentrons_96_aluminumblock_biorad_wellplate_200ul', '1',
+                                                     'PCR plate')
+
     @labware_loader(6, "_mm_strips")
     def load_mm_strips(self):
-        self._mm_strips = self._ctx.load_labware('opentrons_96_aluminumblock_generic_pcr_strip_200ul', '4', 'mastermix strips')
-    
+        self._mm_strips = self._ctx.load_labware('opentrons_96_aluminumblock_generic_pcr_strip_200ul', '4',
+                                                 'mastermix strips')
+
     @labware_loader(7, "_tube_block")
     def load_tube_block(self):
-        self._tube_block = self._ctx.load_labware(self._tube_block_model, '7', 'screw tube aluminum block for mastermix + controls')
-    
+        self._tube_block = self._ctx.load_labware(self._tube_block_model, '7',
+                                                  'screw tube aluminum block for mastermix + controls')
+
     @instrument_loader(0, "_m20")
     def load_m20(self):
         self._m20 = self._ctx.load_instrument('p20_multi_gen2', 'right', tip_racks=self._tips20)
         self._m20.flow_rate.aspirate = self._aspirate_rate
         self._m20.flow_rate.dispense = self._dispense_rate
-    
+
     @instrument_loader(0, "_p300")
     def load_p300(self):
         self._p300 = self._ctx.load_instrument('p300_single_gen2', 'left', tip_racks=self._tips300)
         self._p300.flow_rate.aspirate = self._aspirate_rate
         self._p300.flow_rate.dispense = self._dispense_rate
-    
+
     @property
     def sources(self):
         if self._transfer_samples:
             return self._source_plate.rows()[0][:self.num_cols]
         else:
             return None
-    
+
     @property
     def sample_dests(self):
         return self._pcr_plate.rows()[0][:self.num_cols]
@@ -180,17 +192,17 @@ class StationC(Station):
     @property
     def control_dests(self):
         return self._pcr_plate.wells()[95]
-    
+
     def _tipracks(self) -> dict:
         return {
             "_tips300": "_p300",
             "_tips20": "_m20",
             "_tips20_no_a": "_m20",
         }
-    
+
     def pick_up_no_a(self):
         self.pick_up(self._m20, tiprack="_tips20_no_a")
-        
+
     @property
     def mm_tubes(self):
         return self._tube_block.wells()[:1]
@@ -198,76 +210,90 @@ class StationC(Station):
     @property
     def mm_tube_con(self):
         return self._tube_block.wells()[0]
-    
+
     @property
     def mm_strips(self):
         return self._mm_strips.columns()[:1]
-    
+
     @property
-    def remaining_cols(self) -> int: 
+    def remaining_cols(self) -> int:
         return int(math.ceil(min(self._remaining_samples, self._samples_per_cycle) / self._m20.channels))
-    
+
     def fill_mm_strips(self):
         vol_per_strip_well = self.remaining_cols * self._mastermix_vol / len(self.mm_strips)
-        
-        has_tip = False        
+
+        has_tip = False
         for j, (strip, tube) in enumerate(zip(self.mm_strips, self.mm_tubes)):
             for i, well in enumerate(strip):
-                if self.run_stage("transfer mastermix {}/{} to strip {}/{}{}{}".format(i + 1, len(strip), j + 1, len(self.mm_strips), " " if self.num_cycles > 1 else "", self._cycle)):
+                if self.run_stage("transfer mastermix {}/{} to strip {}/{}{}{}".format(i + 1, len(strip), j + 1,
+                                                                                       len(self.mm_strips),
+                                                                                       " " if self.num_cycles > 1 else "",
+                                                                                       self._cycle)):
                     if not has_tip:
                         self.pick_up(self._p300)
                         has_tip = True
                     self.logger.debug("filling mastermix at {}".format(well))
-                    self._p300.transfer(vol_per_strip_well, tube.bottom(0.2), well, new_tip='never')
+                    self._p300.transfer(vol_per_strip_well, tube.bottom(self._tube_bottom_headroom_height),
+                                        well.bottom(self._strip_bottom_headroom_height), new_tip='never')
 
     def fill_control(self):
         if self.run_stage("Transfer mastermix to positive control hole in H12"):
             has_tip = True
-            self._p300.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate, self.mm_tube_con.bottom(0.2),
-                                self.control_dests, new_tip='never')
+            self._p300.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate,
+                                self.mm_tube_con.bottom(self._tube_bottom_headroom_height),
+                                self.control_dests.bottom(self._pcr_bottom_headroom_height), new_tip='never')
             if has_tip:
                 self._p300.drop_tip()
 
     @property
     def mm_indices(self):
         return list(repeat(0, self._samples_per_cycle))
-    
+
     def transfer_mm(self, stage="transfer mastermix {}/{}"):
         n = len(list(zip(self.mm_indices[::self._m20.channels], self.sample_dests[:self.remaining_cols])))
-        for i, (m_idx, s) in enumerate(zip(self.mm_indices[::self._m20.channels], self.sample_dests[:self.remaining_cols])):
+        for i, (m_idx, s) in enumerate(
+                zip(self.mm_indices[::self._m20.channels], self.sample_dests[:self.remaining_cols])):
             if self.run_stage(stage.format(i + 1, n)):
                 self.pick_up(self._m20)
-                self._m20.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate, self.mm_strips[m_idx][0].bottom(0.8), s, new_tip='never')
+                self._m20.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate,
+                                   self.mm_strips[m_idx][0].bottom(self._strip_bottom_headroom_height),
+                                   s.bottom(self._pcr_bottom_headroom_height), new_tip='never')
                 self._m20.drop_tip()
-    
+
     def transfer_sample(self, vol: float, source, dest):
         self.logger.debug("transferring {:.0f} uL from {} to {}".format(vol, source, dest))
-        self.pick_up(self._m20, tiprack="_tips20_no_a" if source.display_name.split(" ")[0] == self._positive_control_well else None)
-        self._m20.transfer(vol, source.bottom(self._sample_bottom_height), dest.bottom(self._sample_bottom_height), new_tip='never')
+        self.pick_up(self._m20, tiprack="_tips20_no_a" if source.display_name.split(" ")[
+                                                              0] == self._positive_control_well else None)
+        self._m20.transfer(vol, source.bottom(self._sample_bottom_height), dest.bottom(self._sample_bottom_height),
+                           new_tip='never')
         self._m20.mix(self._sample_mix_reps, self._sample_mix_vol, dest.bottom(self._sample_bottom_height))
         self._m20.blow_out(dest.top(self._sample_blow_height))
-        self._m20.aspirate(self._suck_vol, dest.top(self._suck_height))  # suck in any remaining droplets on way to trash
+        self._m20.aspirate(self._suck_vol,
+                           dest.top(self._suck_height))  # suck in any remaining droplets on way to trash
         self._m20.drop_tip()
-        
+
     def cycle_begin(self):
         self.logger.info(self.get_msg_format("current cycle", self._cycle.split(" ")[-1]))
         self._cycle = self._cycle if self.num_cycles > 1 else ""
-    
+
     def run_cycle(self):
         self._cycle = self.stage
         n = self._remaining_samples
         self._samples_this_cycle = min(n, self._samples_per_cycle)
-        
+
         self.cycle_begin()
-        
+
         self.fill_mm_strips()
         self.fill_control()
-        self.transfer_mm(stage="transfer mastermix to plate {}{}{}".format("{}/{}", " " if self.num_cycles > 1 else "", self._cycle))
+        self.transfer_mm(
+            stage="transfer mastermix to plate {}{}{}".format("{}/{}", " " if self.num_cycles > 1 else "", self._cycle))
         if self.sources is not None:
             for i, (s, d) in enumerate(zip(self.sources, self.sample_dests)):
-                if self._transfer_samples and self.run_stage("transfer samples {}/{}".format(self._num_samples + min(self._m20.channels - self._remaining_samples, 0), self._num_samples)):
+                if self._transfer_samples and self.run_stage("transfer samples {}/{}".format(
+                        self._num_samples + min(self._m20.channels - self._remaining_samples, 0), self._num_samples)):
                     if self.num_cycles > 1:
-                        self.msg_format("sample per cycle", (i + 1) * self._m20.channels, self._samples_this_cycle, self._cycle.split(" ")[-1])
+                        self.msg_format("sample per cycle", (i + 1) * self._m20.channels, self._samples_this_cycle,
+                                        self._cycle.split(" ")[-1])
                         self.logger.info(self.msg)
                     self.transfer_sample(self._sample_vol, s, d)
                     self.msg = ""
@@ -276,15 +302,16 @@ class StationC(Station):
                     break
         else:
             pass
-    
+
     def body(self):
         self.logger.info(self.get_msg_format("number of cycles", self._num_samples, self.num_cycles))
-        
+
         for i in range(self.num_cycles):
             self.run_stage("cycle {}/{}".format(i + 1, self.num_cycles))
             self.run_cycle()
             self.pause(self.get_msg_format("end of cycle", i + 1, self.num_cycles), color="yellow")
-            if i + 1 < self.num_cycles and self.run_stage("pausing for next cycle {}/{}".format(i + 2, self.num_cycles)):
+            if i + 1 < self.num_cycles and self.run_stage(
+                    "pausing for next cycle {}/{}".format(i + 2, self.num_cycles)):
                 self.pause("new cycle", color="green", blink=False, home=False)
 
 
