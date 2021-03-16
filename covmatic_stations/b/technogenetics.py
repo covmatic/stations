@@ -188,15 +188,8 @@ class StationBTechnogenetics(StationB):
                 loc = m.bottom(0.3).move(Point(x=side*2))
                 self._m300.aspirate(self._final_vol, loc)
                 self._m300.air_gap(self._elute_air_gap)
-
-                aspirate_height = self._h_bottom - (i + 1) * (self._h_bottom / self._n_bottom)
-                back_step = 0.1
-                n_back_step = 2
-                for _ in range(n_back_step):
-                    aspirate_height = aspirate_height + back_step
-                    self._ctx.comment("Moving up at {}".format(aspirate_height))
-                    des = e.bottom(aspirate_height)
-                    self._m300.dispense(self._m300.current_volume, des)
+                self._m300.dispense(self._elute_air_gap, e.top())
+                self._m300.dispense(self._m300.current_volume, e.bottom(0.5))
 
                 #self._m300.transfer(self._final_vol, loc, e.bottom(self._elution_height), air_gap=self._elute_air_gap, new_tip='never')
                 self._m300.mix(self._final_mix_times, self._final_mix_vol, e.bottom(self._final_mix_height))
