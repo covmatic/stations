@@ -20,8 +20,7 @@ class StationBTechnogenetics(StationB):
                  final_vol: float = 20,
                  flatplate_slot: str = '3',
                  h_bottom: float = 0.3,
-                 n_bottom: float = 2,
-                 w_bottom: float = 0.2,
+                 n_bottom: float = 3,
                  mix_incubate_on_time: float = 20,
                  mix_incubate_off_time: float = 5,
                  postspin_incubation_time: float = 3,
@@ -30,7 +29,6 @@ class StationBTechnogenetics(StationB):
                  sample_mix_times: float = 10,
                  sample_mix_vol: float = 180,
                  starting_vol: float = 650,
-                 wash_removal_height: float = 0.2,
                  tempdeck_slot: str = '10',
                  tempdeck_temp: float = 60,
                  thermomixer_incubation_time: float = 5,
@@ -79,7 +77,6 @@ class StationBTechnogenetics(StationB):
         self._flatplate_slot = flatplate_slot
         self._h_bottom = h_bottom
         self._n_bottom = n_bottom
-        self._w_bottom = w_bottom
         self._mix_incubate_on_time = mix_incubate_on_time
         self._mix_incubate_off_time = mix_incubate_off_time
         self._postspin_incubation_time = postspin_incubation_time
@@ -87,7 +84,6 @@ class StationBTechnogenetics(StationB):
         self._sample_mix_height = sample_mix_height
         self._sample_mix_times = sample_mix_times
         self._sample_mix_vol = sample_mix_vol
-        self._wash_removal_height = wash_removal_height
         self._thermomixer_incubation_time = thermomixer_incubation_time
     
     @labware_loader(5, "_flatplate")
@@ -144,37 +140,8 @@ class StationBTechnogenetics(StationB):
         super(StationBTechnogenetics, self).elute(positions=positions, transfer=transfer, stage=stage)
         self._magdeck.disengage()
     
-    def remove_wash(self, vol):
-        self._magdeck.engage(height=self._magheight)
-        self.check()
-        self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
-        num_trans, vol_per_trans = uniform_divide(vol, self._wash_max_transfer_vol)
-        
-        for i, m in enumerate(self.mag_samples_m):
-            if self.run_stage("remove wash {}/{}".format(i + 1, len(self.mag_samples_m))):
-                self.pick_up(self._m300)
-                for _ in range(num_trans):
-                    if self._m300.current_volume > 0:
-                        self._m300.dispense(self._m300.current_volume, m.top())  # void air gap if necessary
-                    self._m300.move_to(m.center())
-
-                    aspirate_height = self._w_bottom - (i + 1) * (self._w_bottom / self._n_bottom)
-                    back_step = 0.1
-                    n_back_step = 3
-                    self._m300.aspirate(vol_per_trans, m.bottom(self._wash_removal_height))
-                    for _ in range(n_back_step):
-                        aspirate_height = aspirate_height + back_step
-                        self._ctx.comment("Moving up at {}".format(aspirate_height))
-                        loc = m.bottom(aspirate_height)
-                        self._m300.move_to(loc)
-                    self._m300.air_gap(self._supernatant_removal_air_gap)
-                    #self._m300.transfer(vol_per_trans, m.bottom(self._wash_removal_height), self._waste, air_gap=self._supernatant_removal_air_gap, new_tip='never')
-
-                    self._m300.dispense(self._m300.current_volume, self._waste)
-                    self._m300.air_gap(self._supernatant_removal_air_gap)
-                self.drop(self._m300)
-        self._m300.flow_rate.aspirate = self._default_aspiration_rate
-        self._magdeck.disengage()
+    def remove_wash(self, vol, stage: str = "remove wash"):
+        self.remove_supernatant(vol, stage)
     
     def final_transfer(self):
         self._m300.flow_rate.aspirate = self._final_transfer_rate_aspirate
@@ -210,7 +177,7 @@ class StationBTechnogenetics(StationB):
             self.delay(self._mix_incubate_off_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         
         self.remove_supernatant(self._starting_vol)
-        self.wash(self._wash_1_vol, self.wash1, self._wash_1_times, "wash 1")
+        self.wash(self._wash_1_vol, self.wash1, self._wash_1_times, "wash A")
 
         if self.run_stage("spin deepwell"):
             self._magdeck.disengage()
@@ -222,12 +189,12 @@ class StationBTechnogenetics(StationB):
         if self.run_stage("post spin incubation"):
             self.delay(self._postspin_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
 
-        self.remove_wash(self._remove_wash_vol)
+        self.remove_wash(self._remove_wash_vol, "remove wash A after spin")
 
         if self.run_stage("remove wash A"):
             self.dual_pause("Check Wash A removal and empty waste reservoir")
 
-        self.wash(self._wash_2_vol, self.wash2, self._wash_2_times, "wash 2")
+        self.wash(self._wash_2_vol, self.wash2, self._wash_2_times, "wash B")
         
         if self.run_stage("spin deepwell"):
             self._magdeck.disengage()
@@ -239,7 +206,7 @@ class StationBTechnogenetics(StationB):
         if self.run_stage("post spin incubation"):
             self.delay(self._postspin_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         
-        self.remove_wash(self._remove_wash_vol)
+        self.remove_wash(self._remove_wash_vol, "remove wash B after spin")
 
         if self.run_stage("remove wash B"):
             self.dual_pause("Check Wash B removal and empty waste reservoir")

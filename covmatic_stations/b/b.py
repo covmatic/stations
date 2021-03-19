@@ -113,7 +113,7 @@ class StationB(Station):
         :param elution_vol: The volume of elution buffer to aspirate in uL
         :param logger: logger object. If not specified, the default logger is used that logs through the ProtocolContext comment method
         :param h_trans: total liquid height expected starting on B
-        :param h_bottom: height offset from the bottom 
+        :param h_bottom: starting height offset from the bottom for the last section phase
         :param n_bottom: number of aspirating phases done in the last phase 
         :param vol_last_trans: volume left for the last section phase
         :param magheight: Height of the magnet, in mm
@@ -327,9 +327,9 @@ class StationB(Station):
 
     def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
         self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
-        
+
         num_trans = math.ceil((vol - self._vol_last_trans) / self._bind_max_transfer_vol)
-        vol_per_trans = (vol - self._vol_last_trans) / num_trans
+        vol_per_trans = ((vol - self._vol_last_trans) / num_trans) if num_trans else 0
         # h_num_trans = self._h_trans/num_trans
 
         for i, m in enumerate(self.mag_samples_m):
@@ -351,13 +351,12 @@ class StationB(Station):
                 # dispensing the air gap present in the tip
                 if self._m300.current_volume > 0:
                     self._m300.dispense(self._m300.current_volume, m.top())
-                #self._m300.move_to(m.center())         ## Dovrebbe essere già fatto da m.bottom() seguente
 
                 for j in range(self._n_bottom):
-                    aspirate_height = self._h_bottom - (j+1)*(self._h_bottom/self._n_bottom) # expecting aspirated height
+                    aspirate_height = self._h_bottom - (j)*(self._h_bottom/(self._n_bottom-1)) # expecting aspirated height
+                    self._ctx.comment("Aspirating at {}".format(aspirate_height))
                     loc = m.bottom(aspirate_height)
                     self._m300.aspirate(self._supernatant_removal_last_transfer_max_vol/self._n_bottom, loc)
-                    self._ctx.comment("Aspirating at {}".format(aspirate_height))
 
                 back_step = 0.1
                 n_back_step = 3
