@@ -78,6 +78,7 @@ class Station(metaclass=StationMeta):
         dummy_lights: bool = True,
         jupyter: bool = True,
         log_filepath: Optional[str] = '/var/lib/jupyter/notebooks/outputs/run_{}.log',
+        log_lws_enable: Optional[str] = True,
         log_lws_ip: Optional[str] = None,
         log_lws_endpoint: str = ":5002/log",
         logger: Optional[logging.getLoggerClass()] = None,
@@ -105,6 +106,7 @@ class Station(metaclass=StationMeta):
         self.jupyter = jupyter
         self._language = language
         self._log_filepath = log_filepath.format(time.strftime("%Y_%m_%d__%H_%M_%S"))
+        self._log_lws_enable = log_lws_enable
         self._log_lws_ip = log_lws_ip
         self._log_lws_endpoint = log_lws_endpoint
         self._logger = logger
@@ -174,9 +176,11 @@ class Station(metaclass=StationMeta):
         if self._log_filepath and (self._simulation_log_file or not self._ctx.is_simulating()):
             os.makedirs(os.path.dirname(self._log_filepath), exist_ok=True)
             stack_logger.addHandler(logging.FileHandler(self._log_filepath))
-        self._lws_logger = LocalWebServerLogger(self._log_lws_ip, self._log_lws_endpoint)
-        if self._simulation_log_lws or not self._ctx.is_simulating():
-            self._ctx.broker.subscribe(opentrons.commands.types.COMMAND, self._lws_logger)
+
+        if self._log_lws_enable:
+            self._lws_logger = LocalWebServerLogger(self._log_lws_ip, self._log_lws_endpoint)
+            if self._simulation_log_lws or not self._ctx.is_simulating():
+                self._ctx.broker.subscribe(opentrons.commands.types.COMMAND, self._lws_logger)
     
     @property
     def logger_name(self) -> str:
