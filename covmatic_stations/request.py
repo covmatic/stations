@@ -61,21 +61,23 @@ class StationRESTServer:
                     ip = "127.0.0.1"
             lws_logger.ip = ip
             self._station.logger.debug("Set runlog URL to: {}".format(lws_logger.url))
-        
+            
         if self._station._wait_first_log and self._station._waiting_first_log:
             self._station._ctx.resume()
             return json.dumps({})
         
         status = getattr(self._station, "status", None)
-        tip_log = copy.deepcopy(getattr(self._station, "_tip_log", {}))
-        if "tips" in tip_log:
-            del tip_log["tips"]
-        
+        tip_log = getattr(self._station, "_tip_log", {})
+
+        tip_log_for_log = dict()
+        for k in "count", "max":
+            tip_log_for_log[k] = tip_log.get(k)
+
         # try:
         #     temp = getattr(getattr(self._station, "_tempdeck", None), "temperature", None)
         # except Exception:
         #     temp = None
-        
+
         return json.dumps({
             "status": status if status == "finished" or self._status is None else self._status,
             "stage": getattr(self._station, "stage", None),
@@ -83,7 +85,7 @@ class StationRESTServer:
             "external": getattr(self._station, "external", False),
             "time": datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S:%f"),
             # "temp": temp,
-            "tips": tip_log,
+            "tips": tip_log_for_log,
             "runlog": self._station._log_filepath,
         }, indent=2)
     

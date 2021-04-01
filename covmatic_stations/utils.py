@@ -21,13 +21,17 @@ class ProtocolContextLoggingHandler(logging.Handler):
 
 
 class LocalWebServerLogger:
-    def __init__(self, ip: Optional[str] = None, endpoint: str = ":5002/log", timeout: float = 2, *args, **kwargs):
+    def __init__(self, ip: Optional[str] = None, endpoint: str = ":5002/log", timeout: float = 2,
+                 errorlogger: logging.Logger = logging.getLogger("LWSLog"), *args, **kwargs):
         super(LocalWebServerLogger, self).__init__(*args, **kwargs)
         self.ip = ip
         self.endpoint = endpoint
         self.timeout = timeout
         self.level = 0
         self.last_dollar = None
+        self.logfail_count = dict()  # dictionary of url, Number of exceptions during log
+        self.logfail_max = 5       # Retries sending log, after that disable send.
+        self.errorlogger = errorlogger
     
     @property
     def url(self) -> str:
@@ -47,16 +51,26 @@ class LocalWebServerLogger:
         s = self.format(record)
         url = self.url
         if url and s:
-            try:
-                requests.post(
-                    url,
-                    s.encode('utf-8'),
-                    headers={'Content-type': 'text/plain; charset=utf-8'},
-                    timeout=self.timeout,
-                )
-            except Exception:
-                pass
-
+            self.logfail_count.setdefault(url, 0)
+            if self.logfail_count[url] < self.logfail_max:
+                try:
+                    requests.post(
+                        url,
+                        s.encode('utf-8'),
+                        headers={'Content-type': 'text/plain; charset=utf-8'},
+                        timeout=self.timeout,
+                    )
+                    self.logfail_count[url] = 0
+                except requests.exceptions.ConnectTimeout as e:
+                    self.logfail_count[url] += 1
+                    self.errorlogger.error("Exception during lws log {} of {}: {}".format(self.logfail_count[url],
+                                                                                            self.logfail_max, e))
+                    if self.logfail_count[url] == self.logfail_max:
+                        self.errorlogger.error("Disabling lws log, max retries encountered for url {}".format(url))
+                except Exception:
+                    pass
+            else:
+                self.errorlogger.debug("Skipping lws log, max retries encountered for url {}".format(url))
 
 def mix_bottom_top(pip, reps: int, vol: float, pos: Callable[[float], Location], bottom: float, top: float):
     """Custom mixing procedure aspirating at the bottom and dispensing at the top
