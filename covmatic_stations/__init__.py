@@ -2,8 +2,6 @@ import logging
 
 __version__ = "2.1.10"
 
-
-
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(name)-12s %(levelname)-8s: %(message)s',
