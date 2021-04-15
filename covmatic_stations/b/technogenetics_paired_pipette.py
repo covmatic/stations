@@ -1,6 +1,6 @@
 from covmatic_stations.station import instrument_loader
 from .technogenetics import StationBTechnogenetics
-from ..paired_pipette import TestPaired
+from ..paired_pipette import PairedPipette
 import math
 
 class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
@@ -20,7 +20,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             self._m300r.flow_rate.blow_out = self._bind_blowout_rate
 
     def body(self):
-        TestPaired.setup(self._m300, self._m300r)
+        PairedPipette.setup(self._m300, self._m300r)
         # super(StationBTechnogeneticsPairedPipette, self).body()
 
         # self.mix_samples()
@@ -30,7 +30,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         self._m300.flow_rate.aspirate = 94
         self._m300r.flow_rate.aspirate = 94
 
-        with TestPaired(self._magplate, self.mag_samples_m) as tp:
+        with PairedPipette(self._magplate, self.mag_samples_m) as tp:
             tp.pick_up()
             tp.mix(self._sample_mix_times, self._sample_mix_vol,
                    location="target",
@@ -57,7 +57,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         for i, m in enumerate(self.mag_samples_m):
             loc = m.bottom(self._supernatant_removal_height)
 
-            with TestPaired(self._magplate, self.mag_samples_m) as tp:
+            with PairedPipette(self._magplate, self.mag_samples_m) as tp:
                 tp.pick_up()
                 for _ in range(num_trans):
                     tp.move_to(location="target", well_modifier="top(0)")  # we want center() but for now it is not in available commands

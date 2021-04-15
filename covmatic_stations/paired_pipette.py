@@ -7,7 +7,7 @@ import logging
 import parse
 
 
-class TestPaired:
+class PairedPipette:
     available_commands = ["pick_up", "drop_tip", "mix", "air_gap", "aspirate", "dispense", "move_to"]
     pips = []
     pippairedctx = None
