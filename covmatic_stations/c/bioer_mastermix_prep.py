@@ -135,7 +135,7 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
     def fill_controls(self):
 
         if len(self.control_wells_not_in_samples) > 0:
-            self.logger.info("Filling controls in {}".format(self.control_wells_not_in_samples))
+            self.logger.info(self.msg_format("fill control", self.control_wells_not_in_samples))
             if not self._p300.has_tip:
                 self.pick_up(self._p300)
 
@@ -145,7 +145,7 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
             for w in self.control_dests_wells:
                 self._p300.dispense(self._mastermix_vol, w.bottom(self._pcr_bottom_headroom_height))
         else:
-            self.logger.info("Not filling controls: they will be filled with 8 channel pipette..")
+            self.logger.info(self.get_msg("controls already filled"))
 
     def aspirate_from_tubes(self, volume, pip):
         aspirate_list = []

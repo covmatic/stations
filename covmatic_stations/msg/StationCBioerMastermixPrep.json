@@ -1,0 +1,18 @@
+{
+  "protocol description": {
+	"ENG": "station C protocol for Bioer mastermix dispense",
+	"ITA": "protocollo Bioer per la preparazione della plate di mastermix"
+  },
+  "load tubes": {
+	"ENG": "mastermix: load {} tubes with at least{}",
+	"ITA": "mastermix: caricare {} tube con almeno{}"
+  },
+  "fill control": {
+    "ENG": "Filling control in positions {}",
+	"ITA": "Riempio i controlli in posizione {}"
+  },
+  "controls already filled": {
+    "ENG": "Control positions will be filled with 8-channel pipette.",
+	"ITA": "I controlli saranno riempiti con la pipetta a 8 canali"
+  }
+}
