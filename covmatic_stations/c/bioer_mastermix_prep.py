@@ -194,8 +194,6 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
         return samples_to_do
 
     def body(self):
-        self.logger.info("Samples: {}".format(self._num_samples))
-
         volume_for_controls = len(self.control_wells_not_in_samples) * self._mastermix_vol
         volume_for_samples = self._mastermix_vol * self.num_cols * 8
         volume_to_distribute_to_pcr_plate = volume_for_samples + volume_for_controls
@@ -205,14 +203,15 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
         self.logger.info("For this run we need a total of {}ul of mastermix".format(total_volume))
 
         num_tubes, vol_per_tube = uniform_divide(total_volume, self._mm_tube_capacity)
-        self.logger.info("We need {} tubes with {}ul of mastermix each.".format(num_tubes, vol_per_tube))
-        self.logger.info("{}ul will be dispensed to control positions.".format(volume_for_controls))
-        self.logger.info("{}ul will be dispensed to PCR plate".format(volume_to_distribute_to_pcr_plate))
-        self.logger.info("{}ul will be dispensed to strips".format(volume_to_distribute_to_strip))
         self.logger.info("")
-        self.logger.info("In this run we use a volume overhead of: {}ul".format(self._mastermix_vol_headroom))
-        self.logger.info("\t- {:.1f}ul will remain in tubes".format(self.headroom_vol_from_tubes_to_strip))
-        self.logger.info("\t- {:.1f}ul will remain in strips".format(self.headroom_vol_from_strip_to_pcr))
+        self.logger.info("We need {} tubes with {}ul of mastermix each.".format(num_tubes, vol_per_tube))
+        self.logger.debug("{}ul will be dispensed to control positions.".format(volume_for_controls))
+        self.logger.debug("{}ul will be dispensed to PCR plate".format(volume_to_distribute_to_pcr_plate))
+        self.logger.debug("{}ul will be dispensed to strips".format(volume_to_distribute_to_strip))
+        self.logger.debug("")
+        self.logger.debug("In this run we use a volume overhead of: {}ul".format(self._mastermix_vol_headroom))
+        self.logger.debug("\t- {:.1f}ul will remain in tubes".format(self.headroom_vol_from_tubes_to_strip))
+        self.logger.debug("\t- {:.1f}ul will remain in strips".format(self.headroom_vol_from_strip_to_pcr))
 
         mm_tubes = self._tube_block.wells()[:num_tubes]
 
