@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 import logging
 
 
-class BioerMastermixPrep(StationCTechnogenetics):
+class StationCBioerMastermixPrep(StationCTechnogenetics):
     _protocol_description = "Bioer mastermix preparation protocol"
 
     def __init__(self,
@@ -45,7 +45,7 @@ class BioerMastermixPrep(StationCTechnogenetics):
         :param skip_delay: If True, pause instead of delay.
         :param tube_block_model: Tube block model name
         """
-        super(BioerMastermixPrep, self).__init__(
+        super(StationCBioerMastermixPrep, self).__init__(
             mm_tube_capacity = mm_tube_capacity,
             num_samples = num_samples,
             skip_delay = skip_delay,
@@ -261,9 +261,9 @@ arguments = dict(num_samples=88)
 
 # protocol for loading in Opentrons App or opentrons_simulate
 # =====================================
-logging.getLogger(BioerMastermixPrep.__name__).setLevel(logging.INFO)
+logging.getLogger(StationCBioerMastermixPrep.__name__).setLevel(logging.INFO)
 metadata = {'apiLevel': '2.7'}
-station = BioerMastermixPrep(**arguments)
+station = StationCBioerMastermixPrep(**arguments)
 
 
 def run(ctx):
@@ -273,4 +273,4 @@ def run(ctx):
 # for running directly with python command 'py Mastermix_prep_stations.py"
 # ========================================================================
 if __name__ == "__main__":
-    BioerMastermixPrep(**arguments, metadata={'apiLevel': '2.7'}).simulate()
+    StationCBioerMastermixPrep(**arguments, metadata={'apiLevel': '2.7'}).simulate()
