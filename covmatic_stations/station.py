@@ -167,6 +167,8 @@ class Station(metaclass=StationMeta):
     def logger(self) -> logging.getLoggerClass():
         if ((not hasattr(self, "_logger")) or self._logger is None) and self._ctx is not None:
             self._logger = logging.getLogger(self.logger_name)
+            if self._logger.hasHandlers():
+                self._logger.handlers = []
             self._logger.addHandler(ProtocolContextLoggingHandler(self._ctx))
         return self._logger
     
