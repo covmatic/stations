@@ -9,6 +9,7 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
 
     def __init__(self,
             aspirate_rate: float = 55,
+            debug_mode: bool = False,
             tube_bottom_headroom_height: float = 2.5,
             strip_bottom_headroom_height: float = 4.0,
             pcr_bottom_headroom_height: float = 4.5,
@@ -55,6 +56,7 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
             dispense_rate = dispense_rate,
             ** kwargs
         )
+        self._debug_mode = debug_mode
         self._tube_bottom_headroom_height = tube_bottom_headroom_height
         self._strip_bottom_headroom_height = strip_bottom_headroom_height
         self._pcr_bottom_headroom_height = pcr_bottom_headroom_height
@@ -255,9 +257,12 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
         self.logger.debug("Remaining vols: {}".format(self._source_tubes_and_vol))
 
     def drop(self, pip):
-        pip.return_tip()
+        if self._debug_mode:
+            pip.return_tip()
+        else:
+            super(StationCBioerMastermixPrep, self).drop(pip)
 
-arguments = dict(num_samples=88)
+arguments = dict(num_samples=88, debug_mode=False)
 
 # protocol for loading in Opentrons App or opentrons_simulate
 # =====================================
