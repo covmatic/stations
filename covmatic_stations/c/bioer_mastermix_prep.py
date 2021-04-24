@@ -8,12 +8,12 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
     _protocol_description = "Bioer mastermix preparation protocol"
 
     def __init__(self,
-            aspirate_rate: float = 55,
+            aspirate_rate: float = 30,
             debug_mode: bool = False,
             tube_bottom_headroom_height: float = 2.5,
             strip_bottom_headroom_height: float = 4.0,
             pcr_bottom_headroom_height: float = 4.5,
-            dispense_rate: float = 55,
+            dispense_rate: float = 30,
             mastermix_vol: float = 20,
             mastermix_vol_headroom: float = 100,
             mastermix_headroom_part_in_strip: float = 0.7,

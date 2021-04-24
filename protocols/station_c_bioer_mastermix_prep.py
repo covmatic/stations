@@ -1,10 +1,10 @@
 import logging
-from covmatic_stations.c.bioer_mastermix_prep import BioerMastermixPrep
+from covmatic_stations.c.bioer_mastermix_prep import StationCBioerMastermixPrep
 
 
-logging.getLogger(BioerMastermixPrep.__name__).setLevel(logging.INFO)
+logging.getLogger(StationCBioerMastermixPrep.__name__).setLevel(logging.INFO)
 metadata = {'apiLevel': '2.7'}
-station = BioerMastermixPrep(num_samples=96)
+station = StationCBioerMastermixPrep(num_samples=96)
 
 
 def run(ctx):
