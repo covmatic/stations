@@ -70,6 +70,7 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
 
         self._remaining_samples = self._num_samples
         self._done_cols: int = 0
+        self._mastermix_volume_in_tip = 0       # Volume of mastermix passed present in p300 tip before distributing to strips
 
 
     @property
@@ -128,24 +129,31 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
         self.logger.debug("Filling strips with {}ul each; used volume: {}".format(volume, total_vol))
 
         for well in self.mm_strip:
-            self.aspirate_from_tubes(volume, self._p300)
+            self.aspirate_from_tubes(volume - self._mastermix_volume_in_tip, self._p300)
+            self._mastermix_volume_in_tip = 0   # only doing the first time
             self._p300.dispense(volume, well.bottom(self._strip_bottom_headroom_height))
 
         self.drop(self._p300)
 
 
-    def fill_controls(self):
+    def fill_controls(self, dead_volume: float = 0):
 
         if len(self.control_wells_not_in_samples) > 0:
             self.logger.info(self.msg_format("fill control", self.control_wells_not_in_samples))
             if not self._p300.has_tip:
                 self.pick_up(self._p300)
 
-            vol = self._mastermix_vol * len(self.control_wells_not_in_samples)
+            vol = self._mastermix_vol * len(self.control_wells_not_in_samples) + dead_volume
             self.aspirate_from_tubes(vol, self._p300)
 
             for w in self.control_dests_wells:
                 self._p300.dispense(self._mastermix_vol, w.bottom(self._pcr_bottom_headroom_height))
+
+            assert self._p300.current_volume == dead_volume, \
+                "Please verify: dead volume in tip is not as expected. in tip {}, expected {}".format(
+                    self._p300.current_volume, dead_volume)
+
+            self._mastermix_volume_in_tip = dead_volume     # Saving volume, eventually it will be disposed to strip...
         else:
             self.logger.info(self.get_msg("controls already filled"))
 
@@ -229,7 +237,7 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
         strip_headroom_vol_single_first_time = self.headroom_vol_from_strip_to_pcr_single
 
         # First fill controls
-        self.fill_controls()
+        self.fill_controls(dead_volume=self._p300.min_volume)
 
         # Mail loop filling the plate
         while self.remaining_cols > 0:
