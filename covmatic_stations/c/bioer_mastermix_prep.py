@@ -1,6 +1,6 @@
-from covmatic_stations.utils import uniform_divide
-from covmatic_stations.c.technogenetics import StationCTechnogenetics
-from typing import Optional, Tuple
+from ..multi_tube_source import MultiTubeSource
+from ..utils import uniform_divide
+from .technogenetics import StationCTechnogenetics
 import logging
 
 
@@ -71,7 +71,7 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
         self._remaining_samples = self._num_samples
         self._done_cols: int = 0
         self._mastermix_volume_in_tip = 0       # Volume of mastermix passed present in p300 tip before distributing to strips
-
+        self._mm_sources = MultiTubeSource("Mastermix tubes", self.logger)
 
     @property
     def sample_dests_wells(self):
@@ -129,7 +129,7 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
         self.logger.debug("Filling strips with {}ul each; used volume: {}".format(volume, total_vol))
 
         for well in self.mm_strip:
-            self.aspirate_from_tubes(volume - self._mastermix_volume_in_tip, self._p300)
+            self._mm_sources.aspirate_from_tubes(volume - self._mastermix_volume_in_tip, self._p300, self._tube_bottom_headroom_height)
             self._mastermix_volume_in_tip = 0   # only doing the first time
             self._p300.dispense(volume, well.bottom(self._strip_bottom_headroom_height))
 
@@ -144,7 +144,7 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
                 self.pick_up(self._p300)
 
             vol = self._mastermix_vol * len(self.control_wells_not_in_samples) + dead_volume
-            self.aspirate_from_tubes(vol, self._p300)
+            self._mm_sources.aspirate_from_tubes(vol, self._p300, self._tube_bottom_headroom_height)
 
             for w in self.control_dests_wells:
                 self._p300.dispense(self._mastermix_vol, w.bottom(self._pcr_bottom_headroom_height))
@@ -156,30 +156,6 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
             self._mastermix_volume_in_tip = dead_volume     # Saving volume, eventually it will be disposed to strip...
         else:
             self.logger.info(self.get_msg("controls already filled"))
-
-    def aspirate_from_tubes(self, volume, pip):
-        aspirate_list = []
-        left_volume = volume
-        for source_and_vol in self._source_tubes_and_vol:
-            if source_and_vol["available_volume"] >= left_volume:
-                # aspirate_list.append(dict(source=source_and_vol["source"], vol=left_volume))
-                aspirate_vol = left_volume
-            else:
-                aspirate_vol = source_and_vol["available_volume"]
-            left_volume -= aspirate_vol
-            source_and_vol["available_volume"] -= aspirate_vol
-            if aspirate_vol != 0:
-                aspirate_list.append(dict(source=source_and_vol["source"], vol=aspirate_vol))
-
-            if left_volume == 0:
-                break
-        else:
-            raise Exception("No volume left in source tubes.")
-
-        for a in aspirate_list:
-            pip.aspirate(a["vol"], a["source"].bottom(self._tube_bottom_headroom_height))
-
-        self.logger.debug("Sources: {}".format(self._source_tubes_and_vol))
 
     def transfer_to_pcr_plate_and_mark_done(self, num_columns: int):
         num_columns = int(num_columns)
@@ -211,8 +187,20 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
         self.logger.info("For this run we need a total of {}ul of mastermix".format(total_volume))
 
         num_tubes, vol_per_tube = uniform_divide(total_volume, self._mm_tube_capacity)
+        mm_tubes = self._tube_block.wells()[:num_tubes]
+
+        # Filling source class to calculate where to aspirate
+        available_volume = (volume_to_distribute_to_strip + volume_for_controls) / len(mm_tubes)
+        assert vol_per_tube > available_volume, \
+            "Error in volume calcuations: requested {}ul while total in tubes {}ul".format(available_volume,
+                                                                                           vol_per_tube)
+        for source in mm_tubes:
+            self._mm_sources.append_tube_with_vol(source, available_volume)
+
         self.logger.info("")
-        self.logger.info("We need {} tubes with {}ul of mastermix each.".format(num_tubes, vol_per_tube))
+        self.logger.info("We need {} tubes with {}ul of mastermix each in {}.".format(num_tubes,
+                                                                                      vol_per_tube,
+                                                                                      self._mm_sources))
         self.logger.debug("{}ul will be dispensed to control positions.".format(volume_for_controls))
         self.logger.debug("{}ul will be dispensed to PCR plate".format(volume_to_distribute_to_pcr_plate))
         self.logger.debug("{}ul will be dispensed to strips".format(volume_to_distribute_to_strip))
@@ -221,25 +209,13 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
         self.logger.debug("\t- {:.1f}ul will remain in tubes".format(self.headroom_vol_from_tubes_to_strip))
         self.logger.debug("\t- {:.1f}ul will remain in strips".format(self.headroom_vol_from_strip_to_pcr))
 
-        mm_tubes = self._tube_block.wells()[:num_tubes]
-
-        # Filling source class to calculate where to aspirate
-        self._source_tubes_and_vol = []
-        for source in mm_tubes:
-            available_volume = (volume_to_distribute_to_strip + volume_for_controls) / len(mm_tubes)
-            assert vol_per_tube > available_volume, \
-                "Error in volume calcuations: requested {}ul while total in tubes {}ul".format(available_volume,
-                                                                                          vol_per_tube)
-            self._source_tubes_and_vol.append(dict(source=source,
-                                                   available_volume=available_volume))
-
         # Variable to transfer headroom to strip only the first time
         strip_headroom_vol_single_first_time = self.headroom_vol_from_strip_to_pcr_single
 
         # First fill controls
         self.fill_controls(dead_volume=self._p300.min_volume)
 
-        # Mail loop filling the plate
+        # Main loop filling the plate
         while self.remaining_cols > 0:
             # calcuations for filling strip each time
             self.logger.debug("Remaining columns: {}".format(self.remaining_cols))
@@ -261,7 +237,7 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
         if self._p300.has_tip:
             self.drop(self._p300)
 
-        self.logger.debug("Remaining vols: {}".format(self._source_tubes_and_vol))
+        self.logger.debug("Remaining vols: {}".format(self._mm_sources))
 
     def drop(self, pip):
         if self._debug_mode:
