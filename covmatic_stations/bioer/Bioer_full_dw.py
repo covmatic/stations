@@ -79,12 +79,12 @@ class BioerProtocol(Station):
 
     @labware_loader(1, "_tips200")
     def load_tips200(self):
-        self._tips200 = [self._ctx.load_labware('opentrons_96_filtertiprack_200ul', slot, '200µl filter tiprack')
+        self._tips200 = [self._ctx.load_labware('opentrons_96_filtertiprack_200ul', slot, '200µl filter tiprack multi')
                                 for slot in ['7', '10']]
 
     @labware_loader(2, "_tips200_single")
     def load_tips200_single(self):
-        self._tips200_single = [self._ctx.load_labware('opentrons_96_filtertiprack_200ul', '11', '200µl filter tiprack')]
+        self._tips200_single = [self._ctx.load_labware('opentrons_96_tiprack_300ul', '11', '200µl filter tiprack single')]
 
     @labware_loader(3, "_plate_elute")
     def load_dest_plate_elute(self):
