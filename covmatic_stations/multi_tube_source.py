@@ -42,6 +42,11 @@ class MultiTubeSource(object):
 
         self.logger.debug("{} sources: {}".format(self._name, self._source_tubes_and_vol))
 
+    @property
+    def locations_str(self):
+        return "{}: ".format(self._name) + \
+               " ".join(["{}; ".format(sv['source'])
+                         for sv in self._source_tubes_and_vol])
     def __str__(self):
         return "{}: ".format(self._name) +\
                " ".join(["{} with volume {}ul;".format(sv['source'], sv['available_volume'])
