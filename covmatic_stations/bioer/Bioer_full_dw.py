@@ -7,6 +7,7 @@ import logging
 class BioerProtocol(Station):
 
     def __init__(self,
+            debug_mode = False,
             num_samples: int = 96,
             pk_tube_bottom_height = 7,
             mm_tube_bottom_height = 5,
@@ -34,6 +35,7 @@ class BioerProtocol(Station):
             num_samples = num_samples,
             ** kwargs)
 
+        self._debug_mode = debug_mode
         self._dests_sample = []
         self._max_sample_per_dw = 16
         self._elution_volume = 12
@@ -264,7 +266,7 @@ class BioerProtocol(Station):
                     self.pick_up(pipette)
                     pipette.transfer(self._elution_volume, t.bottom(self._dw_elutes_bottom_height), o.bottom(self._pcr_bottom_headroom_height), new_tip='never')
                     pipette.mix(5, 20, o.bottom(self._mix_bottom_height))
-                    pipette.drop_tip()
+                    self.drop(pipette)
                 done_col = done_col + len(source_plate)
 
 
@@ -330,6 +332,11 @@ class BioerProtocol(Station):
         if self.transfer_elutes_phase:
             self.transfer_elutes()
 
+    def drop(self, pip):
+        if self._debug_mode:
+            pip.return_tip()
+        else:
+            super(BioerProtocol, self).drop(pip)
 
 # protocol for loading in Opentrons App or opentrons_simulate
 # =====================================
