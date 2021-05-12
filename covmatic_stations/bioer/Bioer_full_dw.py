@@ -9,13 +9,14 @@ class BioerProtocol(Station):
     def __init__(self,
             debug_mode = False,
             num_samples: int = 96,
-            pk_tube_bottom_height = 7,
+            pk_tube_bottom_height = 2,
             mm_tube_bottom_height = 5,
             pcr_bottom_headroom_height = 4.5,
             dw_bottom_height = 13.5,
-            mix_bottom_height = 2,
-            mm_plate_bottom_height = 0.2,
-            dw_elutes_bottom_height = 0.2,
+            mix_bottom_height = 0.5,
+            mix_bottom_height_dw = -1.8,
+            mm_plate_bottom_height = 1.2,
+            dw_elutes_bottom_height = -2,
             pk_volume_tube = 320,
             vol_pk_offset = 5,
             vol_mm_offset = 10,
@@ -25,7 +26,7 @@ class BioerProtocol(Station):
             control_well_positions = ['G12', 'H12'],
             tube_block_model: str = 'opentrons_24_aluminumblock_nest_2ml_screwcap',
             transfer_elutes_phase: bool = False,
-            transfer_proteinase_phase: bool = True,
+            transfer_proteinase_phase: bool = False,
             mix_beads_phase: bool = False,
             mastermix_phase: bool = False,
             vertical_offset = -16,
@@ -45,6 +46,7 @@ class BioerProtocol(Station):
         self._mm_volume_tube = mm_volume_tube
         self._mm_tube_bottom_height = mm_tube_bottom_height
         self._dw_bottom_height = dw_bottom_height
+        self._mix_bottom_height_dw = mix_bottom_height_dw
         self._pcr_bottom_headroom_height = pcr_bottom_headroom_height
         self._mix_bottom_height = mix_bottom_height
         self._mm_plate_bottom_height = mm_plate_bottom_height
@@ -181,7 +183,7 @@ class BioerProtocol(Station):
                 self._vol_pk_offset = 0
             vol_pk = len(samples_to_do) * self._pk_volume
             if num_cycle == 1:
-                self._s300.aspirate(self._vol_pk_offset, self._tube_block.wells()[0])
+                self._s300.aspirate(self._vol_pk_offset, self._tube_block.wells()[0].bottom(self._pk_tube_bottom_height))
             self._pk_tube_source.aspirate_from_tubes(vol_pk, self._s300, self._pk_tube_bottom_height)
             #self.logger.info("Aspirating {} at: {} mm".format(vol_pk, self._pk_tube_bottom_height))
             for s, ss in enumerate(samples_to_do):
@@ -202,7 +204,7 @@ class BioerProtocol(Station):
 
         self.pick_up(self._p300)
         for b, d in enumerate(destbeads):
-            self._p300.mix(3, 15, d.bottom(self._mix_bottom_height))
+            self._p300.mix(3, 15, d.bottom(self._mix_bottom_height_dw))
             done_mix = done_mix + len(self.beads_destinations)
         if self._p300.has_tip:
             self.drop(self._p300)
@@ -322,7 +324,8 @@ class BioerProtocol(Station):
             self.mix_beads()
 
         #Bioer phase
-        self.dual_pause("Move deepwells to Bioer")
+        if (self.transfer_proteinase_phase or self._mix_beads_phase) and (self._mastermix_phase or self.transfer_elutes_phase):
+            self.dual_pause("Move deepwells to Bioer")
 
         #transfer mastermix
         if self._mastermix_phase:
@@ -337,6 +340,20 @@ class BioerProtocol(Station):
             pip.return_tip()
         else:
             super(BioerProtocol, self).drop(pip)
+
+class BioerPreparationToBioer(BioerProtocol):
+    def __init__(self, ** kwargs):
+        super(BioerPreparationToBioer, self).__init__(
+            mix_beads_phase = False,
+            transfer_proteinase_phase = True,
+            ** kwargs)
+
+class BioerPreparationToPcr(BioerProtocol):
+    def __init__(self, ** kwargs):
+        super(BioerPreparationToPcr, self).__init__(
+            mastermix_phase = True,
+            transfer_elutes_phase = True,
+            ** kwargs)
 
 # protocol for loading in Opentrons App or opentrons_simulate
 # =====================================

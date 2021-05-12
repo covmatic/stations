@@ -1,14 +1,15 @@
 import logging
+from covmatic_stations.bioer.Bioer_full_dw import BioerPreparationToPcr
 
-__version__ = "2.3.0"
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(name)-12s %(levelname)-8s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-)
-logging.getLogger("asyncio").setLevel(logging.WARNING)
-logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger(BioerPreparationToPcr.__name__).setLevel(logging.INFO)
+metadata = {'apiLevel': '2.7'}
+station = BioerPreparationToPcr(num_samples = 96,
+                                control_well_positions = ['G12', 'H12'])
+
+
+def run(ctx):
+    return station.run(ctx)
 
 
 # Copyright (c) 2020 Covmatic.

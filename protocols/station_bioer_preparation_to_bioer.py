@@ -1,14 +1,14 @@
 import logging
+from covmatic_stations.bioer.Bioer_full_dw import BioerPreparationToBioer
 
-__version__ = "2.3.0"
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(name)-12s %(levelname)-8s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-)
-logging.getLogger("asyncio").setLevel(logging.WARNING)
-logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger(BioerPreparationToBioer.__name__).setLevel(logging.INFO)
+metadata = {'apiLevel': '2.7'}
+station = BioerPreparationToBioer(num_samples = 96)
+
+
+def run(ctx):
+    return station.run(ctx)
 
 
 # Copyright (c) 2020 Covmatic.
