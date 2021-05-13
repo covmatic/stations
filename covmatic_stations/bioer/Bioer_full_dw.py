@@ -271,7 +271,6 @@ class BioerProtocol(Station):
                     self.drop(pipette)
                 done_col = done_col + len(source_plate)
 
-
     def body(self):
 
         num_dw = math.ceil(self._num_samples / self._max_sample_per_dw)
@@ -294,6 +293,12 @@ class BioerProtocol(Station):
                                                                                       self._pk_volume_tube,
                                                                                       self._pk_tube_source.locations_str))
 
+        pk_requirements = self.get_msg_format("load pk tubes",
+                                           num_pk_tube,
+                                           self._pk_volume_tube,
+                                           self._pk_tube_source.locations_str)
+
+
         #tube_block_mm
         volume_for_controls = len(self.control_wells_not_in_samples) * self._mm_volume
         volume_for_samples = self._mm_volume * self._num_samples
@@ -314,9 +319,14 @@ class BioerProtocol(Station):
         self.logger.info("We need {} tubes with {}ul of mastermix each in {}".format(num_tubes,
                                                                                       vol_per_tube,
                                                                                       self._mm_tube_source.locations_str))
+        mmix_requirements = self.get_msg_format("load mm tubes",
+                                           num_tubes,
+                                           vol_per_tube,
+                                           self._mm_tube_source.locations_str)
 
         #transfer_proteinase
         if self.transfer_proteinase_phase:
+            self.pause(pk_requirements, home=False)
             self.transfer_proteinase()
 
         #mix_beads
@@ -329,6 +339,7 @@ class BioerProtocol(Station):
 
         #transfer mastermix
         if self._mastermix_phase:
+            self.pause(mmix_requirements, home=False)
             self.transfer_mastermix()
 
         #transfer elutes
