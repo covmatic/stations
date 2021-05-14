@@ -10,7 +10,7 @@ class BioerProtocol(Station):
             debug_mode = False,
             num_samples: int = 96,
             pk_tube_bottom_height = 2,
-            mm_tube_bottom_height = 5,
+            mm_tube_bottom_height = 2,
             pcr_bottom_headroom_height = 4.5,
             dw_bottom_height = 13.5,
             mix_bottom_height = 0.5,
@@ -20,8 +20,8 @@ class BioerProtocol(Station):
             pk_volume_tube = 320,
             vol_pk_offset = 5,
             vol_mm_offset = 10,
-            mm_volume_tube = 1800,
-            headroom_vol_from_tubes_to_pcr = 100,
+            mm_volume_tube = 1380,
+            headroom_vol_from_tubes_to_pcr = 60,
             headroom_vol_from_tubes_to_dw = 10,
             control_well_positions = ['G12', 'H12'],
             tube_block_model: str = 'opentrons_24_aluminumblock_nest_2ml_screwcap',
@@ -306,15 +306,14 @@ class BioerProtocol(Station):
         num_tubes, vol_per_tube = uniform_divide(
             volume_to_distribute_to_pcr_plate + self._headroom_vol_from_tubes_to_pcr, self._mm_volume_tube)
         mm_tubes = self._tube_block.wells()[:num_tubes]
-        available_volume = (volume_to_distribute_to_pcr_plate + volume_for_controls) / len(mm_tubes)
+        available_volume = volume_to_distribute_to_pcr_plate / len(mm_tubes)
         if self._headroom_vol_from_tubes_to_pcr > 0:
             if self._vol_mm_offset < (self._headroom_vol_from_tubes_to_pcr / len(mm_tubes)):
                 available_volume += self._vol_mm_offset
         assert vol_per_tube > available_volume, \
             "Error in volume calculations: requested {}ul while total in tubes {}ul".format(available_volume, vol_per_tube)
 
-        num_mm_tube = math.ceil((self._mm_volume * self._num_samples) / self._mm_volume_tube)
-        [self._mm_tube_source.append_tube_with_vol(t, available_volume) for t in self._tube_block.wells()[len(self._tube_block.wells())-num_mm_tube::]]
+        [self._mm_tube_source.append_tube_with_vol(t, available_volume) for t in self._tube_block.wells()[len(self._tube_block.wells())-num_tubes::]]
 
         self.logger.info("We need {} tubes with {}ul of mastermix each in {}".format(num_tubes,
                                                                                       vol_per_tube,
