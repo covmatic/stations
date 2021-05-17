@@ -323,13 +323,18 @@ class BioerProtocol(Station):
                                            vol_per_tube,
                                            self._mm_tube_source.locations_str)
 
+        control_positions = self.get_msg_format("control positions",
+                                                self._control_well_positions)
+
         #transfer_proteinase
         if self.transfer_proteinase_phase:
             self.pause(pk_requirements, home=False)
+            self.stage = "Transfer proteinase"
             self.transfer_proteinase()
 
         #mix_beads
         if self._mix_beads_phase:
+            self.stage = "Mix beads"
             self.mix_beads()
 
         #Bioer phase
@@ -338,11 +343,14 @@ class BioerProtocol(Station):
 
         #transfer mastermix
         if self._mastermix_phase:
+            self.pause(control_positions, home=False)
             self.pause(mmix_requirements, home=False)
+            self.stage = "Transfer mastermix"
             self.transfer_mastermix()
 
         #transfer elutes
         if self.transfer_elutes_phase:
+            self.stage = "Transfer elutes"
             self.transfer_elutes()
 
     def drop(self, pip):
