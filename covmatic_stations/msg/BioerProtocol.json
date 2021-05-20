@@ -1,0 +1,14 @@
+{
+  "load pk tubes": {
+    "ENG": "PK: load {} tubes with {}ul in{}",
+    "ITA": "PK: carica {} tubi da {}ul in{}"
+  },
+    "load mm tubes": {
+    "ENG": "Mastermix: load {} tubes with {}ul in{}",
+    "ITA": "Mastermix: carica {} tubi da {}ul in{}"
+  },
+    "control positions": {
+      "ENG": "Controls positions in: {}",
+      "ITA": "Posizione dei controlli in: {}"
+  }
+}
