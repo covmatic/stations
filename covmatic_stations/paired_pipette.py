@@ -24,7 +24,8 @@ class PairedPipette:
         self.donedests = []
         self.switchpipette = 1  ## used to switch between pipettes when single pipette is requested
         self.commands = []
-        self._logger = logging.getLogger(__name__)
+        self._logger = logging.getLogger(PairedPipette.__name__)
+        self._logger.setLevel(logging.DEBUG)
         self._locations = {'target': targets}
         self._locations_as_well = [self._get_well_from_location(location) for location in self._locations['target']]
         for kwarg in kwargs:
