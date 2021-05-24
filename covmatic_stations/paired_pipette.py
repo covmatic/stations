@@ -13,16 +13,15 @@ class PairedPipette:
     pippairedctx = None
 
     @classmethod
-    def setup(cls, left_pipette, right_pipette):
-        cls.pips = [left_pipette, right_pipette]
-        cls.pippairedctx = left_pipette.pair_with(right_pipette)
+    def setup(cls, pipette1, pipette2, stationctx):
+        cls.pips = [pipette1, pipette2]
+        cls.pippairedctx = pipette1.pair_with(pipette2)
+        cls._stationctx = stationctx
 
     def __init__(self, labware, targets, **kwargs):
         # dests è un iterabile che contiene le destinazioni
         self.labware = labware
         self.donedests = []
-        # self.pips = [left_pipette, right_pipette]
-        # self.pippairedctx = left_pipette.pair_with(right_pipette)
         self.switchpipette = 1  ## used to switch between pipettes when single pipette is requested
         self.commands = []
         self._logger = logging.getLogger(__name__)
@@ -43,49 +42,29 @@ class PairedPipette:
         assert self.__class__.pips, "You must initialize the module with setup first"
         try:
             secondary_well = labware_column_shift(dest_well, self.labware)
-            print("Shifted pos: {}".format(secondary_well))
             if secondary_well in self._locations_as_well and secondary_well not in self.donedests:
-                print("PAIRED OK :-)")
+                self._logger.debug("We can use paired pipette on destination.")
                 return self.__class__.pippairedctx, secondary_well
-            else:
-                print("NO PAIRED HERE")
         except IndexError:
-            print("OUT OF RANGE")
+            self._logger.debug("We can't use paired pipette here.")
         return self._get_single_pipette(), None
 
     def _get_single_pipette(self):
         self.switchpipette = (self.switchpipette + 1) % len(self.__class__.pips)
         return self.__class__.pips[self.switchpipette]
 
-    # Tip tracker does not support parired pickup till now;
-    # So we pickup single pipette
-    #
-    # def _pick_up_tip(self, pipctx):
-    #     print("Trying to pick up a tip")
-    #     try:
-    #         pipctx.pick_up_tip()
-    #     except PipettePairPickUpTipError:
-    #         print("Paired pipette needed but cannot pickup tips, doing one pipette at a time")
-    #         for p in self.pips:
-    #             print("Picking up single for {}".format(p))
-    #             p.pick_up_tip()
-
     def _pick_up_tip(self, pipctx):
-        if isinstance(pipctx, PairedInstrumentContext):
-            # pickup both two
+        self._logger.debug("Trying to pick up a tip")
+        try:
+            self._stationctx.pick_up(pipctx)
+        except PipettePairPickUpTipError:
+            self._logger.debug("Paired pipette needed but cannot pickup tips, doing one pipette at a time")
             for p in self.pips:
-                print("Picking up single for {}".format(p))
-                # p.pick_up_tip(get_next_tip())
-                p.pick_up_tip()
-        else:
-            # pipctx.pick_up_tip(get_next_tip())
-            pipctx.pick_up_tip()
+                self._stationctx.pick_up(p)
 
     @staticmethod
     def substitute_kwarg_location(new_location, keyword, kwargs):
         if keyword in kwargs:
-            print("{} FOUND".format(keyword))
-
             call, arguments = parse.parse("{}({})", kwargs[keyword])
             # arguments conversion to string
             if call in ['top', 'bottom']:
@@ -116,16 +95,12 @@ class PairedPipette:
 
     @staticmethod
     def _get_well_from_location(loc) -> Well:
-        print("Initial pos: {}".format(loc))
-        print("dest is type: {}".format(type(loc)))
         if loc and isinstance(loc, types.Location):
-            print("Loc is location!")
             if loc.labware.is_well:
                 well = loc.labware.as_well()
             else:
                 raise Exception("Cannot make Well from destination {} of type {}.".format(loc, type(loc)))
         elif loc and isinstance(loc, Well):
-            print("Loc is well!")
             well = loc
         else:
             raise Exception("Destination {} of type {} not recognized.".format(loc, type(loc)))
@@ -133,7 +108,7 @@ class PairedPipette:
 
     def _run(self):
         for i, (d, d_well) in enumerate(zip(self._locations['target'], self._locations_as_well)):
-            print("Well is: {}".format(d_well))
+            self._logger.debug("Well is: {}".format(d_well))
             self._execute_command_list_on(d, d_well)
 
     def _execute_command_list_on(self, location, well):
@@ -141,12 +116,12 @@ class PairedPipette:
             pipctx, secondary_well = self.getctx(well)
             primary_well_index = self._locations_as_well.index(well)
             secondary_well_index = self._locations_as_well.index(secondary_well) if secondary_well else None
-            print("Using: {}\n".format(pipctx))
-            skip_next_command = False
+            self._logger.debug("Using pipette context: {}".format(pipctx))
+            skip_next_command = False       # skip_next_command is for merging aspirate and air-gap on each pipette
             for j, c in enumerate(self.commands):
-                print("Command now: {}".format(c))
+                self._logger.debug("Evaluating command: {}".format(c))
                 if skip_next_command:
-                    print("Skipped")
+                    self._logger.debug("Asked to skip command.")
                     skip_next_command = False
                     continue
 
@@ -162,29 +137,30 @@ class PairedPipette:
                             and substituted_kwargs.get('location', None) \
                             and self._get_well_from_location(
                         substituted_kwargs['location']) not in self.labware.wells():
-                        print("We aren't on the destination plate... so we use single pipetting")
+                        self._logger.debug("We aren't on the destination plate... so we use single pipetting")
                         substituted_kwargs_pip2 = dict(c['kwargs'])
                         self.substitute_kwargs_locations(secondary_well_index, substituted_kwargs_pip2)
                         self.substitute_kwargs_well_modifier(substituted_kwargs_pip2)
 
                         for (p, kwargs) in zip(self.__class__.pips, [substituted_kwargs, substituted_kwargs_pip2]):
-                            print("Pipette {} command: {} args: {} {}".format(p, c['command'], c['args'], kwargs))
+                            self._logger.debug("Pipette {} command: {} args: {} {}".format(p, c['command'], c['args'], kwargs))
                             getattr(p, c['command'])(*c['args'], **kwargs)
+                            # Merging air_gap with preceeding command
                             if len(self.commands) > (j + 1) and self.commands[j + 1]['command'] == 'air_gap':
-                                print("Doing air_gap on {}".format(p))
+                                self._logger.debug("Doing air_gap on {}".format(p))
                                 getattr(p, 'air_gap')(*self.commands[j + 1]['args'],
                                                       **self.commands[j + 1]['kwargs'])
                                 skip_next_command = True
                     else:
-                        print("Pipette {} command: {} args: {} {}".format(pipctx, c['command'], c['args'],
+                        self._logger.debug("Pipette {} command: {} args: {} {}".format(pipctx, c['command'], c['args'],
                                                                           substituted_kwargs))
                         getattr(pipctx, c['command'])(*c['args'], **substituted_kwargs)
             self.donedests.append(well)
             if secondary_well is not None:
                 self.donedests.append(secondary_well)
-            print("donedests contains: {}".format(self.donedests))
+            self._logger.debug("donedests contains: {}".format(self.donedests))
         else:
-            print("dest {} skipped, already done.".format(well))
+            self._logger.debug("dest {} skipped, already done.".format(well))
 
     def setcommand(self, command, *args, **kwargs):
         assert command in self.available_commands, "Command {} not recognized.".format(command)
