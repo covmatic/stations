@@ -101,7 +101,9 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         #         self._m300.air_gap(self._supernatant_removal_air_gap)
         #         self.drop(self._m300)
         # self._m300.flow_rate.aspirate = self._default_aspiration_rate
-    def drop_tip(pip):
+
+    def drop_tip(self, pip):
+        self._logger.error("PLEASE DISABLE THIS DEBUG FEATURE!!")
         pip.return_tip()
 
 if __name__ == "__main__":

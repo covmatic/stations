@@ -62,6 +62,15 @@ class PairedPipette:
             for p in self.pips:
                 self._stationctx.pick_up(p)
 
+    def _drop_tip(self, pipctx):
+        try:
+            self._stationctx.drop_tip(pipctx)
+        except TypeError:
+            if isinstance(pipctx, PairedInstrumentContext):
+                self._logger.debug("Pip ctx {}: probably pick_up_tip has been done with single pipette")
+                for p in self.pips:
+                    self._stationctx.drop_tip(p)
+
     @staticmethod
     def substitute_kwarg_location(new_location, keyword, kwargs):
         if keyword in kwargs:
@@ -127,6 +136,8 @@ class PairedPipette:
 
                 if c['command'] == "pick_up":
                     self._pick_up_tip(pipctx)
+                elif c['command'] == "drop_tip":
+                    self._drop_tip(pipctx)
                 else:
                     substituted_kwargs = dict(c['kwargs'])  # copy kwargs and substitute time by time
                     # substituting kwargs to represent actual data
