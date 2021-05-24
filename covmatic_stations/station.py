@@ -260,27 +260,24 @@ class Station(metaclass=StationMeta):
             'tips': {t: list(chain.from_iterable(map(first_row if getattr(self, p).channels > 1 else wells, getattr(self, t)))) for t, p in self._tipracks().items()}
         }
         if data_tip_status:
-            print("loading tip status")
             for tiprack, tips in data_tip_status.items():
                 assert len(tips) == len(self._tip_log['tips'][tiprack]), "Wrong length, please reset tip log"
                 for i, tip in enumerate(tips):
-                    print("check {} with {}".format(tip.get("name", ""), str(self._tip_log['tips'][tiprack][i])))
                     assert tip.get("name", "") == str(self._tip_log['tips'][tiprack][i]), "Wrong tip order, please reset tip log"
                     self._tip_log['tips'][tiprack][i].has_tip = tip.get("has_tip", False)
         self._tip_log['max'] = {t: len(p) for t, p in self._tip_log['tips'].items()}
         self._update_tip_log_count()
-        # self._tip_log['count'] = {t: data.get(t, 0) for t in self._tipracks().keys()}
     
     def track_tip(self):
-        # if self._tip_track and not self._ctx.is_simulating():
-        self.logger.debug(self.get_msg_format("tip log dump", self._tip_log_filepath))
-        os.makedirs(self._tip_log_folder_path, exist_ok=True)
-        with open(self._tip_log_filepath, 'w') as outfile:
-            json.dump({
-                "count": self._tip_log['count'],
-                "next": {k: str(self._tip_log['tips'][k][v % self._tip_log['max'][k]]) for k, v in self._tip_log['count'].items()},
-                "tip_status": {k: [{'name': str(w), 'has_tip': w.has_tip} for w in self._tip_log['tips'][k]] for k, v in self._tip_log['count'].items()}
-            }, outfile, indent=2)
+        if self._tip_track and not self._ctx.is_simulating():
+            self.logger.debug(self.get_msg_format("tip log dump", self._tip_log_filepath))
+            os.makedirs(self._tip_log_folder_path, exist_ok=True)
+            with open(self._tip_log_filepath, 'w') as outfile:
+                json.dump({
+                    "count": self._tip_log['count'],
+                    "next": {k: str(self._tip_log['tips'][k][v % self._tip_log['max'][k]]) for k, v in self._tip_log['count'].items()},
+                    "tip_status": {k: [{'name': str(w), 'has_tip': w.has_tip} for w in self._tip_log['tips'][k]] for k, v in self._tip_log['count'].items()}
+                }, outfile, indent=2)
 
     def pick_up(self, pip, loc: Optional[Location] = None, tiprack: Optional[str] = None):
         if loc is None:
@@ -294,7 +291,7 @@ class Station(metaclass=StationMeta):
                     # Paired pipette tiprack doesn't work with the for loop below
                     # pipettes must be the same, so selecting the first tiprack
                     tiprack = list(self._tipracks().keys())[0]
-                    self._logger.info("Selectiong {} tiprack for paired pipette".format(tiprack))
+                    self._logger.debug("Selectiong {} tiprack for paired pipette".format(tiprack))
                 else:
                     raise RuntimeError("no tiprack associated to pipette {}".format(pip))
             self._update_tip_log_count()
@@ -307,7 +304,6 @@ class Station(metaclass=StationMeta):
             self.track_tip()
             available_tips = list(dropwhile(lambda x: not x.has_tip, self._tip_log['tips'][tiprack]))
             loc = available_tips[0]
-        self._logger.debug("Picking up next: {}".format(loc))
         pip.pick_up_tip(loc)
     
     def drop(self, pip):
