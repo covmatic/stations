@@ -20,7 +20,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             self._m300r.flow_rate.blow_out = self._bind_blowout_rate
 
     def body(self):
-        PairedPipette.setup(self._m300, self._m300r)
+        PairedPipette.setup(self._m300, self._m300r, self)
         # super(StationBTechnogeneticsPairedPipette, self).body()
 
         # self.mix_samples()
@@ -57,11 +57,11 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         for i, m in enumerate(self.mag_samples_m):
             loc = m.bottom(self._supernatant_removal_height)
 
-            with PairedPipette(self._magplate, self.mag_samples_m) as tp:
-                tp.pick_up()
-                for _ in range(num_trans):
-                    tp.move_to(location="target", well_modifier="top(0)")  # we want center() but for now it is not in available commands
-                tp.drop_tip()
+        with PairedPipette(self._magplate, self.mag_samples_m) as tp:
+            tp.pick_up()
+            for _ in range(num_trans):
+                tp.move_to(location="target", well_modifier="top(0)")  # we want center() but for now it is not in available commands
+            tp.drop_tip()
 
         #     if self.run_stage("{} {}/{}".format(stage, i + 1, len(self.mag_samples_m))):
         #         self.pick_up(self._m300)
@@ -101,7 +101,9 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         #         self._m300.air_gap(self._supernatant_removal_air_gap)
         #         self.drop(self._m300)
         # self._m300.flow_rate.aspirate = self._default_aspiration_rate
+    def drop_tip(pip):
+        pip.return_tip()
 
 if __name__ == "__main__":
-    StationBTechnogeneticsPairedPipette(metadata={'apiLevel': '2.3'}).simulate()
+    StationBTechnogeneticsPairedPipette(metadata={'apiLevel': '2.3'}, num_samples=64).simulate()
 

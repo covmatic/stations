@@ -3,7 +3,7 @@ from covmatic_stations.b.technogenetics_paired_pipette import StationBTechnogene
 
 
 logging.getLogger(StationBTechnogeneticsPairedPipette.__name__).setLevel(logging.INFO)
-metadata = {'apiLevel': '2.3'}
+metadata = {'apiLevel': '2.7'}
 station = StationBTechnogeneticsPairedPipette(num_samples=96)
 
 
