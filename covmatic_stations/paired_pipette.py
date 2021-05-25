@@ -5,18 +5,22 @@ from opentrons.protocol_api.labware import Well
 from opentrons import types
 import logging
 import parse
+from opentrons.types import Mount, Point, Location
 
 
 class PairedPipette:
     available_commands = ["pick_up", "drop_tip", "mix", "air_gap", "aspirate", "dispense", "move_to"]
     pips = []
     pippairedctx = None
+    labware_height_overhead = 10.0      # mm height over the top of the tallest labware
 
     @classmethod
     def setup(cls, pipette1, pipette2, stationctx):
         cls.pips = [pipette1, pipette2]
         cls.pippairedctx = pipette1.pair_with(pipette2)
         cls._stationctx = stationctx
+        cls.max_labware_height = cls.labware_height_overhead + \
+            max([labware.highest_z for labware in cls._stationctx._ctx.loaded_labwares.values()])
 
     def __init__(self, labware, targets, **kwargs):
         # dests è un iterabile che contiene le destinazioni
@@ -66,11 +70,25 @@ class PairedPipette:
     def _drop_tip(self, pipctx):
         try:
             self._stationctx.drop_tip(pipctx)
+            self._check_pipette_over_labware(pipctx)
         except TypeError:
             if isinstance(pipctx, PairedInstrumentContext):
-                self._logger.debug("Pip ctx {}: probably pick_up_tip has been done with single pipette")
+                self._logger.debug("Pip ctx {}: probably pick_up_tip has been done with single pipette".format(pipctx))
+                self._check_pipette_over_labware(pipctx)    # before move single pipette bring each pipette in safe position
                 for p in self.pips:
                     self._stationctx.drop_tip(p)
+                    self._check_pipette_over_labware(pipctx)    # after dropping move each pipette in safe position
+
+    def _check_pipette_over_labware(self, pipctx):
+        """Check that the pipette has enough height to pass over all labware"""
+        mount = pipctx._pair_policy.primary if isinstance(pipctx,
+                                                          PairedInstrumentContext) else pipctx._implementation.get_mount()
+        current_loc = self._stationctx._ctx._hw_manager.hardware.gantry_position(mount)
+        self._logger.debug("{}: Actual location for mount {} is: {}".format(pipctx, mount, current_loc))
+        if current_loc.z < self.__class__.max_labware_height:
+            new_point = Point(x=current_loc.x, y=current_loc.y, z=self.__class__.max_labware_height)
+            self._logger.debug("Location to move to: {}".format(new_point))
+            pipctx.move_to(Location(new_point, None))
 
     @staticmethod
     def substitute_kwarg_location(new_location, keyword, kwargs):
@@ -163,6 +181,7 @@ class PairedPipette:
                                 getattr(p, 'air_gap')(*self.commands[j + 1]['args'],
                                                       **self.commands[j + 1]['kwargs'])
                                 skip_next_command = True
+                            self._check_pipette_over_labware(p)
                     else:
                         self._logger.debug("Pipette {} command: {} args: {} {}".format(pipctx, c['command'], c['args'],
                                                                           substituted_kwargs))
