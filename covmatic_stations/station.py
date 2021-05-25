@@ -245,13 +245,12 @@ class Station(metaclass=StationMeta):
                 t.has_tip = True
 
     def setup_tip_log(self):
-        data = {}
+        data_tip_status = {}
         if self._tip_track:
             self.logger.info(self.msg_format("tip info log", self._tip_log_filepath))
             if os.path.isfile(self._tip_log_filepath):
                 with open(self._tip_log_filepath) as json_file:
                     file = json.load(json_file)
-                    data: dict = file.get("count", {})
                     data_tip_status: dict = file.get("tip_status", {})
         else:
             self.logger.debug("not using tip log file")
@@ -275,9 +274,14 @@ class Station(metaclass=StationMeta):
             with open(self._tip_log_filepath, 'w') as outfile:
                 json.dump({
                     "count": self._tip_log['count'],
-                    "next": {k: str(self._tip_log['tips'][k][v % self._tip_log['max'][k]]) for k, v in self._tip_log['count'].items()},
+                    "next": {k: str(self._get_next_tip(v)) for k, v in self._tip_log['tips'].items()},
                     "tip_status": {k: [{'name': str(w), 'has_tip': w.has_tip} for w in self._tip_log['tips'][k]] for k, v in self._tip_log['count'].items()}
                 }, outfile, indent=2)
+
+    @staticmethod
+    def _get_next_tip(tips):
+        available_tips = list(dropwhile(lambda x: not x.has_tip, tips))
+        return available_tips[0] if len(available_tips) else None
 
     def pick_up(self, pip, loc: Optional[Location] = None, tiprack: Optional[str] = None):
         if loc is None:
@@ -302,8 +306,7 @@ class Station(metaclass=StationMeta):
                 self.track_tip()
                 self.pause(self.get_msg_format("refill tips", "\n".join(map(str, getattr(self, tiprack)))))
             self.track_tip()
-            available_tips = list(dropwhile(lambda x: not x.has_tip, self._tip_log['tips'][tiprack]))
-            loc = available_tips[0]
+            loc = self._get_next_tip(self._tip_log['tips'][tiprack])
         pip.pick_up_tip(loc)
     
     def drop(self, pip):
