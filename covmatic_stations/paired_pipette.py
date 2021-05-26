@@ -52,11 +52,16 @@ class PairedPipette:
                 return self.__class__.pippairedctx, secondary_well
         except IndexError:
             self._logger.debug("We can't use paired pipette here.")
-        return self._get_single_pipette(), None
+        pipette_to_use = self._get_single_pipette()
+        print("Checking other pipette labware setting")
+        self._check_pipette_over_labware(self.__class__._get_other_pipette(pipette_to_use))
+        return pipette_to_use, None
 
     def _get_single_pipette(self):
-        self.switchpipette = (self.switchpipette + 1) % len(self.__class__.pips)
-        return self.__class__.pips[self.switchpipette]
+        """ Get a single pipette to use for a single-pipette operation"""
+        # self.switchpipette = (self.switchpipette + 1) % len(self.__class__.pips)
+        # return self.__class__.pips[self.switchpipette]
+        return self.__class__.pips[0]
 
     def _pick_up_tip(self, pipctx):
         self._logger.debug("Trying to pick up a tip")
@@ -70,14 +75,12 @@ class PairedPipette:
     def _drop_tip(self, pipctx):
         try:
             self._stationctx.drop_tip(pipctx)
-            self._check_pipette_over_labware(pipctx)
         except TypeError:
             if isinstance(pipctx, PairedInstrumentContext):
                 self._logger.debug("Pip ctx {}: probably pick_up_tip has been done with single pipette".format(pipctx))
                 self._check_pipette_over_labware(pipctx)    # before move single pipette bring each pipette in safe position
                 for p in self.pips:
                     self._stationctx.drop_tip(p)
-                    self._check_pipette_over_labware(pipctx)    # after dropping move each pipette in safe position
 
     def _check_pipette_over_labware(self, pipctx):
         """Check that the pipette has enough height to pass over all labware"""
@@ -120,6 +123,13 @@ class PairedPipette:
                 kwargs.pop('well_modifier')
                 old_location = kwargs.pop('location')
                 kwargs['location'] = getattr(old_location, call)(arguments)
+    @classmethod
+    def _get_other_pipette(cls, pip):
+        for p in cls.pips:
+            if p != pip:
+                print("Returning other pipette: {}".format(p))
+                return p
+        raise Exception("Different pipette not found")
 
     @staticmethod
     def _get_well_from_location(loc) -> Well:
@@ -174,6 +184,7 @@ class PairedPipette:
 
                         for (p, kwargs) in zip(self.__class__.pips, [substituted_kwargs, substituted_kwargs_pip2]):
                             self._logger.debug("Pipette {} command: {} args: {} {}".format(p, c['command'], c['args'], kwargs))
+                            self._check_pipette_over_labware(self.__class__._get_other_pipette(p))
                             getattr(p, c['command'])(*c['args'], **kwargs)
                             # Merging air_gap with preceeding command
                             if len(self.commands) > (j + 1) and self.commands[j + 1]['command'] == 'air_gap':
@@ -181,7 +192,6 @@ class PairedPipette:
                                 getattr(p, 'air_gap')(*self.commands[j + 1]['args'],
                                                       **self.commands[j + 1]['kwargs'])
                                 skip_next_command = True
-                            self._check_pipette_over_labware(p)
                     else:
                         self._logger.debug("Pipette {} command: {} args: {} {}".format(pipctx, c['command'], c['args'],
                                                                           substituted_kwargs))
