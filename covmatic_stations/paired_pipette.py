@@ -53,7 +53,6 @@ class PairedPipette:
         except IndexError:
             self._logger.debug("We can't use paired pipette here.")
         pipette_to_use = self._get_single_pipette()
-        print("Checking other pipette labware setting")
         self._check_pipette_over_labware(self.__class__._get_other_pipette(pipette_to_use))
         return pipette_to_use, None
 
@@ -127,7 +126,6 @@ class PairedPipette:
     def _get_other_pipette(cls, pip):
         for p in cls.pips:
             if p != pip:
-                print("Returning other pipette: {}".format(p))
                 return p
         raise Exception("Different pipette not found")
 
