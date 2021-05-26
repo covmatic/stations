@@ -52,55 +52,44 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
         num_trans = math.ceil((vol - self._vol_last_trans) / self._bind_max_transfer_vol)
         vol_per_trans = ((vol - self._vol_last_trans) / num_trans) if num_trans else 0
-        # h_num_trans = self._h_trans/num_trans
-
-        for i, m in enumerate(self.mag_samples_m):
-            loc = m.bottom(self._supernatant_removal_height)
 
         with PairedPipette(self._magplate, self.mag_samples_m) as tp:
             tp.pick_up()
+            # Fake air gap, maybe we can avoid it
+            tp.move_to(location="target", well_modifier="top(0)")
+            tp.air_gap(self._supernatant_removal_air_gap)
             for _ in range(num_trans):
                 tp.move_to(location="target", well_modifier="top(0)")  # we want center() but for now it is not in available commands
+                tp.dispense(self._supernatant_removal_air_gap)
+                tp.aspirate(vol_per_trans, location="target", well_modifier="bottom({})".format(self._supernatant_removal_height))
+                tp.air_gap(self._supernatant_removal_air_gap)
+                tp.dispense(vol_per_trans+self._supernatant_removal_air_gap, self._waste)
+                tp.air_gap(self._supernatant_removal_air_gap)
+
+            tp.comment("Supernatant removal: last transfer in {} step".format(self._n_bottom))
+            tp.dispense(self._supernatant_removal_air_gap, location="target", well_modifier="top(0)")
+            for j in range(self._n_bottom):
+                aspirate_height = self._h_bottom - (j) * (self._h_bottom / (self._n_bottom - 1))
+                tp.comment("Aspirating at {}".format(aspirate_height))
+                tp.aspirate(self._supernatant_removal_last_transfer_max_vol/self._n_bottom,
+                            location="target",
+                            well_modifier="bottom({})".format(aspirate_height))
+
+            back_step = 0.1
+            n_back_step = 3
+            for _ in range(n_back_step):
+                aspirate_height = aspirate_height + back_step
+                tp.comment("Moving up at {}".format(aspirate_height))
+                tp.move_to(location="target", well_modifier="bottom({})".format(aspirate_height))
+
+            tp.air_gap(self._supernatant_removal_air_gap)
+            tp.dispense(self._supernatant_removal_last_transfer_max_vol + self._supernatant_removal_air_gap,
+                        self._waste)
+            tp.air_gap(self._supernatant_removal_air_gap)
             tp.drop_tip()
 
-        #     if self.run_stage("{} {}/{}".format(stage, i + 1, len(self.mag_samples_m))):
-        #         self.pick_up(self._m300)
-        #         loc = m.bottom(self._supernatant_removal_height)
-        #         self._ctx.comment("Supernatant removal: {} transfer with {}ul each.".format(num_trans, vol_per_trans))
-        #         for _ in range(num_trans):
-        #             # num_trans = num_trans - 1
-        #             # aspirate_height = self.h_bottom + (num_trans * h_num_trans) # expecting aspirated height
-        #             # ctx.comment('Aspirating at {}'.format(aspirate_height))
-        #             if self._m300.current_volume > 0:
-        #                 self._m300.dispense(self._m300.current_volume, m.top())
-        #             self._m300.move_to(m.center())
-        #             self._m300.transfer(vol_per_trans, loc, self._waste, new_tip='never', air_gap=self._supernatant_removal_air_gap)
-        #             self._m300.air_gap(self._supernatant_removal_air_gap)
-        #
-        #         self._ctx.comment("Supernatant removal: last transfer in {} step".format(self._n_bottom))
-        #         # dispensing the air gap present in the tip
-        #         if self._m300.current_volume > 0:
-        #             self._m300.dispense(self._m300.current_volume, m.top())
-        #
-        #         for j in range(self._n_bottom):
-        #             aspirate_height = self._h_bottom - (j)*(self._h_bottom/(self._n_bottom-1)) # expecting aspirated height
-        #             self._ctx.comment("Aspirating at {}".format(aspirate_height))
-        #             loc = m.bottom(aspirate_height)
-        #             self._m300.aspirate(self._supernatant_removal_last_transfer_max_vol/self._n_bottom, loc)
-        #
-        #         back_step = 0.1
-        #         n_back_step = 3
-        #         for _ in range(n_back_step):
-        #             aspirate_height = aspirate_height + back_step
-        #             self._ctx.comment("Moving up at {}".format(aspirate_height))
-        #             loc = m.bottom(aspirate_height)
-        #             self._m300.move_to(loc)
-        #
-        #         self._m300.air_gap(self._supernatant_removal_air_gap)
-        #         self._m300.dispense(self._m300.current_volume, self._waste)
-        #         self._m300.air_gap(self._supernatant_removal_air_gap)
-        #         self.drop(self._m300)
-        # self._m300.flow_rate.aspirate = self._default_aspiration_rate
+        self._m300.flow_rate.aspirate = self._default_aspiration_rate
+        self._m300r.flow_rate.aspirate = self._default_aspiration_rate
 
     def drop_tip(self, pip):
         self._logger.error("PLEASE DISABLE THIS DEBUG FEATURE!!")
