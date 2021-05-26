@@ -9,7 +9,7 @@ from opentrons.types import Mount, Point, Location
 
 
 class PairedPipette:
-    available_commands = ["pick_up", "drop_tip", "mix", "air_gap", "aspirate", "dispense", "move_to"]
+    available_commands = ["pick_up", "drop_tip", "mix", "air_gap", "aspirate", "dispense", "move_to", "comment"]
     pips = []
     pippairedctx = None
     labware_height_overhead = 10.0      # mm height over the top of the tallest labware
@@ -60,6 +60,8 @@ class PairedPipette:
         """ Get a single pipette to use for a single-pipette operation"""
         # self.switchpipette = (self.switchpipette + 1) % len(self.__class__.pips)
         # return self.__class__.pips[self.switchpipette]
+        # for now use only one pipette if single pipette needed.
+        # TODO maybe switch pipette each run?
         return self.__class__.pips[0]
 
     def _pick_up_tip(self, pipctx):
@@ -165,6 +167,8 @@ class PairedPipette:
                     self._pick_up_tip(pipctx)
                 elif c['command'] == "drop_tip":
                     self._drop_tip(pipctx)
+                elif c['command'] == "comment":
+                    self._stationctx._ctx.comment(*c['args'], **c['kwargs'])
                 else:
                     substituted_kwargs = dict(c['kwargs'])  # copy kwargs and substitute time by time
                     # substituting kwargs to represent actual data
@@ -234,3 +238,6 @@ class PairedPipette:
 
     def move_to(self, *args, **kwargs):
         self.setcommand('move_to', *args, **kwargs)
+
+    def comment(self, *args, **kwargs):
+        self.setcommand('comment', *args, **kwargs)
