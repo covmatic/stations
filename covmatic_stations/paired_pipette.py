@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------------
 from opentrons.protocols.api_support.util import labware_column_shift
 from opentrons.protocol_api.paired_instrument_context import PairedInstrumentContext, PipettePairPickUpTipError
-from opentrons.protocol_api.labware import Well
+from opentrons.protocol_api.labware import Well, Labware
 from opentrons import types
 import logging
 import parse
@@ -24,6 +24,7 @@ class PairedPipette:
 
     def __init__(self, labware, targets, **kwargs):
         # dests è un iterabile che contiene le destinazioni
+        assert isinstance(labware, Labware), "Paired pipette labware not a labware but a {}".format(type(labware))
         self.labware = labware
         self.donedests = []
         self.switchpipette = 1  ## used to switch between pipettes when single pipette is requested
@@ -106,17 +107,19 @@ class PairedPipette:
             kwargs['location'] = getattr(new_location, call)(arguments)
 
     def substitute_kwargs_locations(self, index, kwargs):
-        if 'location' in kwargs:
-            assert isinstance(kwargs['location'], str), "location parameter must be a string."
-            if kwargs['location'] in self._locations:
-                loc_keyword = kwargs.pop('location')
+        if 'locationFrom' in kwargs:
+            assert isinstance(kwargs['locationFrom'], str), "location parameter must be a string."
+            if kwargs['locationFrom'] in self._locations:
+                loc_keyword = kwargs.pop('locationFrom')
+                assert 'location' not in kwargs, "location already set, not overwriting. Value: {}".format(kwargs['location'])
                 kwargs['location'] = self._locations[loc_keyword][index]
             else:
-                raise Exception("Location {} not set.".format(kwargs['location']))
+                raise Exception("Location {} not set.".format(kwargs['locationFrom']))
 
     def substitute_kwargs_well_modifier(self, kwargs):
         if 'well_modifier' in kwargs:
             if 'location' in kwargs:
+                self._logger.debug("Substitute kwargs {}".format(kwargs['location']))
                 call, arguments = parse.parse("{}({})", kwargs['well_modifier'])
                 # arguments conversion to string
                 if call in ['top', 'bottom']:
@@ -149,6 +152,14 @@ class PairedPipette:
             self._logger.debug("Well is: {}".format(d_well))
             self._execute_command_list_on(d, d_well)
 
+    @staticmethod
+    def _getValueFromKwargsAndClean(kwargs, key: str, default_value):
+        if key in kwargs:
+            ret_value = kwargs.pop(key)
+        else:
+            ret_value = default_value
+        return ret_value
+
     def _execute_command_list_on(self, location, well):
         if well not in self.donedests:
             pipctx, secondary_well = self.getctx(well)
@@ -172,13 +183,15 @@ class PairedPipette:
                 else:
                     substituted_kwargs = dict(c['kwargs'])  # copy kwargs and substitute time by time
                     # substituting kwargs to represent actual data
+                    isTargetPaired = 'locationFrom' in substituted_kwargs
+                    self._logger.debug("Target can be accessed with paired: {}".format(isTargetPaired))
+                    isCommandOkWithPaired = self._getValueFromKwargsAndClean(substituted_kwargs, 'isOkWithPaired', False)
+                    self._logger.debug("Command ok with paired: {}".format(isCommandOkWithPaired))
                     self.substitute_kwargs_locations(primary_well_index, substituted_kwargs)
                     self.substitute_kwargs_well_modifier(substituted_kwargs)
 
                     if isinstance(pipctx, PairedInstrumentContext) \
-                            and substituted_kwargs.get('location', None) \
-                            and self._get_well_from_location(
-                        substituted_kwargs['location']) not in self.labware.wells():
+                            and not (isTargetPaired or isCommandOkWithPaired):
                         self._logger.debug("We aren't on the destination plate... so we use single pipetting")
                         substituted_kwargs_pip2 = dict(c['kwargs'])
                         self.substitute_kwargs_locations(secondary_well_index, substituted_kwargs_pip2)
@@ -191,6 +204,7 @@ class PairedPipette:
                             # Merging air_gap with preceeding command
                             if len(self.commands) > (j + 1) and self.commands[j + 1]['command'] == 'air_gap':
                                 self._logger.debug("Doing air_gap on {}".format(p))
+                                self._getValueFromKwargsAndClean(self.commands[j + 1]['kwargs'], 'isOkWithPaired', False)
                                 getattr(p, 'air_gap')(*self.commands[j + 1]['args'],
                                                       **self.commands[j + 1]['kwargs'])
                                 skip_next_command = True
@@ -223,11 +237,10 @@ class PairedPipette:
         self.setcommand('drop_tip')
 
     def air_gap(self, *args, **kwargs):
+        kwargs['isOkWithPaired'] = True
         self.setcommand('air_gap', *args, **kwargs)
 
     def mix(self, *args, **kwargs):
-        if 'location' not in kwargs:
-            kwargs['location'] = 'target'
         self.setcommand('mix', *args, **kwargs)
 
     def aspirate(self, *args, **kwargs):
@@ -240,6 +253,7 @@ class PairedPipette:
         self.setcommand('move_to', *args, **kwargs)
 
     def touch_tip(self, *args, **kwargs):
+        kwargs['isOkWithPaired'] = True
         self.setcommand('touch_tip', *args, **kwargs)
 
     def comment(self, *args, **kwargs):
