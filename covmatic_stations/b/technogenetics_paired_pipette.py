@@ -1,6 +1,8 @@
 from covmatic_stations.station import instrument_loader
 from .technogenetics import StationBTechnogenetics
 from ..paired_pipette import PairedPipette
+from opentrons.types import Point
+from itertools import repeat
 import math
 
 class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
@@ -24,7 +26,8 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         # super(StationBTechnogeneticsPairedPipette, self).body()
 
         # self.mix_samples()
-        self.remove_supernatant(self._starting_vol)
+        #self.remove_supernatant(self._starting_vol)
+        self.elute()
 
     def mix_samples(self):
         self._m300.flow_rate.aspirate = 94
@@ -90,6 +93,71 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
         self._m300.flow_rate.aspirate = self._default_aspiration_rate
         self._m300r.flow_rate.aspirate = self._default_aspiration_rate
+
+    def elute(self, positions=None, transfer: bool = False, stage: str = "elute"):
+        if positions is None:
+            positions = self.temp_samples_m
+        self._magdeck.disengage()
+        self._elute(positions=positions, transfer=transfer, stage=stage)
+        self._magdeck.disengage()
+
+    def _elute(self, positions=None, transfer: bool = True, stage: str = "elute"):
+        """Resuspend beads in elution"""
+        # if positions is None:
+        #     positions = self.mag_samples_m
+        self._m300.flow_rate.aspirate = self._elute_aspiration_rate
+
+        side_locs = []
+        for i, m in enumerate(positions):
+            side = 1 if i % 2 == 0 else -1
+            side_locs.append(m.bottom(self._bottom_headroom_height).move(Point(x=side * 2)))
+
+        elute_locs = list(repeat(self.water, len(side_locs)))
+
+        with PairedPipette(self._tempplate, positions, side_locs=side_locs, elute_locs=elute_locs) as tp:
+            tp.pick_up()
+            tp.aspirate(self._elution_vol, location="elute_locs")
+            tp.air_gap(self._elute_air_gap)
+            tp.dispense(self._elute_air_gap, location="target", well_modifier="top(0)")
+            tp.dispense(self._elution_vol, location="side_locs")
+            tp.mix(self._elute_mix_times, self._elute_mix_vol, location="side_locs")
+            tp.touch_tip(v_offset=self._touch_tip_height)
+            tp.drop_tip()
+        # for i, m in enumerate(positions):
+        #     if self.run_stage("{} {}/{}".format(stage, i + 1, len(positions))):
+        #         self.pick_up(self._m300)
+        #         side = 1 if i % 2 == 0 else -1
+        #         loc = m.bottom(self._bottom_headroom_height).move(Point(x=side * 2))
+        #         self._m300.aspirate(self._elution_vol, self.water)
+        #         self._m300.air_gap(self._elute_air_gap)
+        #         self._m300.dispense(self._elute_air_gap, m.top())
+        #         self._m300.dispense(self._elution_vol, loc)
+        #         self._m300.mix(self._elute_mix_times, self._elute_mix_vol, loc)
+        #         self._m300.touch_tip(v_offset=self._touch_tip_height)
+        #         self._m300.air_gap(self._elute_air_gap)
+        #         self.drop(self._m300)
+        #
+        # if self._elute_incubate and self.run_stage("{} incubate off".format(stage)):
+        #     self.delay(self._wait_time_elute_off, self.get_msg_format("incubate on magdeck", self.get_msg("off")))
+        # self._magdeck.engage(height=self._magheight)
+        # self.check()
+        # if self._elute_incubate and self.run_stage("{} incubate on".format(stage)):
+        #     self.delay(self._wait_time_elute_on, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
+        #
+        # if transfer:
+        #     for i, (m, e) in enumerate(zip(
+        #             positions,
+        #             self.elution_samples_m
+        #     )):
+        #         if self.run_stage("{} transfer {}/{}".format(stage, i + 1, len(positions))):
+        #             self.pick_up(self._m300)
+        #             side = -1 if i % 2 == 0 else 1
+        #             loc = m.bottom(self._bottom_headroom_height).move(Point(x=side * 2))
+        #             self._m300.transfer(self._elution_vol, loc, e.bottom(self._elution_height),
+        #                                 air_gap=self._elute_air_gap, new_tip='never')
+        #             # m300.blow_out(e.top(-2))
+        #             self._m300.air_gap(self._elute_air_gap)
+        #             self.drop(self._m300)
 
     def drop_tip(self, pip):
         self._logger.error("PLEASE DISABLE THIS DEBUG FEATURE!!")

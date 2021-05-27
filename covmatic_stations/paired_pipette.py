@@ -9,7 +9,7 @@ from opentrons.types import Mount, Point, Location
 
 
 class PairedPipette:
-    available_commands = ["pick_up", "drop_tip", "mix", "air_gap", "aspirate", "dispense", "move_to", "comment"]
+    available_commands = ["pick_up", "drop_tip", "mix", "air_gap", "aspirate", "dispense", "move_to", "touch_tip", "comment"]
     pips = []
     pippairedctx = None
     labware_height_overhead = 10.0      # mm height over the top of the tallest labware
@@ -238,6 +238,9 @@ class PairedPipette:
 
     def move_to(self, *args, **kwargs):
         self.setcommand('move_to', *args, **kwargs)
+
+    def touch_tip(self, *args, **kwargs):
+        self.setcommand('touch_tip', *args, **kwargs)
 
     def comment(self, *args, **kwargs):
         self.setcommand('comment', *args, **kwargs)
