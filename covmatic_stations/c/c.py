@@ -253,12 +253,12 @@ class StationC(Station):
         n = len(list(zip(self.mm_indices[::self._m20.channels], self.sample_dests[:self.remaining_cols])))
         for i, (m_idx, s) in enumerate(
                 zip(self.mm_indices[::self._m20.channels], self.sample_dests[:self.remaining_cols])):
+            self.pick_up(self._m20)
             if self.run_stage(stage.format(i + 1, n)):
-                self.pick_up(self._m20)
                 self._m20.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate,
                                    self.mm_strips[m_idx][0].bottom(self._strip_bottom_headroom_height),
                                    s.bottom(self._pcr_bottom_headroom_height), new_tip='never')
-                self._m20.drop_tip()
+            self._m20.drop_tip()
 
     def transfer_sample(self, vol: float, source, dest):
         self.logger.debug("transferring {:.0f} uL from {} to {}".format(vol, source, dest))
