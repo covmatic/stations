@@ -30,7 +30,7 @@ class PairedPipette:
         self.switchpipette = 1  ## used to switch between pipettes when single pipette is requested
         self.commands = []
         self._logger = logging.getLogger(PairedPipette.__name__)
-        self._logger.setLevel(logging.DEBUG)
+        self._logger.setLevel(logging.INFO)
         self._locations = {'target': targets}
         self._locations_as_well = [self._get_well_from_location(location) for location in self._locations['target']]
         for kwarg in kwargs:
@@ -47,12 +47,13 @@ class PairedPipette:
     def getctx(self, dest_well):
         assert self.__class__.pips, "You must initialize the module with setup first"
         try:
-            secondary_well = labware_column_shift(dest_well, self.labware)
+            _, secondary_well = self.pippairedctx._get_locations(dest_well)
+            self._logger.debug("Primary well: {}. Secondary well found: {}".format(dest_well, secondary_well))
             if secondary_well in self._locations_as_well and secondary_well not in self.donedests:
                 self._logger.debug("We can use paired pipette on destination.")
                 return self.__class__.pippairedctx, secondary_well
-        except IndexError:
-            self._logger.debug("We can't use paired pipette here.")
+        except PipettePairPickUpTipError as e:
+            self._logger.debug("We can't use paired pipette here. Exception: {}".format(e))
         pipette_to_use = self._get_single_pipette()
         self._check_pipette_over_labware(self.__class__._get_other_pipette(pipette_to_use))
         return pipette_to_use, None
@@ -183,17 +184,22 @@ class PairedPipette:
                 else:
                     substituted_kwargs = dict(c['kwargs'])  # copy kwargs and substitute time by time
                     # substituting kwargs to represent actual data
-                    isTargetPaired = 'locationFrom' in substituted_kwargs
-                    self._logger.debug("Target can be accessed with paired: {}".format(isTargetPaired))
-                    isCommandOkWithPaired = self._getValueFromKwargsAndClean(substituted_kwargs, 'isOkWithPaired', False)
-                    self._logger.debug("Command ok with paired: {}".format(isCommandOkWithPaired))
+                    is_target_paired = 'locationFrom' in substituted_kwargs
+                    is_forced_single = self._getValueFromKwargsAndClean(substituted_kwargs, 'forceSingle', False)
+                    is_command_ok_with_paired = self._getValueFromKwargsAndClean(substituted_kwargs, 'isOkWithPaired', False)
+                    self._logger.debug("Target is paired: {}; forced single: {}; command ok with paired: {}"
+                                       .format(is_target_paired, is_forced_single, is_command_ok_with_paired))
                     self.substitute_kwargs_locations(primary_well_index, substituted_kwargs)
                     self.substitute_kwargs_well_modifier(substituted_kwargs)
 
-                    if isinstance(pipctx, PairedInstrumentContext) \
-                            and not (isTargetPaired or isCommandOkWithPaired):
-                        self._logger.debug("We aren't on the destination plate... so we use single pipetting")
+                    to_do_with_single =  (is_target_paired==False and is_command_ok_with_paired==False) or is_forced_single
+                    self._logger.debug("To do with single is: {}".format(to_do_with_single))
+
+                    if isinstance(pipctx, PairedInstrumentContext) and to_do_with_single:
+                        self._logger.debug("Using single pipetting")
                         substituted_kwargs_pip2 = dict(c['kwargs'])
+                        self._getValueFromKwargsAndClean(substituted_kwargs_pip2, 'forceSingle', False)
+                        self._getValueFromKwargsAndClean(substituted_kwargs_pip2, 'isOkWithPaired', False)
                         self.substitute_kwargs_locations(secondary_well_index, substituted_kwargs_pip2)
                         self.substitute_kwargs_well_modifier(substituted_kwargs_pip2)
 
@@ -204,6 +210,7 @@ class PairedPipette:
                             # Merging air_gap with preceeding command
                             if len(self.commands) > (j + 1) and self.commands[j + 1]['command'] == 'air_gap':
                                 self._logger.debug("Doing air_gap on {}".format(p))
+                                self._getValueFromKwargsAndClean(self.commands[j + 1]['kwargs'], 'forceSingle', False)
                                 self._getValueFromKwargsAndClean(self.commands[j + 1]['kwargs'], 'isOkWithPaired', False)
                                 getattr(p, 'air_gap')(*self.commands[j + 1]['args'],
                                                       **self.commands[j + 1]['kwargs'])
