@@ -32,8 +32,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
     @property
     def water(self):
-        """Elution reagent"""
-        return self._res12.rows()[0][11]
+        return self._elut12.rows()[0][11]
 
     @instrument_loader(0, "_m300r")
     def load_m300_right(self):
