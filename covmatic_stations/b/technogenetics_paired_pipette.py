@@ -1,15 +1,39 @@
-from covmatic_stations.station import instrument_loader
+import json
+from covmatic_stations.station import instrument_loader, labware_loader
 from covmatic_stations.utils import uniform_divide
 from .technogenetics import StationBTechnogenetics
 from ..paired_pipette import PairedPipette
 from opentrons.types import Point
 from itertools import repeat
 import math
+import os
 
 class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
     def __init__(self, **kwargs):
         super(StationBTechnogeneticsPairedPipette, self).__init__(**kwargs)
+
+    @labware_loader(8, "_res12")
+    def load_res12(self):
+        # re-loading labware to avoid bug on reagent reservoir (see https://github.com/Opentrons/opentrons/issues/7793)
+        reservoir_file = os.path.join(os.path.split(__file__)[0], "nest_12_reservoir_15ml_modified.json")
+        self.logger.info("Loading reservoir labware from: {}".format(reservoir_file))
+        with open(reservoir_file) as labware_file:
+            labware_def = json.load(labware_file)
+        self._res12 = self._ctx.load_labware_from_definition(labware_def, 5, 'Trough with WashReagents')
+
+    @property
+    def wash1(self):
+        return self._res12.rows()[0][:6]
+
+    @property
+    def wash2(self):
+        return self._res12.rows()[0][:-6]
+
+    @property
+    def water(self):
+        """Elution reagent"""
+        return self._res12.rows()[0][11]
 
     @instrument_loader(0, "_m300r")
     def load_m300_right(self):

@@ -1,0 +1,1229 @@
+{
+  "ordering": [
+    [
+      "A1",
+      "FAKEB1",
+      "FAKEC1",
+      "FAKED1",
+      "FAKEE1",
+      "FAKEF1",
+      "FAKEG1",
+      "FAKEH1",
+      "A2"
+    ],
+    [
+      "FAKEB2",
+      "FAKEC2",
+      "FAKED2",
+      "FAKEE2",
+      "FAKEF2",
+      "FAKEG2",
+      "FAKEH2"
+    ],
+    [
+      "A3",
+      "FAKEB3",
+      "FAKEC3",
+      "FAKED3",
+      "FAKEE3",
+      "FAKEF3",
+      "FAKEG3",
+      "FAKEH3"
+    ],
+    [
+      "A4",
+      "FAKEB4",
+      "FAKEC4",
+      "FAKED4",
+      "FAKEE4",
+      "FAKEF4",
+      "FAKEG4",
+      "FAKEH4"
+    ],
+    [
+      "A5",
+      "FAKEB5",
+      "FAKEC5",
+      "FAKED5",
+      "FAKEE5",
+      "FAKEF5",
+      "FAKEG5",
+      "FAKEH5"
+    ],
+    [
+      "A6",
+      "FAKEB6",
+      "FAKEC6",
+      "FAKED6",
+      "FAKEE6",
+      "FAKEF6",
+      "FAKEG6",
+      "FAKEH6"
+    ],
+    [
+      "A7",
+      "FAKEB7",
+      "FAKEC7",
+      "FAKED7",
+      "FAKEE7",
+      "FAKEF7",
+      "FAKEG7",
+      "FAKEH7"
+    ],
+    [
+      "A8",
+      "FAKEB8",
+      "FAKEC8",
+      "FAKED8",
+      "FAKEE8",
+      "FAKEF8",
+      "FAKEG8",
+      "FAKEH8"
+    ],
+    [
+      "A9",
+      "FAKEB9",
+      "FAKEC9",
+      "FAKED9",
+      "FAKEE9",
+      "FAKEF9",
+      "FAKEG9",
+      "FAKEH9"
+    ],
+    [
+      "A10",
+      "FAKEB10",
+      "FAKEC10",
+      "FAKED10",
+      "FAKEE10",
+      "FAKEF10",
+      "FAKEG10",
+      "FAKEH10"
+    ],
+    [
+      "A11",
+      "FAKEB11",
+      "FAKEC11",
+      "FAKED11",
+      "FAKEE11",
+      "FAKEF11",
+      "FAKEG11",
+      "FAKEH11"
+    ],
+    [
+      "A12",
+      "FAKEB12",
+      "FAKEC12",
+      "FAKED12",
+      "FAKEE12",
+      "FAKEF12",
+      "FAKEG12",
+      "FAKEH12"
+    ]
+  ],
+  "brand": {
+    "brand": "NEST",
+    "brandId": [
+      "360102"
+    ],
+    "links": [
+      "http://www.cell-nest.com/page94?_l=en&product_id=102"
+    ]
+  },
+  "metadata": {
+    "displayName": "modified NEST 12 Well Reservoir 15 mL",
+    "displayCategory": "reservoir",
+    "displayVolumeUnits": "mL",
+    "tags": []
+  },
+  "dimensions": {
+    "xDimension": 127.76,
+    "yDimension": 85.48,
+    "zDimension": 31.4
+  },
+  "wells": {
+    "A1": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 14.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "A2": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 23.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "A3": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 32.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "A4": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 41.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "A5": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 50.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "A6": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 59.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "A7": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 68.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "A8": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 77.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "A9": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 86.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "A10": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 95.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "A11": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 104.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "A12": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEB1": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEC1": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKED1": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEE1": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEF1": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEG1": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEH1": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEB2": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEC2": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKED2": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEE2": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEF2": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEG2": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEH2": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEB3": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEC3": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKED3": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEE3": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEF3": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEG3": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEH3": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEB4": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEC4": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKED4": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEE4": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEF4": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEG4": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEH4": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEB5": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEC5": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKED5": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEE5": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEF5": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEG5": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEH5": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEB6": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEC6": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKED6": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEE6": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEF6": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEG6": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEH6": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEB7": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEC7": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKED7": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEE7": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEF7": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEG7": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEH7": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEB8": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEC8": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKED8": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEE8": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEF8": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEG8": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEH8": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEB9": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEC9": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKED9": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEE9": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEF9": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEG9": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEH9": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEB10": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEC10": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKED10": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEE10": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEF10": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEG10": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEH10": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEB11": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEC11": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKED11": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEE11": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEF11": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEG11": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEH11": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEB12": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEC12": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKED12": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEE12": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEF12": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEG12": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    },
+    "FAKEH12": {
+      "depth": 26.85,
+      "shape": "rectangular",
+      "xDimension": 8.2,
+      "yDimension": 71.2,
+      "totalLiquidVolume": 15000,
+      "x": 113.38,
+      "y": 42.78,
+      "z": 4.55
+    }
+  },
+  "groups": [
+    {
+      "metadata": {
+        "wellBottomShape": "v"
+      },
+      "wells": [
+        "A1",
+        "FAKEB1",
+        "FAKEC1",
+        "FAKED1",
+        "FAKEE1",
+        "FAKEF1",
+        "FAKEG1",
+        "FAKEH1",
+        "A2",
+        "FAKEB2",
+        "FAKEC2",
+        "FAKED2",
+        "FAKEE2",
+        "FAKEF2",
+        "FAKEG2",
+        "FAKEH2",
+        "A3",
+        "FAKEB3",
+        "FAKEC3",
+        "FAKED3",
+        "FAKEE3",
+        "FAKEF3",
+        "FAKEG3",
+        "FAKEH3",
+        "A4",
+        "FAKEB4",
+        "FAKEC4",
+        "FAKED4",
+        "FAKEE4",
+        "FAKEF4",
+        "FAKEG4",
+        "FAKEH4",
+        "A5",
+        "FAKEB5",
+        "FAKEC5",
+        "FAKED5",
+        "FAKEE5",
+        "FAKEF5",
+        "FAKEG5",
+        "FAKEH5",
+        "A6",
+        "FAKEB6",
+        "FAKEC6",
+        "FAKED6",
+        "FAKEE6",
+        "FAKEF6",
+        "FAKEG6",
+        "FAKEH6",
+        "A7",
+        "FAKEB7",
+        "FAKEC7",
+        "FAKED7",
+        "FAKEE7",
+        "FAKEF7",
+        "FAKEG7",
+        "FAKEH7",
+        "A8",
+        "FAKEB8",
+        "FAKEC8",
+        "FAKED8",
+        "FAKEE8",
+        "FAKEF8",
+        "FAKEG8",
+        "FAKEH8",
+        "A9",
+        "FAKEB9",
+        "FAKEC9",
+        "FAKED9",
+        "FAKEE9",
+        "FAKEF9",
+        "FAKEG9",
+        "FAKEH9",
+        "A10",
+        "FAKEB10",
+        "FAKEC10",
+        "FAKED10",
+        "FAKEE10",
+        "FAKEF10",
+        "FAKEG10",
+        "FAKEH10",
+        "A11",
+        "FAKEB11",
+        "FAKEC11",
+        "FAKED11",
+        "FAKEE11",
+        "FAKEF11",
+        "FAKEG11",
+        "FAKEH11",
+        "A12",
+        "FAKEB12",
+        "FAKEC12",
+        "FAKED12",
+        "FAKEE12",
+        "FAKEF12",
+        "FAKEG12",
+        "FAKEH12"
+      ]
+    }
+  ],
+  "parameters": {
+    "format": "trough",
+    "isTiprack": false,
+    "isMagneticModuleCompatible": false,
+    "quirks": [
+      "centerMultichannelOnWells",
+      "touchTipDisabled"
+    ],
+    "loadName": "modified_nest_12_reservoir_15ml"
+  },
+  "namespace": "custom_beta",
+  "version": 1,
+  "schemaVersion": 2,
+  "cornerOffsetFromSlot": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+  }
+}
