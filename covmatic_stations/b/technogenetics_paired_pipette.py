@@ -28,7 +28,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
     @property
     def wash2(self):
-        return self._res12.rows()[0][:-6]
+        return self._res12.rows()[0][-6:]
 
     @property
     def water(self):
