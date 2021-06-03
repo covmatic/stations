@@ -1,6 +1,9 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.4.1
+- [*paired pipette*] minor fixes
+
 ## v2.4.0
 ### Added
 - [*station*] now support debug mode to return tip instead of trashing them for debug.
