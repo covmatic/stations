@@ -1,6 +1,12 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.4.0
+### Added
+- [*station*] now support debug mode to return tip instead of trashing them for debug.
+- [*station*] added Paired Pipette support
+- [B Techogenetics] added protocol for paired pipette
+
 ## v2.3.2
 - [station] in file log added date-time info
 
