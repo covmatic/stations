@@ -5,6 +5,7 @@ wheel
 # Required for core package
 cherrypy
 typing-extensions
+parse
 requests
 ipaddress
 
