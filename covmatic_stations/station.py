@@ -314,6 +314,9 @@ class Station(metaclass=StationMeta):
             self.track_tip()
             loc = self._get_next_tip(self._tip_log['tips'][tiprack])
         pip.pick_up_tip(loc)
+        self._update_tip_log_count()
+        self.track_tip()
+
     
     def drop(self, pip):
         # Drop in the Fixed Trash (on 12) at different positions to avoid making a tall heap of tips
