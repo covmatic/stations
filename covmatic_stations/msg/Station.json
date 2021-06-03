@@ -42,5 +42,9 @@
   "continue": {
 	"ENG": "Press resume to make the robot continue",
 	"ITA": "Premi resume per riattivare il robot"
+  },
+  "debug mode": {
+	"ENG": "WARNING: Debug mode enabled! Please stop the run if you are not water testing",
+	"ITA": "ATTENZIONE: Debug mode abilitato! Fermare la run se non si sta testando con l'acqua"
   }
 }

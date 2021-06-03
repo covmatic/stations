@@ -71,6 +71,7 @@ class Station(metaclass=StationMeta):
     _protocol_description = "[BRIEFLY DESCRIBE YOUR PROTOCOL]"
     
     def __init__(self,
+        debug_mode = False,
         drop_height: float = -2,
         drop_loc_l: float = 0,
         drop_loc_r: float = 0,
@@ -100,6 +101,7 @@ class Station(metaclass=StationMeta):
         wait_first_log: bool = False,
         **kwargs,
     ):
+        self._debug_mode = debug_mode
         self._drop_height = drop_height
         self._drop_loc_l = drop_loc_l
         self._drop_loc_r = drop_loc_r
@@ -316,13 +318,15 @@ class Station(metaclass=StationMeta):
         pip.pick_up_tip(loc)
         self._update_tip_log_count()
         self.track_tip()
-
     
     def drop(self, pip):
         # Drop in the Fixed Trash (on 12) at different positions to avoid making a tall heap of tips
         drop_loc = self._ctx.loaded_labwares[12].wells()[0].top(self._drop_height).move(Point(x=self._drop_loc_r if self._side_switch else self._drop_loc_l, y=self._drop_loc_y))
         self._side_switch = not self._side_switch
-        pip.drop_tip(drop_loc)
+        if self._debug_mode:
+            pip.return_tip()
+        else:
+            pip.drop_tip(drop_loc)
         self._drop_count += pip.channels
         if self._drop_count >= self._drop_threshold:
             self.pause('empty tips')
@@ -413,6 +417,9 @@ class Station(metaclass=StationMeta):
         self.setup_tip_log()
         self._button.color = 'white'
         self.msg = ""
+
+        if self._debug_mode:
+            self.dual_pause("debug mode")
         
         try:
             self.body()
