@@ -214,10 +214,6 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             self.delay(self._wait_time_wash_on, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         self.remove_supernatant(vol, stage="remove {}".format(wash_name))
 
-    def drop_tip(self, pip):
-        self._logger.error("PLEASE DISABLE THIS DEBUG FEATURE!!")
-        pip.return_tip()
-
 if __name__ == "__main__":
     station = StationBTechnogeneticsPairedPipette(metadata={'apiLevel': '2.3'},
                                                   num_samples=96)

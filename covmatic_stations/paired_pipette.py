@@ -83,7 +83,7 @@ class PairedPipette:
 
     def _drop_tip(self, pipctx):
         try:
-            self._stationctx.drop_tip(pipctx)
+            self._stationctx.drop(pipctx)
         except TypeError:
             if isinstance(pipctx, PairedInstrumentContext):
                 self._logger.debug("Pip ctx {}: probably pick_up_tip has been done with single pipette".format(pipctx))

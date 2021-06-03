@@ -318,7 +318,12 @@ class Station(metaclass=StationMeta):
         pip.pick_up_tip(loc)
         self._update_tip_log_count()
         self.track_tip()
-    
+
+    @staticmethod
+    def _get_pipette_num_channels(pip):
+        pips = pip._instruments.values() if isinstance(pip, PairedInstrumentContext) else [pip]
+        return sum([p.channels for p in pips])
+
     def drop(self, pip):
         # Drop in the Fixed Trash (on 12) at different positions to avoid making a tall heap of tips
         drop_loc = self._ctx.loaded_labwares[12].wells()[0].top(self._drop_height).move(Point(x=self._drop_loc_r if self._side_switch else self._drop_loc_l, y=self._drop_loc_y))
@@ -327,7 +332,7 @@ class Station(metaclass=StationMeta):
             pip.return_tip()
         else:
             pip.drop_tip(drop_loc)
-        self._drop_count += pip.channels
+        self._drop_count += self._get_pipette_num_channels(pip)
         if self._drop_count >= self._drop_threshold:
             self.pause('empty tips')
             self._drop_count = 0
