@@ -53,7 +53,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         self._m300.flow_rate.aspirate = 94
         self._m300r.flow_rate.aspirate = 94
 
-        with PairedPipette(self._magplate, self.mag_samples_m) as tp:
+        with PairedPipette(self._magplate, self.mag_samples_m, start_at="mix sample") as tp:
             tp.pick_up()
             tp.mix(self._sample_mix_times, self._sample_mix_vol,
                    locationFrom="target",
@@ -71,7 +71,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
         waste_locs = list(repeat(self._waste, len(self.mag_samples_m)))
 
-        with PairedPipette(self._magplate, self.mag_samples_m, waste_locs=waste_locs) as tp:
+        with PairedPipette(self._magplate, self.mag_samples_m, waste_locs=waste_locs, start_at=stage) as tp:
             tp.pick_up()
             for i in range(num_trans):
                 # tp.move_to()  # we want center() but for now it is not in available commands
@@ -125,7 +125,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             side = 1 if i % 2 == 0 else -1
             side_locs.append(m.bottom(self._bottom_headroom_height).move(Point(x=side * 2)))
 
-        with PairedPipette(self._tempplate, positions, side_locs=side_locs) as tp:
+        with PairedPipette(self._tempplate, positions, side_locs=side_locs, start_at=stage) as tp:
             tp.pick_up()
             tp.aspirate(self._elution_vol, self.water)
             tp.air_gap(self._elute_air_gap)
@@ -149,7 +149,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             side = -1 if i % 2 == 0 else 1
             locs.append(m.bottom(0.3).move(Point(x=side * 2)))
 
-        with PairedPipette(self._magplate, locs, pcr_locs=self.pcr_samples_m) as tp:
+        with PairedPipette(self._magplate, locs, start_at="final transfer", pcr_locs=self.pcr_samples_m) as tp:
             tp.pick_up()
             tp.aspirate(self._final_vol, locationFrom="target")
             tp.air_gap(self._elute_air_gap)
@@ -189,7 +189,10 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             src.append(self.wash_getcol(i, len(self.mag_samples_m), source))
             mix_locs.append(m.bottom(self._bottom_headroom_height).move(Point(x=2 * (-1 if i % 2 else +1))))
 
-        with PairedPipette(self._magplate, self.mag_samples_m, wash_locs=wash_locs, mix_locs=mix_locs) as tp:
+        with PairedPipette(self._magplate, self.mag_samples_m,
+                           wash_locs=wash_locs,
+                           mix_locs=mix_locs,
+                           start_at=wash_name) as tp:
             tp.pick_up()
             for n in range(num_trans):
                 if n > 0:
@@ -207,7 +210,8 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
         self._magdeck.engage(height=self._magheight)
         self.check()
-        self.delay(self._wait_time_wash_on, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
+        if self.run_stage("{} incubate".format(wash_name)):
+            self.delay(self._wait_time_wash_on, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         self.remove_supernatant(vol, stage="remove {}".format(wash_name))
 
     def drop_tip(self, pip):
@@ -215,7 +219,8 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         pip.return_tip()
 
 if __name__ == "__main__":
-    station = StationBTechnogeneticsPairedPipette(metadata={'apiLevel': '2.3'}, num_samples=96)
+    station = StationBTechnogeneticsPairedPipette(metadata={'apiLevel': '2.3'},
+                                                  num_samples=96)
     # logging.getLogger(StationBTechnogeneticsPairedPipette.__name__).setLevel(logging.DEBUG)
     station.simulate()
 

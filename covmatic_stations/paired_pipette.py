@@ -22,7 +22,7 @@ class PairedPipette:
         cls.max_labware_height = cls.labware_height_overhead + \
             max([labware.highest_z for labware in cls._stationctx._ctx.loaded_labwares.values()])
 
-    def __init__(self, labware, targets, **kwargs):
+    def __init__(self, labware, targets, start_at:str = None, **kwargs):
         # dests è un iterabile che contiene le destinazioni
         assert isinstance(labware, Labware), "Paired pipette labware not a labware but a {}".format(type(labware))
         self.labware = labware
@@ -37,6 +37,12 @@ class PairedPipette:
             self._logger.debug("Appending {} to keywork {}".format(kwargs[kwarg], kwarg))
             self._locations[kwarg] = kwargs[kwarg]
         self._logger.debug("Locations now contain: {}".format(self._locations))
+        self._start_at = start_at
+        if self._start_at:
+            assert callable(getattr(self._stationctx, "run_stage")), \
+                "run_stage function not found. Please do not use start_at names."
+            self._start_at_function = getattr(self._stationctx, "run_stage")
+            self._start_at += " {}/{}"
 
     def __enter__(self):
         return self
@@ -151,7 +157,8 @@ class PairedPipette:
     def _run(self):
         for i, (d, d_well) in enumerate(zip(self._locations['target'], self._locations_as_well)):
             self._logger.debug("Well is: {}".format(d_well))
-            self._execute_command_list_on(d, d_well)
+            if self._start_at and self._start_at_function(self._start_at.format(i+1, len(self._locations['target']))):
+                self._execute_command_list_on(d, d_well)
 
     @staticmethod
     def _getValueFromKwargsAndClean(kwargs, key: str, default_value):
