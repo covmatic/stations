@@ -16,7 +16,7 @@ class BioerProtocol(Station):
             mix_bottom_height = 0.5,
             mix_bottom_height_dw = -1.8,
             mm_plate_bottom_height = 1.2,
-            dw_elutes_bottom_height = -2,
+            dw_elutes_bottom_height = -3,
             pk_volume_tube = 320,
             vol_pk_offset = 5,
             vol_mm_offset = 10,
@@ -42,7 +42,7 @@ class BioerProtocol(Station):
         self._elution_volume = 12
         self._pk_volume = 10
         self._pk_volume_tube = pk_volume_tube
-        self._mm_volume = 20
+        self._mm_volume = 18
         self._mm_volume_tube = mm_volume_tube
         self._mm_tube_bottom_height = mm_tube_bottom_height
         self._dw_bottom_height = dw_bottom_height
