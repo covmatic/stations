@@ -424,7 +424,7 @@ class Station(metaclass=StationMeta):
         self.msg = ""
 
         if self._debug_mode:
-            self.dual_pause("debug mode")
+            self.dual_pause("debug mode", home=(False, False))
         
         try:
             self.body()
