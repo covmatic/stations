@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.4.2
+- [*bioer*] fixed height in elution transfer
+- minor improvements
+
 ## v2.4.1
 - [*paired pipette*] minor fixes
 
