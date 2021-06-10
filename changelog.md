@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.4.3
+- [*bioer*] added pause before elutes transfer.
+- [MultiTubeSource] changed aspirate command to fit *start_at* logic
+
 ## v2.4.2
 - [*bioer*] fixed height in elution transfer
 - minor improvements
