@@ -129,7 +129,8 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
         self.logger.debug("Filling strips with {}ul each; used volume: {}".format(volume, total_vol))
 
         for well in self.mm_strip:
-            self._mm_sources.aspirate_from_tubes(volume - self._mastermix_volume_in_tip, self._p300, self._tube_bottom_headroom_height)
+            self._mm_sources.calculate_aspirate_volume(volume - self._mastermix_volume_in_tip)
+            self._mm_sources.aspirate(self._p300, self._tube_bottom_headroom_height)
             self._mastermix_volume_in_tip = 0   # only doing the first time
             self._p300.dispense(volume, well.bottom(self._strip_bottom_headroom_height))
 
@@ -144,7 +145,8 @@ class StationCBioerMastermixPrep(StationCTechnogenetics):
                 self.pick_up(self._p300)
 
             vol = self._mastermix_vol * len(self.control_wells_not_in_samples) + dead_volume
-            self._mm_sources.aspirate_from_tubes(vol, self._p300, self._tube_bottom_headroom_height)
+            self._mm_sources.calculate_aspirate_volume(vol)
+            self._mm_sources.aspirate(self._p300, self._tube_bottom_headroom_height)
 
             for w in self.control_dests_wells:
                 self._p300.dispense(self._mastermix_vol, w.bottom(self._pcr_bottom_headroom_height))
