@@ -10,5 +10,9 @@
     "control positions": {
       "ENG": "Controls positions in: {}",
       "ITA": "Posizione dei controlli in: {}"
+  },
+  "insert deepwell": {
+      "ENG": "Please insert the deepwell: {}",
+      "ITA": "Inserisci le deepwell: {}"
   }
 }

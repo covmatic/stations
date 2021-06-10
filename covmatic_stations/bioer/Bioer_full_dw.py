@@ -24,6 +24,7 @@ class BioerProtocol(Station):
             headroom_vol_from_tubes_to_pcr = 60,
             headroom_vol_from_tubes_to_dw = 10,
             control_well_positions = ['G12', 'H12'],
+            pause_between_mastermix_and_elutes: bool = True,
             tube_block_model: str = 'opentrons_24_aluminumblock_nest_2ml_screwcap',
             transfer_elutes_phase: bool = False,
             transfer_proteinase_phase: bool = False,
@@ -57,6 +58,7 @@ class BioerProtocol(Station):
         self._pk_tube_bottom_height = pk_tube_bottom_height
         self._headroom_vol_from_tubes_to_pcr = headroom_vol_from_tubes_to_pcr
         self._headroom_vol_from_tubes_to_dw = headroom_vol_from_tubes_to_dw
+        self._pause_between_mastermix_and_elutes = pause_between_mastermix_and_elutes
         self._tube_block_model = tube_block_model
         self._mix_beads_phase = mix_beads_phase
         self._mastermix_phase = mastermix_phase
@@ -246,6 +248,9 @@ class BioerProtocol(Station):
         set_of_source = math.ceil(self._num_samples / self._max_sample_per_dw)
         source_plate = [row for plate in self._dests_plates for row in plate.columns()[4::6]]
         dests_sample_elute = self._dest_plate_elute.columns()[:self.num_cols]
+
+        if self._pause_between_mastermix_and_elutes:
+            self.dual_pause(self.get_msg_format("insert deepwell", self._dests_plates))
 
         self.logger.info("Trasferring elutes from deepwells to pcr plate")
 
