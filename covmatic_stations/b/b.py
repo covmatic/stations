@@ -1,5 +1,5 @@
 from ..station import Station, labware_loader, instrument_loader
-from ..utils import mix_bottom_top, uniform_divide, mix_walk
+from ..utils import mix_bottom_top, uniform_divide, mix_walk, WellWithVolume
 from . import magnets
 from opentrons.types import Point
 from typing import Optional, Tuple
@@ -333,9 +333,9 @@ class StationB(Station):
         # h_num_trans = self._h_trans/num_trans
 
         for i, m in enumerate(self.mag_samples_m):
+            well_with_volume = WellWithVolume(m, vol)
             if self.run_stage("{} {}/{}".format(stage, i + 1, len(self.mag_samples_m))):
                 self.pick_up(self._m300)
-                loc = m.bottom(self._supernatant_removal_height)
                 self._ctx.comment("Supernatant removal: {} transfer with {}ul each.".format(num_trans, vol_per_trans))
                 for _ in range(num_trans):
                     # num_trans = num_trans - 1
@@ -344,7 +344,9 @@ class StationB(Station):
                     if self._m300.current_volume > 0:
                         self._m300.dispense(self._m300.current_volume, m.top())                   
                     self._m300.move_to(m.center())
-                    self._m300.transfer(vol_per_trans, loc, self._waste, new_tip='never', air_gap=self._supernatant_removal_air_gap)
+                    height = well_with_volume.extract_vol_and_get_height(vol_per_trans)
+                    self.logger.info("Aspirate at: {}".format(height))
+                    self._m300.transfer(vol_per_trans, m.bottom(height), self._waste, new_tip='never', air_gap=self._supernatant_removal_air_gap)
                     self._m300.air_gap(self._supernatant_removal_air_gap)
 
                 self._ctx.comment("Supernatant removal: last transfer in {} step".format(self._n_bottom))
