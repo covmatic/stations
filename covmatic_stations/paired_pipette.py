@@ -89,7 +89,7 @@ class PairedPipette:
                 self._logger.debug("Pip ctx {}: probably pick_up_tip has been done with single pipette".format(pipctx))
                 self._check_pipette_over_labware(pipctx)    # before move single pipette bring each pipette in safe position
                 for p in self.pips:
-                    self._stationctx.drop_tip(p)
+                    self._stationctx.drop(p)
 
     def _check_pipette_over_labware(self, pipctx):
         """Check that the pipette has enough height to pass over all labware"""
