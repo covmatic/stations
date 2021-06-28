@@ -359,6 +359,7 @@ class StationB(Station):
                 if self._m300.current_volume > 0:
                     self._m300.dispense(self._m300.current_volume, m.top())
 
+                self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
                 for j in range(self._n_bottom):
                     aspirate_height = self._h_bottom - (j)*(self._h_bottom/(self._n_bottom-1)) # expecting aspirated height
                     self._ctx.comment("Aspirating at {}".format(aspirate_height))
@@ -368,7 +369,6 @@ class StationB(Station):
                 back_step = 0.1
                 n_back_step = 3
 
-                self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
                 for _ in range(n_back_step):
                     aspirate_height = aspirate_height + back_step
                     self._ctx.comment("Moving up at {}".format(aspirate_height))
