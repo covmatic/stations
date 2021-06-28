@@ -431,12 +431,12 @@ class StationB(Station):
     
     def wash(self, vol: float, source, mix_reps: int, wash_name: str = "wash"):
         self.logger.info(self.msg_format("wash info", vol, wash_name, mix_reps))
-        if wash_name == "wash 1":
+        if wash_name == "wash A":
             self._default_aspiration_rate = self._wash_1_mix_aspiration_rate
             dispense_rate = self._wash_1_mix_dispense_rate
             self._m300.flow_rate.dispense = self._wash_1_mix_dispense_rate
             self._m300.flow_rate.aspirate = self._wash_1_mix_aspiration_rate
-        else:
+        if wash_name == "wash B":
             self._default_aspiration_rate = self._wash_2_mix_aspiration_rate
             dispense_rate = self._wash_2_mix_dispense_rate
             self._m300.flow_rate.dispense = self._wash_2_mix_dispense_rate
