@@ -33,6 +33,7 @@ class StationB(Station):
         drop_threshold: int = 5000,
         elute_air_gap: float = 20,
         elute_aspiration_rate: float = 50,
+        elute_dispense_rate: float = 50,
         elute_incubate: bool = True,
         elute_mix_times: int = 10,
         elute_mix_vol: float = 30,
@@ -54,6 +55,8 @@ class StationB(Station):
         skip_delay: bool = False,
         supernatant_removal_air_gap: float = 5,
         supernatant_removal_aspiration_rate: float = 25,
+        supernatant_removal_aspiration_rate_first_phase = 50,
+        supernatant_removal_dispense_rate: float = 200,
         supernatant_removal_height: float = 0.5,
         supernatant_removal_last_transfer_max_vol: float = 190,
         starting_vol: float = 380,
@@ -79,10 +82,10 @@ class StationB(Station):
         wash_1_vol: float = 500,
         wash_2_times: int = 20,
         wash_2_vol: float = 500,
-        wash_2_mix_aspiration_rate: float = 150,
-        wash_2_mix_dispense_rate: float = 160,
-        wash_1_mix_aspiration_rate: float = 120,
-        wash_1_mix_dispense_rate: float = 120,
+        wash_2_mix_aspiration_rate: float = 230,
+        wash_2_mix_dispense_rate: float = 230,
+        wash_1_mix_aspiration_rate: float = 230,
+        wash_1_mix_dispense_rate: float = 230,
         **kwargs
     ):
         """ Build a :py:class:`.StationB`.
@@ -188,6 +191,7 @@ class StationB(Station):
         self._drop_threshold = drop_threshold
         self._elute_air_gap = elute_air_gap
         self._elute_aspiration_rate = elute_aspiration_rate
+        self._elute_dispense_rate = elute_dispense_rate
         self._elute_incubate = elute_incubate
         self._elute_mix_times = elute_mix_times
         self._elute_mix_vol = elute_mix_vol
@@ -203,6 +207,8 @@ class StationB(Station):
         self._magplate_model = magplate_model
         self._supernatant_removal_air_gap = supernatant_removal_air_gap
         self._supernatant_removal_aspiration_rate = supernatant_removal_aspiration_rate
+        self._supernatant_removal_aspiration_rate_first_phase = supernatant_removal_aspiration_rate_first_phase
+        self._supernatant_removal_dispense_rate = supernatant_removal_dispense_rate
         self._supernatant_removal_height = supernatant_removal_height
         self._supernatant_removal_last_transfer_max_vol = supernatant_removal_last_transfer_max_vol
         self._starting_vol = starting_vol
@@ -326,7 +332,8 @@ class StationB(Station):
             self.dual_pause("check module")
 
     def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
-        self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
+        self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate_first_phase
+        self._m300.flow_rate.dispense = self._supernatant_removal_dispense_rate
 
         num_trans = math.ceil((vol - self._vol_last_trans) / self._bind_max_transfer_vol)
         vol_per_trans = ((vol - self._vol_last_trans) / num_trans) if num_trans else 0
@@ -360,6 +367,8 @@ class StationB(Station):
 
                 back_step = 0.1
                 n_back_step = 3
+
+                self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
                 for _ in range(n_back_step):
                     aspirate_height = aspirate_height + back_step
                     self._ctx.comment("Moving up at {}".format(aspirate_height))
@@ -370,7 +379,7 @@ class StationB(Station):
                 self._m300.dispense(self._m300.current_volume, self._waste)
                 self._m300.air_gap(self._supernatant_removal_air_gap)
                 self.drop(self._m300)
-        self._m300.flow_rate.aspirate = self._default_aspiration_rate
+        #self._m300.flow_rate.aspirate = self._default_aspiration_rate
         
     def bind(self):
         """Add bead binding buffer and mix samples"""
@@ -454,8 +463,8 @@ class StationB(Station):
                 else:
                     loc = m.bottom(self._bottom_headroom_height).move(Point(x=2*(-1 if i % 2 else +1)))
                     self._m300.mix(mix_reps, self._wash_mix_vol, loc)
-                self._m300.flow_rate.aspirate = self._default_aspiration_rate
-                self._m300.flow_rate.dispense = dispense_rate
+                #self._m300.flow_rate.aspirate = self._default_aspiration_rate
+                #self._m300.flow_rate.dispense = dispense_rate
                 
                 self._m300.air_gap(self._wash_air_gap)
                 self.drop(self._m300)
@@ -471,6 +480,7 @@ class StationB(Station):
         if positions is None:
             positions = self.mag_samples_m
         self._m300.flow_rate.aspirate = self._elute_aspiration_rate
+        self._m300.flow_rate.dispense = self._elute_dispense_rate
         for i, m in enumerate(positions):
             if self.run_stage("{} {}/{}".format(stage, i + 1, len(positions))):
                 self.pick_up(self._m300)
