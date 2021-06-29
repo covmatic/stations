@@ -1,4 +1,5 @@
 from opentrons.protocol_api import ProtocolContext
+from opentrons.protocol_api.labware import Well
 from opentrons.types import Location
 import logging
 import math
@@ -135,6 +136,38 @@ def uniform_divide(total: float, mpp: float) -> Tuple[int, float]:
     n = int(math.ceil(total / mpp))
     p = total / n
     return n, p
+
+
+class WellWithVolume:
+    """Class to make easy to calcualate and use the height of the liquid in a well"""
+    def __init__(self, well: Well, initial_vol: float, min_height: float = 0.5, headroom_height: float = 2.0):
+        """Class initialization
+        :param total_vol: the total volume expected in the well
+        :param min_height: optional, the minimum height
+        :param headroom_height: optional, the height in mm of liquid above the tip expected after the aspirate
+        """
+        self._well = well
+        self._volume = initial_vol
+        self._min_height = min_height
+        self._headroom_height = headroom_height
+
+    def extract_vol_and_get_height(self, aspirate_vol: float) -> float:
+        """Return the maximum height to aspirate safely a volume from a well
+        :param aspirate_vol: The volume to aspirate
+        :returns: the maximum height to aspirate safely the volume in the well"""
+        self._volume = self._volume - aspirate_vol if self._volume > aspirate_vol else 0
+
+        if self._well.diameter:
+            remaining_height = self._volume / (math.pi * self._well.diameter**2)
+        else:
+            remaining_height = self._volume / self._well.length**2
+        remaining_height -= self._headroom_height
+        final_height = max(remaining_height, self._min_height)
+        print("final height: {}".format(final_height))
+        return final_height
+
+
+
 
 
 # Copyright (c) 2020 Covmatic.
