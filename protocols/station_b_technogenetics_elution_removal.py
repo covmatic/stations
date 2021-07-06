@@ -3,7 +3,7 @@ from covmatic_stations.b.technogenetics_short import StationBTechnogeneticsEluti
 
 
 logging.getLogger(StationBTechnogeneticsElutionRemoval.__name__).setLevel(logging.INFO)
-metadata = {'apiLevel': '2.3'}
+metadata = {'apiLevel': '2.7'}
 station = StationBTechnogeneticsElutionRemoval(num_samples=96)
 
 

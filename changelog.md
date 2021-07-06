@@ -1,6 +1,15 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.5.0
+### Added
+- [*station B*] Higher aspirate and dispense speed;
+- WellWithVolume class now calculates the optimal height to aspirate from a well.
+
+### Fixed
+- [*station B*] Fixed bug on wash A and B liquid speed;
+- [*station B*] Fixed bug on supernatant removal apiration rate;
+
 ## v2.4.3
 - [*bioer*] added pause before elutes transfer.
 - [MultiTubeSource] changed aspirate command to fit *start_at* logic

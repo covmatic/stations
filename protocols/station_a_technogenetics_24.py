@@ -3,7 +3,7 @@ from covmatic_stations.a.technogenetics import StationATechnogenetics24
 
 
 logging.getLogger(StationATechnogenetics24.__name__).setLevel(logging.INFO)
-metadata = {'apiLevel': '2.3'}
+metadata = {'apiLevel': '2.7'}
 station = StationATechnogenetics24(num_samples=96)
 
 
