@@ -28,6 +28,8 @@ class StationBTechnogenetics(StationB):
                  sample_mix_height: float = 0.3,
                  sample_mix_times: float = 10,
                  sample_mix_vol: float = 180,
+                 mix_samples_rate_aspirate = 200,
+                 mix_samples_rate_dispense = 200,
                  starting_vol: float = 650,
                  tempdeck_slot: str = '10',
                  tempdeck_temp: float = 60,
@@ -73,6 +75,8 @@ class StationBTechnogenetics(StationB):
         self._final_mix_vol = final_mix_vol
         self._final_transfer_rate_aspirate = final_transfer_rate_aspirate
         self._final_transfer_rate_dispense = final_transfer_rate_dispense
+        self._mix_samples_rate_aspirate = mix_samples_rate_aspirate
+        self._mix_samples_rate_dispense = mix_samples_rate_dispense
         self._final_vol = final_vol
         self._flatplate_slot = flatplate_slot
         self._h_bottom = h_bottom
@@ -125,7 +129,8 @@ class StationBTechnogenetics(StationB):
         return source[sample_col_idx // 2]
     
     def mix_samples(self):
-        self._m300.flow_rate.aspirate = 94
+        self._m300.flow_rate.aspirate = self._mix_samples_rate_aspirate
+        self._m300.flow_rate.dispense = self._mix_samples_rate_dispense
         for i, m in enumerate(self.mag_samples_m):
             if self.run_stage("mix sample {}/{}".format(i + 1, len(self.mag_samples_m))):
                 self.pick_up(self._m300)
@@ -162,7 +167,7 @@ class StationBTechnogenetics(StationB):
                 self._m300.mix(self._final_mix_times, self._final_mix_vol, e.bottom(self._final_mix_height))
                 self._m300.air_gap(self._elute_air_gap)
                 self.drop(self._m300)
-    
+
     def body(self):
         self.logger.info(self.get_msg_format("volume", "wash 1", self._wash_headroom * self._wash_1_vol * self._num_samples / 1000))
         self.logger.info(self.get_msg_format("volume", "wash 2", self._wash_headroom * self._wash_2_vol * self._num_samples / 1000))

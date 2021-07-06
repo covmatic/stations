@@ -1,5 +1,5 @@
 from ..station import Station, labware_loader, instrument_loader
-from ..utils import mix_bottom_top, uniform_divide, mix_walk
+from ..utils import mix_bottom_top, uniform_divide, mix_walk, WellWithVolume
 from . import magnets
 from opentrons.types import Point
 from typing import Optional, Tuple
@@ -33,6 +33,7 @@ class StationB(Station):
         drop_threshold: int = 5000,
         elute_air_gap: float = 20,
         elute_aspiration_rate: float = 50,
+        elute_dispense_rate: float = 50,
         elute_incubate: bool = True,
         elute_mix_times: int = 10,
         elute_mix_vol: float = 30,
@@ -54,6 +55,8 @@ class StationB(Station):
         skip_delay: bool = False,
         supernatant_removal_air_gap: float = 5,
         supernatant_removal_aspiration_rate: float = 25,
+        supernatant_removal_aspiration_rate_first_phase = 50,
+        supernatant_removal_dispense_rate: float = 200,
         supernatant_removal_height: float = 0.5,
         supernatant_removal_last_transfer_max_vol: float = 190,
         starting_vol: float = 380,
@@ -79,10 +82,10 @@ class StationB(Station):
         wash_1_vol: float = 500,
         wash_2_times: int = 20,
         wash_2_vol: float = 500,
-        wash_2_mix_aspiration_rate: float = 150,
-        wash_2_mix_dispense_rate: float = 160,
-        wash_1_mix_aspiration_rate: float = 120,
-        wash_1_mix_dispense_rate: float = 120,
+        wash_2_mix_aspiration_rate: float = 230,
+        wash_2_mix_dispense_rate: float = 230,
+        wash_1_mix_aspiration_rate: float = 230,
+        wash_1_mix_dispense_rate: float = 230,
         **kwargs
     ):
         """ Build a :py:class:`.StationB`.
@@ -188,6 +191,7 @@ class StationB(Station):
         self._drop_threshold = drop_threshold
         self._elute_air_gap = elute_air_gap
         self._elute_aspiration_rate = elute_aspiration_rate
+        self._elute_dispense_rate = elute_dispense_rate
         self._elute_incubate = elute_incubate
         self._elute_mix_times = elute_mix_times
         self._elute_mix_vol = elute_mix_vol
@@ -203,6 +207,8 @@ class StationB(Station):
         self._magplate_model = magplate_model
         self._supernatant_removal_air_gap = supernatant_removal_air_gap
         self._supernatant_removal_aspiration_rate = supernatant_removal_aspiration_rate
+        self._supernatant_removal_aspiration_rate_first_phase = supernatant_removal_aspiration_rate_first_phase
+        self._supernatant_removal_dispense_rate = supernatant_removal_dispense_rate
         self._supernatant_removal_height = supernatant_removal_height
         self._supernatant_removal_last_transfer_max_vol = supernatant_removal_last_transfer_max_vol
         self._starting_vol = starting_vol
@@ -326,16 +332,17 @@ class StationB(Station):
             self.dual_pause("check module")
 
     def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
-        self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
+        self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate_first_phase
+        self._m300.flow_rate.dispense = self._supernatant_removal_dispense_rate
 
         num_trans = math.ceil((vol - self._vol_last_trans) / self._bind_max_transfer_vol)
         vol_per_trans = ((vol - self._vol_last_trans) / num_trans) if num_trans else 0
         # h_num_trans = self._h_trans/num_trans
 
         for i, m in enumerate(self.mag_samples_m):
+            well_with_volume = WellWithVolume(m, vol)
             if self.run_stage("{} {}/{}".format(stage, i + 1, len(self.mag_samples_m))):
                 self.pick_up(self._m300)
-                loc = m.bottom(self._supernatant_removal_height)
                 self._ctx.comment("Supernatant removal: {} transfer with {}ul each.".format(num_trans, vol_per_trans))
                 for _ in range(num_trans):
                     # num_trans = num_trans - 1
@@ -344,7 +351,9 @@ class StationB(Station):
                     if self._m300.current_volume > 0:
                         self._m300.dispense(self._m300.current_volume, m.top())                   
                     self._m300.move_to(m.center())
-                    self._m300.transfer(vol_per_trans, loc, self._waste, new_tip='never', air_gap=self._supernatant_removal_air_gap)
+                    height = well_with_volume.extract_vol_and_get_height(vol_per_trans)
+                    self.logger.info("Aspirate at: {}".format(height))
+                    self._m300.transfer(vol_per_trans, m.bottom(height), self._waste, new_tip='never', air_gap=self._supernatant_removal_air_gap)
                     self._m300.air_gap(self._supernatant_removal_air_gap)
 
                 self._ctx.comment("Supernatant removal: last transfer in {} step".format(self._n_bottom))
@@ -352,6 +361,7 @@ class StationB(Station):
                 if self._m300.current_volume > 0:
                     self._m300.dispense(self._m300.current_volume, m.top())
 
+                self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
                 for j in range(self._n_bottom):
                     aspirate_height = self._h_bottom - (j)*(self._h_bottom/(self._n_bottom-1)) # expecting aspirated height
                     self._ctx.comment("Aspirating at {}".format(aspirate_height))
@@ -360,6 +370,7 @@ class StationB(Station):
 
                 back_step = 0.1
                 n_back_step = 3
+
                 for _ in range(n_back_step):
                     aspirate_height = aspirate_height + back_step
                     self._ctx.comment("Moving up at {}".format(aspirate_height))
@@ -370,7 +381,7 @@ class StationB(Station):
                 self._m300.dispense(self._m300.current_volume, self._waste)
                 self._m300.air_gap(self._supernatant_removal_air_gap)
                 self.drop(self._m300)
-        self._m300.flow_rate.aspirate = self._default_aspiration_rate
+        #self._m300.flow_rate.aspirate = self._default_aspiration_rate
         
     def bind(self):
         """Add bead binding buffer and mix samples"""
@@ -422,12 +433,12 @@ class StationB(Station):
     
     def wash(self, vol: float, source, mix_reps: int, wash_name: str = "wash"):
         self.logger.info(self.msg_format("wash info", vol, wash_name, mix_reps))
-        if wash_name == "wash 1":
+        if wash_name == "wash A":
             self._default_aspiration_rate = self._wash_1_mix_aspiration_rate
             dispense_rate = self._wash_1_mix_dispense_rate
             self._m300.flow_rate.dispense = self._wash_1_mix_dispense_rate
             self._m300.flow_rate.aspirate = self._wash_1_mix_aspiration_rate
-        else:
+        if wash_name == "wash B":
             self._default_aspiration_rate = self._wash_2_mix_aspiration_rate
             dispense_rate = self._wash_2_mix_dispense_rate
             self._m300.flow_rate.dispense = self._wash_2_mix_dispense_rate
@@ -454,8 +465,8 @@ class StationB(Station):
                 else:
                     loc = m.bottom(self._bottom_headroom_height).move(Point(x=2*(-1 if i % 2 else +1)))
                     self._m300.mix(mix_reps, self._wash_mix_vol, loc)
-                self._m300.flow_rate.aspirate = self._default_aspiration_rate
-                self._m300.flow_rate.dispense = dispense_rate
+                #self._m300.flow_rate.aspirate = self._default_aspiration_rate
+                #self._m300.flow_rate.dispense = dispense_rate
                 
                 self._m300.air_gap(self._wash_air_gap)
                 self.drop(self._m300)
@@ -471,6 +482,7 @@ class StationB(Station):
         if positions is None:
             positions = self.mag_samples_m
         self._m300.flow_rate.aspirate = self._elute_aspiration_rate
+        self._m300.flow_rate.dispense = self._elute_dispense_rate
         for i, m in enumerate(positions):
             if self.run_stage("{} {}/{}".format(stage, i + 1, len(positions))):
                 self.pick_up(self._m300)
