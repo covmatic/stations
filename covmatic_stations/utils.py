@@ -163,7 +163,6 @@ class WellWithVolume:
             remaining_height = self._volume / self._well.length**2
         remaining_height -= self._headroom_height
         final_height = max(remaining_height, self._min_height)
-        print("final height: {}".format(final_height))
         return final_height
 
 
