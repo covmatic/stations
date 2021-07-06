@@ -332,28 +332,25 @@ class StationB(Station):
             self.dual_pause("check module")
 
     def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
-        self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate_first_phase
-        self._m300.flow_rate.dispense = self._supernatant_removal_dispense_rate
-
         num_trans = math.ceil((vol - self._vol_last_trans) / self._bind_max_transfer_vol)
         vol_per_trans = ((vol - self._vol_last_trans) / num_trans) if num_trans else 0
-        # h_num_trans = self._h_trans/num_trans
 
         for i, m in enumerate(self.mag_samples_m):
+            self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate_first_phase
+            self._m300.flow_rate.dispense = self._supernatant_removal_dispense_rate
             well_with_volume = WellWithVolume(m, vol)
             if self.run_stage("{} {}/{}".format(stage, i + 1, len(self.mag_samples_m))):
                 self.pick_up(self._m300)
                 self._ctx.comment("Supernatant removal: {} transfer with {}ul each.".format(num_trans, vol_per_trans))
                 for _ in range(num_trans):
-                    # num_trans = num_trans - 1
-                    # aspirate_height = self.h_bottom + (num_trans * h_num_trans) # expecting aspirated height
-                    # ctx.comment('Aspirating at {}'.format(aspirate_height))
                     if self._m300.current_volume > 0:
                         self._m300.dispense(self._m300.current_volume, m.top())                   
                     self._m300.move_to(m.center())
                     height = well_with_volume.extract_vol_and_get_height(vol_per_trans)
-                    self.logger.info("Aspirate at: {}".format(height))
-                    self._m300.transfer(vol_per_trans, m.bottom(height), self._waste, new_tip='never', air_gap=self._supernatant_removal_air_gap)
+                    side = -1 if i % 2 == 0 else 1
+                    loc = m.bottom(height).move(Point(x=side * 2))
+                    self.logger.info("Aspirate at: {:.2f}".format(height))
+                    self._m300.transfer(vol_per_trans, loc, self._waste, new_tip='never', air_gap=self._supernatant_removal_air_gap)
                     self._m300.air_gap(self._supernatant_removal_air_gap)
 
                 self._ctx.comment("Supernatant removal: last transfer in {} step".format(self._n_bottom))
@@ -364,8 +361,9 @@ class StationB(Station):
                 self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
                 for j in range(self._n_bottom):
                     aspirate_height = self._h_bottom - (j)*(self._h_bottom/(self._n_bottom-1)) # expecting aspirated height
-                    self._ctx.comment("Aspirating at {}".format(aspirate_height))
-                    loc = m.bottom(aspirate_height)
+                    self.logger.info("Aspirating at {:.2f}".format(aspirate_height))
+                    side = -1 if i % 2 == 0 else 1
+                    loc = m.bottom(aspirate_height).move(Point(x=side * 2))
                     self._m300.aspirate(self._supernatant_removal_last_transfer_max_vol/self._n_bottom, loc)
 
                 back_step = 0.1
@@ -373,15 +371,14 @@ class StationB(Station):
 
                 for _ in range(n_back_step):
                     aspirate_height = aspirate_height + back_step
-                    self._ctx.comment("Moving up at {}".format(aspirate_height))
-                    loc = m.bottom(aspirate_height)
+                    self.logger.info("Moving up at {:.2f}".format(aspirate_height))
+                    loc = m.bottom(aspirate_height).move(Point(x=side * 2))
                     self._m300.move_to(loc)
 
                 self._m300.air_gap(self._supernatant_removal_air_gap)
                 self._m300.dispense(self._m300.current_volume, self._waste)
                 self._m300.air_gap(self._supernatant_removal_air_gap)
                 self.drop(self._m300)
-        #self._m300.flow_rate.aspirate = self._default_aspiration_rate
         
     def bind(self):
         """Add bead binding buffer and mix samples"""
