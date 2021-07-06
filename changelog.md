@@ -1,6 +1,9 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.5.1
+- Remove supernatant is on the side of the well.
+
 ## v2.5.0
 ### Added
 - [*station B*] Higher aspirate and dispense speed;
