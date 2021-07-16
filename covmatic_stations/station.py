@@ -89,6 +89,7 @@ class Station(metaclass=StationMeta):
         language: str = "ENG",
         metadata: Optional[dict] = None,
         num_samples: int = 96,
+        protocol_exception_filepath: Optional[str] = '/var/lib/jupyter/notebooks/outputs/error_{}.log',
         rest_server_kwargs: dict = DEFAULT_REST_KWARGS,
         samples_per_col: int = 8,
         skip_delay: bool = False,
@@ -119,6 +120,7 @@ class Station(metaclass=StationMeta):
         self._logger = logger
         self.metadata = metadata
         self._num_samples = num_samples
+        self._protocol_exception_filepath = protocol_exception_filepath.format(time.strftime("%Y_%m_%d__%H_%M_%S"))
         self._rest_server_kwargs = rest_server_kwargs
         self._samples_per_col = samples_per_col
         self._start_at = start_at
@@ -192,7 +194,11 @@ class Station(metaclass=StationMeta):
             self._lws_logger = LocalWebServerLogger(self._log_lws_ip, self._log_lws_endpoint)
             if self._simulation_log_lws or not self._ctx.is_simulating():
                 self._ctx.broker.subscribe(opentrons.commands.types.COMMAND, self._lws_logger)
-    
+
+    def log_protocol_exception(self, e: Exception):
+        with open(self._protocol_exception_filepath, 'w') as f:
+            f.write(json.dumps({"error": "{}".format(e)}))
+
     @property
     def logger_name(self) -> str:
         return self.__class__.__name__
@@ -416,18 +422,24 @@ class Station(metaclass=StationMeta):
         self.logger.info(self.msg_format("protocol description"))
         self.logger.info(self.msg_format("num samples", self._num_samples))
         self.logger.info(self.msg_format("version", __version__))
-        
-        self.load_labware()
-        self.load_instruments()
-        self.setup_tip_log()
-        self._button.color = 'white'
-        self.msg = ""
 
-        if self._debug_mode:
-            self.dual_pause("debug mode", home=(False, False))
-        
         try:
+            self.load_labware()
+            self.load_instruments()
+            self.setup_tip_log()
+            self._button.color = 'white'
+            self.msg = ""
+
+            if self._debug_mode:
+                self.dual_pause("debug mode", home=(False, False))
+
             self.body()
+
+        except Exception as e:
+            self.logger.error("Exception occurred during protocol: {}".format(e))
+            if not self._ctx.is_simulating():
+                self.log_protocol_exception(e)
+            raise e     # Propagate the exception
         finally:
             self.status = "finished"
             if not self._ctx.is_simulating():

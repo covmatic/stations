@@ -87,6 +87,7 @@ class StationRESTServer:
             # "temp": temp,
             "tips": tip_log_for_log,
             "runlog": self._station._log_filepath,
+            "exceptionlog": self._station._protocol_exception_filepath,
         }, indent=2)
     
     @cherrypy.expose
