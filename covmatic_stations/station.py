@@ -173,6 +173,11 @@ class Station(metaclass=StationMeta):
             self._run_stage = True
         self.logger.info("[{}] Stage: {}".format("x" if self._run_stage else " ", self.stage))
         return self._run_stage
+
+    def assert_run_stage_has_been_executed(self):
+        ''' If a _start_at_ value was requested, check it at least a corresponding stage was found in protocol.'''
+        if not self._run_stage:
+            raise Exception("Stage '{}' not found.".format(self._start_at))
     
     @property
     def logger(self) -> logging.getLoggerClass():
@@ -441,6 +446,8 @@ class Station(metaclass=StationMeta):
                 self.dual_pause("debug mode", home=(False, False))
 
             self.body()
+
+            self.assert_run_stage_has_been_executed()
 
         except Exception as e:
             self.logger.error("Exception occurred during protocol: {}".format(e))
