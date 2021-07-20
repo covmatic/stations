@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.6.1
+### Fixed
+- [station] if a wrong start_at value is given throw an error to not complete correctly the protocol.
+
 ## v2.6.0
 ### Added
 - Error on protocol execution are saved to file for LWS; requires covmatic-localwebserver >= 2.6.1
