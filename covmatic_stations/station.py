@@ -1,3 +1,5 @@
+from json import JSONDecodeError
+
 from . import __version__, __file__ as module_path
 from .request import StationRESTServerThread, DEFAULT_REST_KWARGS
 from .utils import ProtocolContextLoggingHandler, LocalWebServerLogger
@@ -262,10 +264,15 @@ class Station(metaclass=StationMeta):
         data_tip_status = {}
         if self._tip_track:
             self.logger.info(self.msg_format("tip info log", self._tip_log_filepath))
-            if os.path.isfile(self._tip_log_filepath):
-                with open(self._tip_log_filepath) as json_file:
-                    file = json.load(json_file)
-                    data_tip_status: dict = file.get("tip_status", {})
+            # Checking  with os.stat if the file is empty, so we don't have a JSONDecodeError
+            if os.path.isfile(self._tip_log_filepath) and os.stat(self._tip_log_filepath).st_size > 0:
+                try:
+                    with open(self._tip_log_filepath) as json_file:
+                        file = json.load(json_file)
+                        data_tip_status: dict = file.get("tip_status", {})
+                except JSONDecodeError as e:
+                    self.logger.error("Error during tip log read: {}".format(e))
+                    raise Exception("Tip log malformed. Please reset it.")
         else:
             self.logger.debug("not using tip log file")
         
