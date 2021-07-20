@@ -1,6 +1,17 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.6.0
+### Added
+- Error on protocol execution are saved to file for LWS; requires covmatic-localwebserver >= 2.6.1
+
+## Fixed
+- [Tip Log] if Tip Log file is emtpy no error is thrown.
+- [Tip Log] if Tip Log is malformed a simple "Reset tiplog" error message is thrown.
+
+## v2.5.2
+- [restored] Station C does not change m20 tips for mastermix each column.
+
 ## v2.5.1
 - Remove supernatant is on the side of the well.
 
