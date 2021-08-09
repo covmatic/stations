@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.6.2
+### Fixed
+- [paired pipette] Flow rates are set correctly using the PairedPipette context as needed.
+
 ## v2.6.1
 ### Fixed
 - [station] if a wrong start_at value is given throw an error to not complete correctly the protocol.
