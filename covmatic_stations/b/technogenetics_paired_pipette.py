@@ -50,10 +50,8 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         super(StationBTechnogeneticsPairedPipette, self).body()
 
     def mix_samples(self):
-        self._m300.flow_rate.aspirate = 94
-        self._m300r.flow_rate.aspirate = 94
-
         with PairedPipette(self._magplate, self.mag_samples_m, start_at="mix sample") as tp:
+            tp.set_flow_rate(aspirate=self._mix_samples_rate_aspirate, dispense=self._mix_samples_rate_dispense)
             tp.pick_up()
             tp.mix(self._sample_mix_times, self._sample_mix_vol,
                    locationFrom="target",
@@ -63,15 +61,14 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
 
     def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
-        self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
-        self._m300r.flow_rate.aspirate = self._supernatant_removal_aspiration_rate
-
         num_trans = math.ceil((vol - self._vol_last_trans) / self._bind_max_transfer_vol)
         vol_per_trans = ((vol - self._vol_last_trans) / num_trans) if num_trans else 0
 
         waste_locs = list(repeat(self._waste, len(self.mag_samples_m)))
 
         with PairedPipette(self._magplate, self.mag_samples_m, waste_locs=waste_locs, start_at=stage) as tp:
+            tp.set_flow_rate(aspirate=self._supernatant_removal_aspiration_rate_first_phase,
+                             dispense=self._supernatant_removal_dispense_rate)
             tp.pick_up()
             for i in range(num_trans):
                 # tp.move_to()  # we want center() but for now it is not in available commands
@@ -84,6 +81,8 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
             tp.comment("Supernatant removal: last transfer in {} step".format(self._n_bottom))
             tp.dispense(self._supernatant_removal_air_gap, locationFrom="target", well_modifier="top(0)")
+
+            tp.set_flow_rate(aspirate=self._supernatant_removal_aspiration_rate)
             for i in range(self._n_bottom):
                 aspirate_height = self._h_bottom - i * (self._h_bottom / (self._n_bottom - 1))
                 tp.comment("Aspirating at {}".format(aspirate_height))
@@ -93,6 +92,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
             back_step = 0.1
             n_back_step = 3
+
             for _ in range(n_back_step):
                 aspirate_height = aspirate_height + back_step
                 tp.comment("Moving up at {}".format(aspirate_height))
@@ -103,9 +103,6 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
                         locationFrom="waste_locs")
             tp.air_gap(self._supernatant_removal_air_gap)
             tp.drop_tip()
-
-        self._m300.flow_rate.aspirate = self._default_aspiration_rate
-        self._m300r.flow_rate.aspirate = self._default_aspiration_rate
 
     def elute(self, positions=None, transfer: bool = False, stage: str = "elute"):
         if positions is None:
@@ -118,14 +115,13 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         """Resuspend beads in elution"""
         # if positions is None:
         #     positions = self.mag_samples_m
-        self._m300.flow_rate.aspirate = self._elute_aspiration_rate
-
         side_locs = []
         for i, m in enumerate(positions):
             side = 1 if i % 2 == 0 else -1
             side_locs.append(m.bottom(self._bottom_headroom_height).move(Point(x=side * 2)))
 
         with PairedPipette(self._tempplate, positions, side_locs=side_locs, start_at=stage) as tp:
+            tp.set_flow_rate(aspirate=self._elute_aspiration_rate, dispense=self._elute_dispense_rate)
             tp.pick_up()
             tp.aspirate(self._elution_vol, self.water)
             tp.air_gap(self._elute_air_gap)
@@ -137,19 +133,13 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             tp.drop_tip()
 
     def final_transfer(self):
-        self._m300.flow_rate.aspirate = self._final_transfer_rate_aspirate
-        self._m300r.flow_rate.aspirate = self._final_transfer_rate_aspirate
-        self._m300.flow_rate.dispense = self._final_transfer_rate_dispense
-        self._m300r.flow_rate.dispense = self._final_transfer_rate_dispense
-
-        n = len(list(zip(self.mag_samples_m, self.pcr_samples_m)))
-
         locs = []
         for i, (m, e) in enumerate(zip(self.mag_samples_m, self.pcr_samples_m)):
             side = -1 if i % 2 == 0 else 1
             locs.append(m.bottom(0.3).move(Point(x=side * 2)))
 
         with PairedPipette(self._magplate, locs, start_at="final transfer", pcr_locs=self.pcr_samples_m) as tp:
+            tp.set_flow_rate(aspirate=self._final_transfer_rate_aspirate, dispense=self._final_transfer_rate_dispense)
             tp.pick_up()
             tp.aspirate(self._final_vol, locationFrom="target")
             tp.air_gap(self._elute_air_gap)
@@ -162,15 +152,12 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
     def wash(self, vol: float, source, mix_reps: int, wash_name: str = "wash"):
         self.logger.info(self.msg_format("wash info", vol, wash_name, mix_reps))
-
-        if wash_name == "wash 1":
-            dispense_rate = self._wash_1_mix_dispense_rate
+        if wash_name == "wash A":
             self._m300.flow_rate.dispense = self._wash_1_mix_dispense_rate
             self._m300r.flow_rate.dispense = self._wash_1_mix_dispense_rate
             self._m300.flow_rate.aspirate = self._wash_1_mix_aspiration_rate
             self._m300r.flow_rate.aspirate = self._wash_1_mix_aspiration_rate
-        else:
-            dispense_rate = self._wash_2_mix_dispense_rate
+        elif wash_name == "wash B":
             self._m300.flow_rate.dispense = self._wash_2_mix_dispense_rate
             self._m300r.flow_rate.dispense = self._wash_2_mix_dispense_rate
             self._m300.flow_rate.aspirate = self._wash_2_mix_aspiration_rate

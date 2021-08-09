@@ -9,7 +9,8 @@ from opentrons.types import Mount, Point, Location
 
 
 class PairedPipette:
-    available_commands = ["pick_up", "drop_tip", "mix", "air_gap", "aspirate", "dispense", "move_to", "touch_tip", "comment"]
+    available_commands = ["pick_up", "drop_tip", "mix", "air_gap", "aspirate", "dispense", "move_to", "touch_tip",
+                          "comment", "set_flow_rate"]
     pips = []
     pippairedctx = None
     labware_height_overhead = 10.0      # mm height over the top of the tallest labware
@@ -102,6 +103,14 @@ class PairedPipette:
             self._logger.debug("Location to move to: {}".format(new_point))
             pipctx.move_to(Location(new_point, None))
 
+    @classmethod
+    def _set_flow_rate(cls, aspirate: str, dispense: str):
+        for p in cls.pips:
+            if aspirate:
+                p.flow_rate.aspirate = aspirate
+            if dispense:
+                p.flow_rate.dispense = dispense
+
     @staticmethod
     def substitute_kwarg_location(new_location, keyword, kwargs):
         if keyword in kwargs:
@@ -188,6 +197,8 @@ class PairedPipette:
                     self._drop_tip(pipctx)
                 elif c['command'] == "comment":
                     self._stationctx._ctx.comment(*c['args'], **c['kwargs'])
+                elif c['command'] == "set_flow_rate":
+                    self._set_flow_rate(*c['args'], **c['kwargs'])
                 else:
                     substituted_kwargs = dict(c['kwargs'])  # copy kwargs and substitute time by time
                     # substituting kwargs to represent actual data
@@ -272,3 +283,7 @@ class PairedPipette:
 
     def comment(self, *args, **kwargs):
         self.setcommand('comment', *args, **kwargs)
+
+    def set_flow_rate(self, aspirate: str = None,
+                            dispense: str = None):
+        self.setcommand('set_flow_rate', aspirate=aspirate, dispense=dispense)
