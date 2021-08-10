@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.6.4
+### Fixed
+- [paired pipette] reduced remove supernatant side movement to accomplish for mechanical space between pipettes
+
 ## v2.6.3
 ### Fixed
 - [paired pipette] Supernatant removal is on the side of the well same as Technogenetics B protocol.

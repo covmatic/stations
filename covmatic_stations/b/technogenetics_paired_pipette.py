@@ -69,7 +69,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         sides = []
         for i, m in enumerate(self.mag_samples_m):
             side = -1 if i % 2 == 0 else 1
-            sides.append(Point(x=side * 2))
+            sides.append(Point(x=side * 1.5))
 
         with PairedPipette(self._magplate, self.mag_samples_m, waste_locs=waste_locs, start_at=stage) as tp:
             well_with_volume = WellWithVolume(self.mag_samples_m[0], vol)       # we assume every well is the same
