@@ -143,6 +143,23 @@ class PairedPipette:
                 kwargs.pop('well_modifier')
                 old_location = kwargs.pop('location')
                 kwargs['location'] = getattr(old_location, call)(arguments)
+
+    def substitute_kwargs_move_points(self, kwargs, index):
+        """ input: kwargs - arguments that in 'well_move_points' contains an array of point;
+                   each point is applied to the target with a *move* instruction.
+            input: index -  actual index of target location
+        """
+        if 'well_move_points' in kwargs:
+            if len(kwargs['well_move_points']) <= index:
+                raise Exception("Move point array must be as long as or longer than target array.")
+            if 'location' in kwargs:
+                self._logger.debug("Substitute kwargs {}".format(kwargs['location']))
+                points_array = kwargs.pop('well_move_points')
+                print("got points array: {}".format(points_array))
+                old_location = kwargs.pop('location')
+                kwargs['location'] = old_location.move(points_array[index])
+                print("new location: {}".format(kwargs['location']))
+
     @classmethod
     def _get_other_pipette(cls, pip):
         for p in cls.pips:
@@ -167,7 +184,7 @@ class PairedPipette:
         for i, (d, d_well) in enumerate(zip(self._locations['target'], self._locations_as_well)):
             self._logger.debug("Well is: {}".format(d_well))
             if self._start_at and self._start_at_function(self._start_at.format(i+1, len(self._locations['target']))):
-                self._execute_command_list_on(d, d_well)
+                self._execute_command_list_on(d_well)
 
     @staticmethod
     def _getValueFromKwargsAndClean(kwargs, key: str, default_value):
@@ -177,7 +194,7 @@ class PairedPipette:
             ret_value = default_value
         return ret_value
 
-    def _execute_command_list_on(self, location, well):
+    def _execute_command_list_on(self, well):
         if well not in self.donedests:
             pipctx, secondary_well = self.getctx(well)
             primary_well_index = self._locations_as_well.index(well)
@@ -209,6 +226,7 @@ class PairedPipette:
                                        .format(is_target_paired, is_forced_single, is_command_ok_with_paired))
                     self.substitute_kwargs_locations(primary_well_index, substituted_kwargs)
                     self.substitute_kwargs_well_modifier(substituted_kwargs)
+                    self.substitute_kwargs_move_points(substituted_kwargs, primary_well_index)
 
                     to_do_with_single =  (is_target_paired==False and is_command_ok_with_paired==False) or is_forced_single
                     self._logger.debug("To do with single is: {}".format(to_do_with_single))
@@ -220,6 +238,7 @@ class PairedPipette:
                         self._getValueFromKwargsAndClean(substituted_kwargs_pip2, 'isOkWithPaired', False)
                         self.substitute_kwargs_locations(secondary_well_index, substituted_kwargs_pip2)
                         self.substitute_kwargs_well_modifier(substituted_kwargs_pip2)
+                        self.substitute_kwargs_move_points(substituted_kwargs_pip2, secondary_well_index)
 
                         for (p, kwargs) in zip(self.__class__.pips, [substituted_kwargs, substituted_kwargs_pip2]):
                             self._logger.debug("Pipette {} command: {} args: {} {}".format(p, c['command'], c['args'], kwargs))
