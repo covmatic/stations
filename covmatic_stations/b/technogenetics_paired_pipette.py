@@ -216,7 +216,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         self.remove_supernatant(vol, stage="remove {}".format(wash_name))
 
 if __name__ == "__main__":
-    station = StationBTechnogeneticsPairedPipette(metadata={'apiLevel': '2.3'},
+    station = StationBTechnogeneticsPairedPipette(metadata={'apiLevel': '2.7'},
                                                   num_samples=96)
     # logging.getLogger(StationBTechnogeneticsPairedPipette.__name__).setLevel(logging.DEBUG)
     station.simulate()

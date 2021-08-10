@@ -251,7 +251,7 @@ class StationB(Station):
         self._magdeck = self._ctx.load_module('Magnetic Module Gen2', self._magdeck_slot)
         self._magdeck.disengage()
         if (self._magheight_load):
-            mag_deck_serial = self._magdeck._module._driver.get_device_info()['serial']
+            mag_deck_serial = self._magdeck._module.device_info['serial']
             self._magheight = magnets.height.by_serial.get(mag_deck_serial, self._magheight)
             self.logger.info("Found MagDeck with serial {}. Engage height is {}mm".format(mag_deck_serial, self._magheight))
     
