@@ -155,10 +155,8 @@ class PairedPipette:
             if 'location' in kwargs:
                 self._logger.debug("Substitute kwargs {}".format(kwargs['location']))
                 points_array = kwargs.pop('well_move_points')
-                print("got points array: {}".format(points_array))
                 old_location = kwargs.pop('location')
                 kwargs['location'] = old_location.move(points_array[index])
-                print("new location: {}".format(kwargs['location']))
 
     @classmethod
     def _get_other_pipette(cls, pip):

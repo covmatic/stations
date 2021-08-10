@@ -72,7 +72,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             sides.append(Point(x=side * 2))
 
         with PairedPipette(self._magplate, self.mag_samples_m, waste_locs=waste_locs, start_at=stage) as tp:
-            well_with_volume = WellWithVolume(self.mag_samples_m[0], vol)
+            well_with_volume = WellWithVolume(self.mag_samples_m[0], vol)       # we assume every well is the same
             tp.set_flow_rate(aspirate=self._supernatant_removal_aspiration_rate_first_phase,
                              dispense=self._supernatant_removal_dispense_rate)
             tp.pick_up()
