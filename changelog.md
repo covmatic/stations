@@ -1,6 +1,11 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.6.3
+### Fixed
+- [paired pipette] Supernatant removal is on the side of the well same as Technogenetics B protocol.
+- [opentrons v4.5.0] MagDeck serial is retrieved with *device_info* property instead of accessing internal driver.
+
 ## v2.6.2
 ### Fixed
 - [paired pipette] Flow rates are set correctly using the PairedPipette context as needed.
