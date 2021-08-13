@@ -11,6 +11,7 @@ class StationATechnogenetics(StationAP1000):
         beads_mix_volume: float = 20,
         beads_vol: float = 10,
         drop_threshold: int = 95,
+        ic_headroom_bottom = 1,
         lysis_first: bool = False,
         lys_mix_repeats: int = 2,
         lys_mix_volume: float = 100,
@@ -54,6 +55,7 @@ class StationATechnogenetics(StationAP1000):
             sample_dispense=sample_dispense,
             iec_volume=prot_k_vol,
             ic_capacity=prot_k_capacity,
+            ic_headroom_bottom=ic_headroom_bottom,
             ic_lys_headroom=prot_k_headroom,
             tempdeck_temp=tempdeck_temp,
             tipracks_slots=tipracks_slots,
@@ -102,10 +104,12 @@ class StationATechnogenetics(StationAP1000):
     def transfer_proteinase(self):
         for i, d in enumerate(self._dests_multi):
             if self.run_stage("transfer proteinase {}/{}".format(i + 1, len(self._dests_multi))):
-                self.pick_up(self._m20)
+                if not self._m20.has_tip:
+                    self.pick_up(self._m20)
                 self._m20.transfer(self._prot_k_volume, self._prot_k[i // self.cols_per_strip], d.bottom(self._ic_headroom_bottom), new_tip='never', touch_tip=True)
                 #self._m20.touch_tip(v_offset=self._touch_tip_height)
-                self._m20.drop_tip()
+        if self._m20.has_tip:
+            self._m20.drop_tip()
     
     def transfer_beads(self):
         for i, d in enumerate(self._dests_multi):
@@ -180,7 +184,7 @@ class StationATechnogenetics48(StationATechnogeneticsReload):
 
 
 if __name__ == "__main__":
-    StationATechnogenetics24(num_samples=96, metadata={'apiLevel': '2.3'}).simulate()
+    StationATechnogenetics24(num_samples=96, metadata={'apiLevel': '2.7'}).simulate()
 
 
 # Copyright (c) 2020 Covmatic.
