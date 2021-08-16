@@ -1,6 +1,11 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.6.5
+### Fixed
+- [station A Technogenetics] lowered proteinase K dispense position to avoid drops;
+- [station A Technogenetics] proteinase K distribution is done without changing tips.
+
 ## v2.6.4
 ### Fixed
 - [paired pipette] reduced remove supernatant side movement to accomplish for mechanical space between pipettes
