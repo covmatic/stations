@@ -1,6 +1,8 @@
 from json import JSONDecodeError
 
 from . import __version__, __file__ as module_path
+
+from .movement_manager import MovementManager
 from .request import StationRESTServerThread, DEFAULT_REST_KWARGS
 from .utils import ProtocolContextLoggingHandler, LocalWebServerLogger
 from .lights import Button, BlinkingLightHTTP, BlinkingLight
@@ -121,6 +123,7 @@ class Station(metaclass=StationMeta):
         self._log_lws_endpoint = log_lws_endpoint
         self._logger = logger
         self.metadata = metadata
+        self._mov_manager = None
         self._num_samples = num_samples
         self._protocol_exception_filepath = protocol_exception_filepath.format(time.strftime("%Y_%m_%d__%H_%M_%S"))
         self._rest_server_kwargs = rest_server_kwargs
@@ -361,7 +364,8 @@ class Station(metaclass=StationMeta):
         blink_period: float = 1,
         color: str = 'red',
         delay_time: float = 0,
-        home: bool = True,
+        home: bool = False,
+        move_to_home: bool = True,
         level: int = logging.INFO,
         pause: bool = True,
     ):
@@ -371,8 +375,10 @@ class Station(metaclass=StationMeta):
         if msg:
             self.msg = msg
             self.logger.log(level, self.msg)
+        if move_to_home:
+            self._mov_manager.move_to_home()
         if home:
-            self._ctx.home()
+            self._mov_manager.home()
         if blink and not self._ctx.is_simulating():
             lt = (BlinkingLightHTTP if self._dummy_lights else BlinkingLight)(self._ctx, t=blink_period/2)
             lt.start()
@@ -387,7 +393,9 @@ class Station(metaclass=StationMeta):
         self._button.color = old_color
         self.status = "running"
         self.msg = ""
-    
+
+
+
     def dual_pause(self, msg: str, cols: Tuple[str, str] = ('red', 'yellow'), between: Optional[Callable] = None, home: Tuple[bool, bool] = (True, False)):
         msg = self.get_msg(msg)
         self._msg = "{}.\n{}".format(msg, self.get_msg("stop blink"))
@@ -420,6 +428,7 @@ class Station(metaclass=StationMeta):
     def run(self, ctx: ProtocolContext):
         self.status = "running"
         self._ctx = ctx
+        self._mov_manager = MovementManager(self._ctx)
         self._button = (Button.dummy if self._dummy_lights else Button)(self._ctx, 'blue')
         if self._simulation_log_lws or not self._ctx.is_simulating():
             self._request = StationRESTServerThread(ctx, station=self, **self._rest_server_kwargs)
