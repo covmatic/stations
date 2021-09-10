@@ -10,7 +10,7 @@ from opentrons.types import Mount, Point, Location
 
 class PairedPipette:
     available_commands = ["pick_up", "drop_tip", "mix", "air_gap", "aspirate", "dispense", "move_to", "touch_tip",
-                          "comment", "set_flow_rate"]
+                          "comment", "set_flow_rate", "blow_out"]
     pips = []
     pippairedctx = None
     labware_height_overhead = 10.0      # mm height over the top of the tallest labware
@@ -304,3 +304,7 @@ class PairedPipette:
     def set_flow_rate(self, aspirate: str = None,
                             dispense: str = None):
         self.setcommand('set_flow_rate', aspirate=aspirate, dispense=dispense)
+
+    def blow_out(self, *args, **kwargs):
+        self.setcommand('blow_out', *args, **kwargs)
+

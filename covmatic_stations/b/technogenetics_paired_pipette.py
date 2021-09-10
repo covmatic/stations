@@ -10,8 +10,14 @@ import os
 
 class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
-    def __init__(self, **kwargs):
-        super(StationBTechnogeneticsPairedPipette, self).__init__(**kwargs)
+    def __init__(self,
+                 drop_height=-10,
+                 final_mix_blow_out_height=-2,
+                 **kwargs):
+        self._final_mix_blow_out_height = final_mix_blow_out_height
+        super(StationBTechnogeneticsPairedPipette, self).__init__(
+            drop_height = drop_height,
+            **kwargs)
 
     @labware_loader(8, "_res12")
     def load_res12(self):
@@ -158,9 +164,13 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             tp.aspirate(self._final_vol, locationFrom="target")
             tp.air_gap(self._elute_air_gap)
             tp.dispense(self._elute_air_gap, locationFrom="pcr_locs", well_modifier="top(0)")
-            tp.dispense(self._final_vol, locationFrom="pcr_locs", well_modifier="bottom(0.5)")
+            tp.dispense(self._final_vol,
+                        locationFrom="pcr_locs",
+                        well_modifier="bottom({})".format(self._final_mix_height))
             tp.mix(self._final_mix_times, self._final_mix_vol, locationFrom="pcr_locs",
                    well_modifier="bottom({})".format(self._final_mix_height))
+            tp.blow_out(locationFrom="pcr_locs",
+                        well_modifier="top({})".format(self._final_mix_blow_out_height))
             tp.air_gap(self._elute_air_gap)
             tp.drop_tip()
 
