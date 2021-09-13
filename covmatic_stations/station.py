@@ -364,21 +364,20 @@ class Station(metaclass=StationMeta):
         blink_period: float = 1,
         color: str = 'red',
         delay_time: float = 0,
-        home: bool = False,
-        move_to_home: bool = True,
+        home: bool = True,
         level: int = logging.INFO,
         pause: bool = True,
     ):
+        # Note: changed default homing method to 'move_to_home' Agos, 2021-09-13
+
         self.status = "pause"
         old_color = self._button.color
         self._button.color = color
         if msg:
             self.msg = msg
             self.logger.log(level, self.msg)
-        if move_to_home:
-            self._mov_manager.move_to_home()
         if home:
-            self._mov_manager.home()
+            self._mov_manager.move_to_home()
         if blink and not self._ctx.is_simulating():
             lt = (BlinkingLightHTTP if self._dummy_lights else BlinkingLight)(self._ctx, t=blink_period/2)
             lt.start()
