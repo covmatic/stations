@@ -1,6 +1,14 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.7.0
+### Fixed
+- [station B paired pipette] lowered drop tip position to avoid tip flying around
+
+### Added
+- [station] Pause now go to home position without homing motors.
+
+
 ## v2.6.5
 ### Fixed
 - [station A Technogenetics] lowered proteinase K dispense position to avoid drops;
