@@ -1,3 +1,5 @@
+# See setup.py for package dipendencies
+#
 # Install before
 opentrons
 wheel

@@ -44,7 +44,8 @@ setuptools.setup(
         'cherrypy',
         'requests',
         'ipaddress',
-        'typing-extensions'
+        'typing-extensions',
+        'parse'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
