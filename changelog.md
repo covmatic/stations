@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.7.1
+### Fixed
+- [paired pipette] Fixed bug in start-at logic when used not at the beginning of the plate.
+
 ## v2.7.0
 ### Fixed
 - [station B paired pipette] lowered drop tip position to avoid tip flying around
