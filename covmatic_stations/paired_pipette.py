@@ -181,8 +181,21 @@ class PairedPipette:
     def _run(self):
         for i, (d, d_well) in enumerate(zip(self._locations['target'], self._locations_as_well)):
             self._logger.debug("Well is: {}".format(d_well))
-            if self._start_at and self._start_at_function(self._start_at.format(i+1, len(self._locations['target']))):
-                self._execute_command_list_on(d_well)
+            if d_well not in self.donedests:
+                pipctx, secondary_well = self.getctx(d_well)
+                if self._start_at and self._start_at_function(self._start_at.format(i+1, len(self._locations['target']))):
+                    self._execute_command_list_on(d_well, secondary_well, pipctx)
+                else:
+                    self._logger.debug("dest {} skipped, not reached start_at".format(d_well))
+                self.donedests.append(d_well)
+                if secondary_well is not None:
+                    self.donedests.append(secondary_well)
+                self._logger.debug("donedests contains: {}".format(self.donedests))
+            else:
+                self._logger.debug("dest {} skipped, already done.".format(d_well))
+
+
+
 
     @staticmethod
     def _getValueFromKwargsAndClean(kwargs, key: str, default_value):
@@ -192,74 +205,68 @@ class PairedPipette:
             ret_value = default_value
         return ret_value
 
-    def _execute_command_list_on(self, well):
-        if well not in self.donedests:
-            pipctx, secondary_well = self.getctx(well)
-            primary_well_index = self._locations_as_well.index(well)
-            secondary_well_index = self._locations_as_well.index(secondary_well) if secondary_well else None
-            self._logger.debug("Using pipette context: {}".format(pipctx))
-            skip_next_command = False       # skip_next_command is for merging aspirate and air-gap on each pipette
-            for j, c in enumerate(self.commands):
-                self._logger.debug("Evaluating command: {}".format(c))
-                if skip_next_command:
-                    self._logger.debug("Asked to skip command.")
-                    skip_next_command = False
-                    continue
+    def _execute_command_list_on(self, well, secondary_well, pipctx):
+        primary_well_index = self._locations_as_well.index(well)
+        secondary_well_index = self._locations_as_well.index(secondary_well) if secondary_well else None
+        self._logger.debug("Using pipette context: {}".format(pipctx))
+        skip_next_command = False       # skip_next_command is for merging aspirate and air-gap on each pipette
+        for j, c in enumerate(self.commands):
+            self._logger.debug("Evaluating command: {}".format(c))
+            if skip_next_command:
+                self._logger.debug("Asked to skip command.")
+                skip_next_command = False
+                continue
 
-                if c['command'] == "pick_up":
-                    self._pick_up_tip(pipctx)
-                elif c['command'] == "drop_tip":
-                    self._drop_tip(pipctx)
-                elif c['command'] == "comment":
-                    self._stationctx._ctx.comment(*c['args'], **c['kwargs'])
-                elif c['command'] == "set_flow_rate":
-                    self._set_flow_rate(*c['args'], **c['kwargs'])
+            if c['command'] == "pick_up":
+                self._pick_up_tip(pipctx)
+            elif c['command'] == "drop_tip":
+                self._drop_tip(pipctx)
+            elif c['command'] == "comment":
+                self._stationctx._ctx.comment(*c['args'], **c['kwargs'])
+            elif c['command'] == "set_flow_rate":
+                self._set_flow_rate(*c['args'], **c['kwargs'])
+            else:
+                substituted_kwargs = dict(c['kwargs'])  # copy kwargs and substitute time by time
+                # substituting kwargs to represent actual data
+                is_target_paired = 'locationFrom' in substituted_kwargs
+                is_forced_single = self._getValueFromKwargsAndClean(substituted_kwargs, 'forceSingle', False)
+                is_command_ok_with_paired = self._getValueFromKwargsAndClean(substituted_kwargs, 'isOkWithPaired', False)
+                self._logger.debug("Target is paired: {}; forced single: {}; command ok with paired: {}"
+                                   .format(is_target_paired, is_forced_single, is_command_ok_with_paired))
+                self.substitute_kwargs_locations(primary_well_index, substituted_kwargs)
+                self.substitute_kwargs_well_modifier(substituted_kwargs)
+                self.substitute_kwargs_move_points(substituted_kwargs, primary_well_index)
+
+                to_do_with_single =  (is_target_paired==False and is_command_ok_with_paired==False) or is_forced_single
+                self._logger.debug("To do with single is: {}".format(to_do_with_single))
+
+                if isinstance(pipctx, PairedInstrumentContext) and to_do_with_single:
+                    self._logger.debug("Using single pipetting")
+                    substituted_kwargs_pip2 = dict(c['kwargs'])
+                    self._getValueFromKwargsAndClean(substituted_kwargs_pip2, 'forceSingle', False)
+                    self._getValueFromKwargsAndClean(substituted_kwargs_pip2, 'isOkWithPaired', False)
+                    self.substitute_kwargs_locations(secondary_well_index, substituted_kwargs_pip2)
+                    self.substitute_kwargs_well_modifier(substituted_kwargs_pip2)
+                    self.substitute_kwargs_move_points(substituted_kwargs_pip2, secondary_well_index)
+
+                    for (p, kwargs) in zip(self.__class__.pips, [substituted_kwargs, substituted_kwargs_pip2]):
+                        self._logger.debug("Pipette {} command: {} args: {} {}".format(p, c['command'], c['args'], kwargs))
+                        self._check_pipette_over_labware(self.__class__._get_other_pipette(p))
+                        getattr(p, c['command'])(*c['args'], **kwargs)
+                        # Merging air_gap with preceeding command
+                        if len(self.commands) > (j + 1) and self.commands[j + 1]['command'] == 'air_gap':
+                            self._logger.debug("Doing air_gap on {}".format(p))
+                            self._getValueFromKwargsAndClean(self.commands[j + 1]['kwargs'], 'forceSingle', False)
+                            self._getValueFromKwargsAndClean(self.commands[j + 1]['kwargs'], 'isOkWithPaired', False)
+                            getattr(p, 'air_gap')(*self.commands[j + 1]['args'],
+                                                  **self.commands[j + 1]['kwargs'])
+                            skip_next_command = True
                 else:
-                    substituted_kwargs = dict(c['kwargs'])  # copy kwargs and substitute time by time
-                    # substituting kwargs to represent actual data
-                    is_target_paired = 'locationFrom' in substituted_kwargs
-                    is_forced_single = self._getValueFromKwargsAndClean(substituted_kwargs, 'forceSingle', False)
-                    is_command_ok_with_paired = self._getValueFromKwargsAndClean(substituted_kwargs, 'isOkWithPaired', False)
-                    self._logger.debug("Target is paired: {}; forced single: {}; command ok with paired: {}"
-                                       .format(is_target_paired, is_forced_single, is_command_ok_with_paired))
-                    self.substitute_kwargs_locations(primary_well_index, substituted_kwargs)
-                    self.substitute_kwargs_well_modifier(substituted_kwargs)
-                    self.substitute_kwargs_move_points(substituted_kwargs, primary_well_index)
+                    self._logger.debug("Pipette {} command: {} args: {} {}".format(pipctx, c['command'], c['args'],
+                                                                      substituted_kwargs))
+                    getattr(pipctx, c['command'])(*c['args'], **substituted_kwargs)
+        return secondary_well
 
-                    to_do_with_single =  (is_target_paired==False and is_command_ok_with_paired==False) or is_forced_single
-                    self._logger.debug("To do with single is: {}".format(to_do_with_single))
-
-                    if isinstance(pipctx, PairedInstrumentContext) and to_do_with_single:
-                        self._logger.debug("Using single pipetting")
-                        substituted_kwargs_pip2 = dict(c['kwargs'])
-                        self._getValueFromKwargsAndClean(substituted_kwargs_pip2, 'forceSingle', False)
-                        self._getValueFromKwargsAndClean(substituted_kwargs_pip2, 'isOkWithPaired', False)
-                        self.substitute_kwargs_locations(secondary_well_index, substituted_kwargs_pip2)
-                        self.substitute_kwargs_well_modifier(substituted_kwargs_pip2)
-                        self.substitute_kwargs_move_points(substituted_kwargs_pip2, secondary_well_index)
-
-                        for (p, kwargs) in zip(self.__class__.pips, [substituted_kwargs, substituted_kwargs_pip2]):
-                            self._logger.debug("Pipette {} command: {} args: {} {}".format(p, c['command'], c['args'], kwargs))
-                            self._check_pipette_over_labware(self.__class__._get_other_pipette(p))
-                            getattr(p, c['command'])(*c['args'], **kwargs)
-                            # Merging air_gap with preceeding command
-                            if len(self.commands) > (j + 1) and self.commands[j + 1]['command'] == 'air_gap':
-                                self._logger.debug("Doing air_gap on {}".format(p))
-                                self._getValueFromKwargsAndClean(self.commands[j + 1]['kwargs'], 'forceSingle', False)
-                                self._getValueFromKwargsAndClean(self.commands[j + 1]['kwargs'], 'isOkWithPaired', False)
-                                getattr(p, 'air_gap')(*self.commands[j + 1]['args'],
-                                                      **self.commands[j + 1]['kwargs'])
-                                skip_next_command = True
-                    else:
-                        self._logger.debug("Pipette {} command: {} args: {} {}".format(pipctx, c['command'], c['args'],
-                                                                          substituted_kwargs))
-                        getattr(pipctx, c['command'])(*c['args'], **substituted_kwargs)
-            self.donedests.append(well)
-            if secondary_well is not None:
-                self.donedests.append(secondary_well)
-            self._logger.debug("donedests contains: {}".format(self.donedests))
-        else:
-            self._logger.debug("dest {} skipped, already done.".format(well))
 
     def setcommand(self, command, *args, **kwargs):
         assert command in self.available_commands, "Command {} not recognized.".format(command)
@@ -268,7 +275,7 @@ class PairedPipette:
     # API
     # as a real pipette apart from "source" and "dest" location keyword
     #
-    # keep in mind that can be used only ine location at a time (eg. no transfer from source to dest):
+    # keep in mind that can be used only one location at a time (eg. no transfer from source to dest):
     # - source keywork (eg. source="bottom(1)") will be replaced with location=s.bottom(1)
     # - dest keywork (eg. dest="top(-2)") will be replaced with location=d.top(-2)
 
