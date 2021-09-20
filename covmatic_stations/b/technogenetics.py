@@ -197,6 +197,7 @@ class StationBTechnogenetics(StationB):
         self.remove_wash(self._remove_wash_vol, "remove wash A after spin")
 
         if self.run_stage("remove wash A"):
+            self._magdeck.disengage()
             self.dual_pause("Check Wash A removal and empty waste reservoir")
 
         self.wash(self._wash_2_vol, self.wash2, self._wash_2_times, "wash B")
@@ -214,6 +215,7 @@ class StationBTechnogenetics(StationB):
         self.remove_wash(self._remove_wash_vol, "remove wash B after spin")
 
         if self.run_stage("remove wash B"):
+            self._magdeck.disengage()
             self.dual_pause("Check Wash B removal and empty waste reservoir")
         
         if self.run_stage("deepwell incubation"):
