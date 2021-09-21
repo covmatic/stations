@@ -1,6 +1,12 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.7.2
+### Fixed 
+- [station A Technogenetics] Lysis buffer is dispensed also in H12 in 96-samples run.
+- [station B Technogenetics] Magnetic module disengaged before manual intervention.
+- [station C Technogenetics] Positive control is not filled twice with 96 samples run.
+
 ## v2.7.1
 ### Fixed
 - [paired pipette] Fixed bug in start-at logic when used not at the beginning of the plate.
