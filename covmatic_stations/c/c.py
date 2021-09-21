@@ -219,34 +219,35 @@ class StationC(Station):
     def remaining_cols(self) -> int:
         return int(math.ceil(min(self._remaining_samples, self._samples_per_cycle) / self._m20.channels))
 
-    def fill_mm_strips(self):
+    def fill_mm_strips(self, drop_tip: bool = False):
         vol_per_strip_well = self.remaining_cols * self._mastermix_vol / len(self.mm_strips)
 
-        has_tip = False
         for j, (strip, tube) in enumerate(zip(self.mm_strips, self.mm_tubes)):
             for i, well in enumerate(strip):
                 if self.run_stage("transfer mastermix {}/{} to strip {}/{}{}{}".format(i + 1, len(strip), j + 1,
                                                                                        len(self.mm_strips),
                                                                                        " " if self.num_cycles > 1 else "",
                                                                                        self._cycle)):
-                    if not has_tip:
+                    if not self._p300.has_tip:
                         self.pick_up(self._p300)
-                        has_tip = True
                     self.logger.debug("filling mastermix at {}".format(well))
                     self._p300.transfer(vol_per_strip_well, tube.bottom(self._tube_bottom_headroom_height),
                                         well.bottom(self._strip_bottom_headroom_height), new_tip='never')
+        if drop_tip and self._p300.has_tip:
+            self._p300.drop_tip()
 
-    def fill_control(self):
+    def fill_control(self, drop_tip: bool = False):
         if self.run_stage("Transfer mastermix to positive control hole in H12"):
             if len(self.sample_dests) < 12:
-                has_tip = True
+                if not self._p300.has_tip:
+                    self.pick_up(self._p300)
                 self._p300.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate,
                                     self.mm_tube_con.bottom(self._tube_bottom_headroom_height),
                                     self.control_dests.bottom(self._pcr_bottom_headroom_height), new_tip='never')
-                if has_tip:
-                    self._p300.drop_tip()
             else:
                 self._ctx.comment("Positive control position will be filled with P20 pipette. Skipping fill.")
+        if drop_tip and self._p300.has_tip:
+            self._p300.drop_tip()
 
     @property
     def mm_indices(self):
@@ -289,7 +290,7 @@ class StationC(Station):
         self.cycle_begin()
 
         self.fill_mm_strips()
-        self.fill_control()
+        self.fill_control(drop_tip=True)
         self.transfer_mm(
             stage="transfer mastermix to plate {}{}{}".format("{}/{}", " " if self.num_cycles > 1 else "", self._cycle))
         if self.sources is not None:
