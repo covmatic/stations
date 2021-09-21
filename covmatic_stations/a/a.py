@@ -321,7 +321,9 @@ class StationA(Station):
         self.drop(self._p_main)
 
     def is_positive_control_well(self, dest) -> bool:
-        return dest == self._dest_plate[self._positive_control_well]
+        if self._positive_control_well:
+            return dest == self._dest_plate[self._positive_control_well]
+        return False
 
     def non_control_positions(self, sources=None, dests=None):
         """Returns the iterator for the source/dest couples,

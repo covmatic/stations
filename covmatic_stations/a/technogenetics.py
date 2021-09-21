@@ -17,6 +17,7 @@ class StationATechnogenetics(StationAP1000):
         lys_mix_volume: float = 100,
         lysis_volume: float = 400,
         mix_repeats: int = 1,
+        positive_control_well = None,
         prot_k_capacity: float = 180,
         prot_k_headroom: float = 1.1,
         prot_k_vol: float = 30,
@@ -51,6 +52,7 @@ class StationATechnogenetics(StationAP1000):
             lys_mix_volume=lys_mix_volume,
             lysis_volume=lysis_volume,
             mix_repeats=mix_repeats,
+            positive_control_well=positive_control_well,
             sample_aspirate=sample_aspirate,
             sample_dispense=sample_dispense,
             iec_volume=prot_k_vol,
@@ -161,14 +163,12 @@ class StationATechnogenetics48(StationATechnogeneticsReload):
     
     def __init__(
         self,
-        positive_control_well: str = 'H12',
         source_racks_slots: Tuple[str, ...] = ('2',),
         *args,
         **kwargs
     ):
         super(StationATechnogenetics48, self).__init__(
             *args,
-            positive_control_well=positive_control_well,
             source_racks_slots=source_racks_slots,
             **kwargs
         )
