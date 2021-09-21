@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.7.3
+### Fixed
+- [station C] Drop tip after positive control fill.
+
 ## v2.7.2
 ### Fixed 
 - [station A Technogenetics] Lysis buffer is dispensed also in H12 in 96-samples run.
