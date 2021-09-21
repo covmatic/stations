@@ -238,12 +238,15 @@ class StationC(Station):
 
     def fill_control(self):
         if self.run_stage("Transfer mastermix to positive control hole in H12"):
-            has_tip = True
-            self._p300.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate,
-                                self.mm_tube_con.bottom(self._tube_bottom_headroom_height),
-                                self.control_dests.bottom(self._pcr_bottom_headroom_height), new_tip='never')
-            if has_tip:
-                self._p300.drop_tip()
+            if len(self.sample_dests) < 12:
+                has_tip = True
+                self._p300.transfer(self._mastermix_vol / self._mastermix_vol_headroom_aspirate,
+                                    self.mm_tube_con.bottom(self._tube_bottom_headroom_height),
+                                    self.control_dests.bottom(self._pcr_bottom_headroom_height), new_tip='never')
+                if has_tip:
+                    self._p300.drop_tip()
+            else:
+                self._ctx.comment("Positive control position will be filled with P20 pipette. Skipping fill.")
 
     @property
     def mm_indices(self):
