@@ -336,24 +336,29 @@ class StationB(Station):
             self.dual_pause("check module")
 
     def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
-        num_trans = math.ceil((vol - self._vol_last_trans) / self._bind_max_transfer_vol)
-        vol_per_trans = ((vol - self._vol_last_trans) / num_trans) if num_trans else 0
+        # num_trans = math.ceil((vol - self._vol_last_trans) / self._bind_max_transfer_vol)
+        # vol_per_trans = ((vol - self._vol_last_trans) / num_trans) if num_trans else 0
+
+        self._ctx.comment("Pipette volume: {}".format(self._pipette_max_volume))
+
+        num_trans, vol_per_trans = uniform_divide(vol-self._vol_last_trans,
+                                                  self._pipette_max_volume - self._supernatant_removal_air_gap)
 
         for i, m in enumerate(self.mag_samples_m):
             self._ctx.comment("Supernatant side: {}, {}".format(self._supernatant_removal_side,
                                                                 self._supernatant_removal_side_last_transfer))
             self._m300.flow_rate.aspirate = self._supernatant_removal_aspiration_rate_first_phase
             self._m300.flow_rate.dispense = self._supernatant_removal_dispense_rate
-            well_with_volume = WellWithVolume(m, vol)
+            well_with_volume = WellWithVolume(m, vol, min_height=self._h_bottom)
             if self.run_stage("{} {}/{}".format(stage, i + 1, len(self.mag_samples_m))):
                 self.pick_up(self._m300)
                 self._ctx.comment("Supernatant removal: {} transfer with {}ul each.".format(num_trans, vol_per_trans))
+                side = -1 if i % 2 == 0 else 1
                 for _ in range(num_trans):
                     if self._m300.current_volume > 0:
                         self._m300.dispense(self._m300.current_volume, m.top())                   
                     self._m300.move_to(m.center())
                     height = well_with_volume.extract_vol_and_get_height(vol_per_trans)
-                    side = -1 if i % 2 == 0 else 1
                     loc = m.bottom(height).move(Point(x=side * self._supernatant_removal_side))
                     self.logger.info("Aspirate at: {:.2f}".format(height))
                     self._m300.transfer(vol_per_trans, loc, self._waste, new_tip='never', air_gap=self._supernatant_removal_air_gap)
@@ -368,7 +373,6 @@ class StationB(Station):
                 for j in range(self._n_bottom):
                     aspirate_height = self._h_bottom - (j)*(self._h_bottom/(self._n_bottom-1)) # expecting aspirated height
                     self.logger.info("Aspirating at {:.2f}".format(aspirate_height))
-                    side = -1 if i % 2 == 0 else 1
                     loc = m.bottom(aspirate_height).move(Point(x=side * self._supernatant_removal_side_last_transfer))
                     self._m300.aspirate(self._supernatant_removal_last_transfer_max_vol/self._n_bottom, loc)
 

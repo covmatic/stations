@@ -134,7 +134,7 @@ def uniform_divide(total: float, mpp: float) -> Tuple[int, float]:
     :param mpp: Maximum quantity per partition
     :returns: The minimum number of partitions and the quantity in each partition"""
     n = int(math.ceil(total / mpp))
-    p = total / n
+    p = total / n if n else 0
     return n, p
 
 
