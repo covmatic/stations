@@ -51,6 +51,7 @@ class StationB(Station):
         magplate_model: str = 'nest_96_wellplate_2ml_deep',
         metadata: Optional[dict] = None,
         num_samples: int = 96,
+        pipette_max_volume: float = 200,
         samples_per_col: int = 8,
         skip_delay: bool = False,
         supernatant_removal_air_gap: float = 5,
@@ -126,6 +127,7 @@ class StationB(Station):
         :param magplate_model: Magnetic plate model
         :param metadata: protocol metadata
         :param num_samples: The number of samples that will be loaded on the station B
+        :param pipette_max_volume: The maximum volume in ul that the pipette (considering tip) can aspirate
         :param samples_per_col: The number of samples in a column of the destination plate
         :param skip_delay: If True, pause instead of delay.
         :param supernatant_removal_air_gap: Air gap when removing the supernatant in uL
@@ -207,6 +209,7 @@ class StationB(Station):
         self._magheight = magheight
         self._magheight_load = magheight_load
         self._magplate_model = magplate_model
+        self._pipette_max_volume = pipette_max_volume
         self._supernatant_removal_air_gap = supernatant_removal_air_gap
         self._supernatant_removal_aspiration_rate = supernatant_removal_aspiration_rate
         self._supernatant_removal_aspiration_rate_first_phase = supernatant_removal_aspiration_rate_first_phase
@@ -336,9 +339,6 @@ class StationB(Station):
             self.dual_pause("check module")
 
     def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
-        # num_trans = math.ceil((vol - self._vol_last_trans) / self._bind_max_transfer_vol)
-        # vol_per_trans = ((vol - self._vol_last_trans) / num_trans) if num_trans else 0
-
         self._ctx.comment("Pipette volume: {}".format(self._pipette_max_volume))
 
         num_trans, vol_per_trans = uniform_divide(vol-self._vol_last_trans,
@@ -377,12 +377,12 @@ class StationB(Station):
                     self._m300.aspirate(self._supernatant_removal_last_transfer_max_vol/self._n_bottom, loc)
 
                 back_step = 0.1
-                n_back_step = 3
+                n_back_step = self._n_bottom
 
                 for _ in range(n_back_step):
                     aspirate_height = aspirate_height + back_step
                     self.logger.info("Moving up at {:.2f}".format(aspirate_height))
-                    loc = m.bottom(aspirate_height).move(Point(x=side * 2))
+                    loc = m.bottom(aspirate_height).move(Point(x=side * self._supernatant_removal_side_last_transfer))
                     self._m300.move_to(loc)
 
                 self._m300.air_gap(self._supernatant_removal_air_gap)
