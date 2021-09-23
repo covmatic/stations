@@ -16,7 +16,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
                  drop_height=-10,
                  final_mix_blow_out_height=-2,
                  supernatant_removal_side=1.5,
-                 supernatant_removal_side_last_transfer=1.5,
+                 supernatant_removal_side_last_transfer=0.5,
                  **kwargs):
         self._final_mix_blow_out_height = final_mix_blow_out_height
         super(StationBTechnogeneticsPairedPipette, self).__init__(
@@ -71,12 +71,14 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             tp.air_gap(self._bind_air_gap)
             tp.drop_tip()
 
-
     def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
         self._ctx.comment("Supernatant side: {}, {}".format(self._supernatant_removal_side,
                                                             self._supernatant_removal_side_last_transfer))
         num_trans = math.ceil((vol - self._vol_last_trans) / self._bind_max_transfer_vol)
         vol_per_trans = ((vol - self._vol_last_trans) / num_trans) if num_trans else 0
+
+        num_trans, vol_per_trans = uniform_divide(vol-self._vol_last_trans,
+                                                  self._pipette_max_volume - self._supernatant_removal_air_gap)
 
         waste_locs = list(repeat(self._waste, len(self.mag_samples_m)))
 
@@ -88,7 +90,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             sides_last_transfer.append(Point(x=side * self._supernatant_removal_side_last_transfer))
 
         with PairedPipette(self._magplate, self.mag_samples_m, waste_locs=waste_locs, start_at=stage) as tp:
-            well_with_volume = WellWithVolume(self.mag_samples_m[0], vol)       # we assume every well is the same
+            well_with_volume = WellWithVolume(self.mag_samples_m[0], vol, min_height=self._h_bottom)
             tp.set_flow_rate(aspirate=self._supernatant_removal_aspiration_rate_first_phase,
                              dispense=self._supernatant_removal_dispense_rate)
             tp.pick_up()
@@ -119,7 +121,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
                             well_move_points=sides_last_transfer)
 
             back_step = 0.1
-            n_back_step = 3
+            n_back_step = self._n_bottom
 
             for _ in range(n_back_step):
                 aspirate_height = aspirate_height + back_step
