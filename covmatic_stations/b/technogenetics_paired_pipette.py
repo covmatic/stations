@@ -74,8 +74,6 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
     def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
         self._ctx.comment("Supernatant side: {}, {}".format(self._supernatant_removal_side,
                                                             self._supernatant_removal_side_last_transfer))
-        num_trans = math.ceil((vol - self._vol_last_trans) / self._bind_max_transfer_vol)
-        vol_per_trans = ((vol - self._vol_last_trans) / num_trans) if num_trans else 0
 
         num_trans, vol_per_trans = uniform_divide(vol-self._vol_last_trans,
                                                   self._pipette_max_volume - self._supernatant_removal_air_gap)
