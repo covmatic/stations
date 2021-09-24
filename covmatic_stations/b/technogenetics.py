@@ -12,7 +12,7 @@ class StationBTechnogenetics(StationB):
                  elution_vol: float = 50,
                  elute_incubate: bool = False,
                  external_deepwell_incubation: bool = True,
-                 final_mix_height: float = 0.3,
+                 final_mix_height: float = 0.5,
                  final_mix_times: int = 5,
                  final_mix_vol: float = 20,
                  final_mix_blow_out_height: float = -2,
