@@ -14,11 +14,9 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
     def __init__(self,
                  drop_height=-10,
-                 final_mix_blow_out_height=-2,
                  supernatant_removal_side=1.5,
                  supernatant_removal_side_last_transfer=0.5,
                  **kwargs):
-        self._final_mix_blow_out_height = final_mix_blow_out_height
         super(StationBTechnogeneticsPairedPipette, self).__init__(
             drop_height = drop_height,
             supernatant_removal_side=supernatant_removal_side,
@@ -166,7 +164,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         locs = []
         for i, (m, e) in enumerate(zip(self.mag_samples_m, self.pcr_samples_m)):
             side = -1 if i % 2 == 0 else 1
-            locs.append(m.bottom(0.3).move(Point(x=side * self._final_transfer_side)))
+            locs.append(m.bottom(self._final_transfer_dw_bottom_height).move(Point(x=side * self._final_transfer_side)))
 
         with PairedPipette(self._magplate, locs, start_at="final transfer", pcr_locs=self.pcr_samples_m) as tp:
             tp.set_flow_rate(aspirate=self._final_transfer_rate_aspirate, dispense=self._final_transfer_rate_dispense)

@@ -15,9 +15,11 @@ class StationBTechnogenetics(StationB):
                  final_mix_height: float = 0.3,
                  final_mix_times: int = 5,
                  final_mix_vol: float = 20,
+                 final_mix_blow_out_height: float = -2,
                  final_transfer_rate_aspirate: float = 30,
                  final_transfer_rate_dispense: float = 30,
                  final_transfer_side: float = 2,
+                 final_transfer_dw_bottom_height: float = 0.6,
                  final_vol: float = 20,
                  flatplate_slot: str = '3',
                  h_bottom: float = 1,
@@ -73,9 +75,11 @@ class StationBTechnogenetics(StationB):
             **kwargs
         )
         self._external_deepwell_incubation = external_deepwell_incubation
+        self._final_mix_blow_out_height = final_mix_blow_out_height
         self._final_mix_height = final_mix_height
         self._final_mix_times = final_mix_times
         self._final_transfer_side = final_transfer_side
+        self._final_transfer_dw_bottom_height = final_transfer_dw_bottom_height
         self._final_mix_vol = final_mix_vol
         self._final_transfer_rate_aspirate = final_transfer_rate_aspirate
         self._final_transfer_rate_dispense = final_transfer_rate_dispense
@@ -161,14 +165,15 @@ class StationBTechnogenetics(StationB):
             if self.run_stage("final transfer {}/{}".format(i + 1, n)):
                 self.pick_up(self._m300)
                 side = -1 if i % 2 == 0 else 1
-                loc = m.bottom(0.3).move(Point(x=side*self._final_transfer_side))
+                loc = m.bottom(self._final_transfer_dw_bottom_height).move(Point(x=side*self._final_transfer_side))
                 self._m300.aspirate(self._final_vol, loc)
                 self._m300.air_gap(self._elute_air_gap)
                 self._m300.dispense(self._elute_air_gap, e.top())
-                self._m300.dispense(self._m300.current_volume, e.bottom(0.5))
+                self._m300.dispense(self._m300.current_volume, e.bottom(self._final_mix_height))
 
                 #self._m300.transfer(self._final_vol, loc, e.bottom(self._elution_height), air_gap=self._elute_air_gap, new_tip='never')
                 self._m300.mix(self._final_mix_times, self._final_mix_vol, e.bottom(self._final_mix_height))
+                self._m300.blow_out(e.top(self._final_mix_blow_out_height))
                 self._m300.air_gap(self._elute_air_gap)
                 self.drop(self._m300)
 
