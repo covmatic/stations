@@ -166,7 +166,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         locs = []
         for i, (m, e) in enumerate(zip(self.mag_samples_m, self.pcr_samples_m)):
             side = -1 if i % 2 == 0 else 1
-            locs.append(m.bottom(0.3).move(Point(x=side * 2)))
+            locs.append(m.bottom(0.3).move(Point(x=side * self._final_transfer_side)))
 
         with PairedPipette(self._magplate, locs, start_at="final transfer", pcr_locs=self.pcr_samples_m) as tp:
             tp.set_flow_rate(aspirate=self._final_transfer_rate_aspirate, dispense=self._final_transfer_rate_dispense)
