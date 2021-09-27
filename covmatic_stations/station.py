@@ -468,7 +468,7 @@ class Station(metaclass=StationMeta):
                 self._request.join(2, 0.5)
             self.track_tip()
             self._button.color = 'blue'
-        self._ctx.home()
+        self._mov_manager.move_to_home()
     
     def simulate(self):
         from opentrons import simulate
