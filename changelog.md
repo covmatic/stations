@@ -1,6 +1,13 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.7.4
+### Fixed
+- [station B] Remove supernatant last step higher to avoid tip clogging.
+- [station B] Remove supernatant and final transfer decreased side movement.
+- [station B] Remove supernatant max volume limit set to tip volume.
+- [station B] Higher Final transfer heights to avoid tips clogging.
+
 ## v2.7.3
 ### Fixed
 - [station C] Drop tip after positive control fill.
