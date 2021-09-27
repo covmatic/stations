@@ -18,7 +18,7 @@ class StationBTechnogenetics(StationB):
                  final_mix_blow_out_height: float = -2,
                  final_transfer_rate_aspirate: float = 30,
                  final_transfer_rate_dispense: float = 30,
-                 final_transfer_side: float = 2,
+                 final_transfer_side: float = 0.5,
                  final_transfer_dw_bottom_height: float = 0.6,
                  final_vol: float = 20,
                  flatplate_slot: str = '3',

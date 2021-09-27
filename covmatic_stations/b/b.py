@@ -31,7 +31,7 @@ class StationB(Station):
         drop_loc_r: float = 20,
         drop_loc_y: float = 0,
         drop_threshold: int = 5000,
-        elute_air_gap: float = 20,
+        elute_air_gap: float = 5,
         elute_aspiration_rate: float = 50,
         elute_dispense_rate: float = 50,
         elute_incubate: bool = True,
