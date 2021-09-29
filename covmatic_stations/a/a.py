@@ -32,6 +32,7 @@ class StationA(Station):
             lysis_cone_height: float = 16,
             lysis_first: bool = False,
             lysis_headroom_height: float = 4,
+            lysis_in_controls: bool = False,
             lysis_rate_aspirate: float = 100,
             lysis_rate_dispense: float = 100,
             lysis_volume: float = 160,
@@ -45,6 +46,7 @@ class StationA(Station):
             mix_repeats: int = 3,
             mix_volume: float = 150,
             num_samples: int = 96,
+            negative_control_well: str = None,
             positive_control_well: str = 'A10',
             sample_aspirate: float = 30,
             sample_blow_out: float = 300,
@@ -97,7 +99,8 @@ class StationA(Station):
         :param max_speeds_a: max speed for sample transfer
         :param metadata: protocol metadata
         :param num_samples: The number of samples that will be loaded on the station A
-        :param positive_control_well: Position of the positive control well
+        :param positive_control_well: Position of the positive control well; samples are not transferred here.
+        :param negative_control_well: Position of the negative control well; samples are not transferred here.
         :param sample_aspirate: P300 samples aspiration flow rate in uL/s
         :param sample_blow_out: P300 samples blow out flow rate in uL/s
         :param sample_dispense: P300 samples dispensation flow rate in uL/s
@@ -142,6 +145,7 @@ class StationA(Station):
         self._lysis_cone_height = lysis_cone_height
         self._lysis_first = lysis_first
         self._lysis_headroom_height = lysis_headroom_height
+        self._lysis_in_controls = lysis_in_controls
         self._lysis_rate_aspirate = lysis_rate_aspirate
         self._lysis_rate_dispense = lysis_rate_dispense
         self._lysis_volume = lysis_volume
@@ -153,6 +157,7 @@ class StationA(Station):
         self._max_speeds_a = max_speeds_a
         self._mix_repeats = mix_repeats
         self._mix_volume = mix_volume
+        self._negative_control_well = negative_control_well
         self._positive_control_well = positive_control_well
         self._sample_aspirate = sample_aspirate
         self._sample_blow_out = sample_blow_out
@@ -263,7 +268,7 @@ class StationA(Station):
 
     @property
     def initlial_volume_lys(self) -> float:
-        return len(list(self.non_control_positions(repeat(None)))) * self._lysis_volume * self._ic_lys_headroom
+        return len(list(self.lysis_positions())) * self._lysis_volume * self._ic_lys_headroom
 
     def setup_samples(self):
         self._sources = list(
@@ -320,9 +325,14 @@ class StationA(Station):
         self._p_main.air_gap(self._air_gap_sample)
         self.drop(self._p_main)
 
-    def is_positive_control_well(self, dest) -> bool:
+    def is_positive_control_well(self, well) -> bool:
         if self._positive_control_well:
-            return dest == self._dest_plate[self._positive_control_well]
+            return well == self._dest_plate[self._positive_control_well]
+        return False
+
+    def is_negative_control_well(self, well) -> bool:
+        if self._negative_control_well:
+            return well == self._dest_plate[self._negative_control_well]
         return False
 
     def non_control_positions(self, sources=None, dests=None):
@@ -331,11 +341,23 @@ class StationA(Station):
         Sources and dests default to self._sources and self._dests"""
         sources = sources or self._sources
         dests = dests or self._dests_single
-        return filter(lambda t: not self.is_positive_control_well(t[1]), zip(sources, dests))
+        return filter(lambda t:
+                      not self.is_positive_control_well(t[1]) and
+                      not self.is_negative_control_well(t[1]), zip(sources, dests))
 
     def non_control_dests(self, dests=None):
         dests = dests or self._dests_single
-        return filter(lambda t: not self.is_positive_control_well(t), dests)
+        return filter(lambda t:
+                      not self.is_positive_control_well(t) and
+                      not self.is_negative_control_well(t), dests)
+
+    def lysis_positions(self, dests=None):
+        dests = dests or self._dests_single
+        if not self._lysis_in_controls:
+            return filter(lambda t:
+                          not self.is_positive_control_well(t) and
+                          not self.is_negative_control_well(t), dests)
+        return dests
 
     def transfer_samples(self):
         self._p_main.flow_rate.aspirate = self._sample_aspirate
@@ -350,10 +372,9 @@ class StationA(Station):
         num_samples_per_aspirate = self._p_main.max_volume // self._lysis_volume
         self.logger.info(
             "1 aspirate can dispense {} times of {}ul.".format(num_samples_per_aspirate, self._lysis_volume))
-
-        pos = list(self.non_control_positions(repeat(None)))
+        pos = list(self.lysis_positions())
         n = len(pos)
-        for i, (_, dest) in enumerate(pos):
+        for i, dest in enumerate(pos):
             remaining_samples = n - i
             self.logger.debug("Remaining {} samples.".format(remaining_samples))
             # Extracting at every cycle

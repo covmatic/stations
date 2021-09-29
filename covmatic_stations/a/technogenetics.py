@@ -16,7 +16,9 @@ class StationATechnogenetics(StationAP1000):
         lys_mix_repeats: int = 2,
         lys_mix_volume: float = 100,
         lysis_volume: float = 400,
+        lysis_in_controls: bool = True,
         mix_repeats: int = 1,
+        negative_control_well='A1',
         positive_control_well = None,
         prot_k_capacity: float = 180,
         prot_k_headroom: float = 1.1,
@@ -51,7 +53,9 @@ class StationATechnogenetics(StationAP1000):
             lys_mix_repeats=lys_mix_repeats,
             lys_mix_volume=lys_mix_volume,
             lysis_volume=lysis_volume,
+            lysis_in_controls=lysis_in_controls,
             mix_repeats=mix_repeats,
+            negative_control_well=negative_control_well,
             positive_control_well=positive_control_well,
             sample_aspirate=sample_aspirate,
             sample_dispense=sample_dispense,
@@ -184,7 +188,7 @@ class StationATechnogenetics48(StationATechnogeneticsReload):
 
 
 if __name__ == "__main__":
-    StationATechnogenetics24(num_samples=96, metadata={'apiLevel': '2.7'}).simulate()
+    StationATechnogenetics48(num_samples=96, metadata={'apiLevel': '2.7'}).simulate()
 
 
 # Copyright (c) 2020 Covmatic.
