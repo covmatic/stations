@@ -7,12 +7,10 @@ import math
 class StationAReloadMixin(metaclass=StationMeta):
     @property
     def max_samples_per_set(self) -> int:
-        self._ctx.comment("Max samples per set: {}".format(len(self._sources)))
         return len(self._sources)
     
     @property
     def sets_of_samples(self) -> int:
-        self._ctx.comment("Set of samples: {}".format(math.ceil(self._num_samples/self.max_samples_per_set)))
         return math.ceil(self._num_samples/self.max_samples_per_set)
 
     @property
