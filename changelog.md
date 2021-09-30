@@ -1,6 +1,12 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.7.5
+### Fixed
+- [station A Techogenetics] Skipped transfer of Negative control from sample A1.
+- [station A] Added Negative control well.
+- [station A] Added possibility to transfer lysis also to control wells-
+
 ## v2.7.4
 ### Fixed
 - [station B] Remove supernatant last step higher to avoid tip clogging.
