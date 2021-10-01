@@ -35,6 +35,8 @@ jobs:
         apt-get install libsystemd-dev
     - name: Install
       run: python setup.py install
+    - name: Test execution
+      run: python -m unittest
     - name: Simulate the protocol
       run: opentrons_simulate protocols/${{ matrix.target }}.py
 

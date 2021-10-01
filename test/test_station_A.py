@@ -122,7 +122,7 @@ class TestSuite(unittest.TestCase):
                 self._test_sample_index = 0
 
             # Fake transfer sample function.
-            # Each call we check the order is the one expected
+            # Each call we check the order is as expected
             def transfer_sample(self, source, dest):
                 expected_source_well_name, expected_dest_well_name = traceability_order[self._test_sample_index]
                 assert expected_source_well_name == source.well_name, \
@@ -131,7 +131,9 @@ class TestSuite(unittest.TestCase):
                     "Got dest {}; expecting {}".format(dest.well_name, expected_dest_well_name)
                 self._test_sample_index += 1
 
-        FakeStationATechnogenetics48(num_samples=96, metadata={'apiLevel': '2.7'}).simulate()
+        fakeStation = FakeStationATechnogenetics48(num_samples=96, metadata={'apiLevel': '2.7'})
+        fakeStation.simulate()
+        self.assertGreater(fakeStation._test_sample_index, 0, "transfer_sample never called!")
 
 
 if __name__ == '__main__':
