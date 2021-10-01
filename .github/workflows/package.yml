@@ -18,6 +18,12 @@ jobs:
     container: python:3.7
     steps:
     - uses: actions/checkout@v2
+    - name: System package install
+      run: |
+        apt-get update
+        apt-get install libsystemd-dev
+    - name: Install
+      run: python setup.py install
     - name: Test execution
       run: python -m unittest
 
