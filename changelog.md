@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.7.6
+### Fixed
+- [station A] Improper use of filter and *in* keyword in transfer_samples
+
 ## v2.7.5
 ### Fixed
 - [station A Techogenetics] Skipped transfer of Negative control from sample A1.
