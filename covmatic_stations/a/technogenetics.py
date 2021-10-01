@@ -7,7 +7,7 @@ from typing import Tuple, Optional
 
 class StationATechnogenetics(StationAP1000):
     def __init__(self,
-        beads_mix_repeats: int = 2,
+        beads_mix_repeats: int = 0,
         beads_mix_volume: float = 20,
         beads_vol: float = 10,
         drop_threshold: int = 5000,
@@ -122,7 +122,8 @@ class StationATechnogenetics(StationAP1000):
             if self.run_stage("transfer beads {}/{}".format(i + 1, len(self._dests_multi))):
                 self.pick_up(self._m20)
                 self._m20.transfer(self._beads_vol, self._beads, d.bottom(self._dest_multi_headroom_height), air_gap=self._air_gap_dest_multi, new_tip='never')
-                self._m20.mix(self._beads_mix_repeats, self._beads_mix_volume, d.bottom(self._dest_multi_headroom_height))
+                if self._beads_mix_repeats:
+                    self._m20.mix(self._beads_mix_repeats, self._beads_mix_volume, d.bottom(self._dest_multi_headroom_height))
                 self._m20.air_gap(self._air_gap_dest_multi)
                 self._m20.drop_tip()
     
