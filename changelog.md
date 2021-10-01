@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.7.7
+### Fixed
+- [station A] Disabled drop tip count
+
 ## v2.7.6
 ### Fixed
 - [station A] Improper use of filter and *in* keyword in transfer_samples

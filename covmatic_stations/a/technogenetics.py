@@ -10,7 +10,7 @@ class StationATechnogenetics(StationAP1000):
         beads_mix_repeats: int = 2,
         beads_mix_volume: float = 20,
         beads_vol: float = 10,
-        drop_threshold: int = 95,
+        drop_threshold: int = 5000,
         ic_headroom_bottom = 1,
         lysis_first: bool = False,
         lys_mix_repeats: int = 2,
