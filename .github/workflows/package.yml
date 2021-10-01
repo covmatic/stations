@@ -13,9 +13,18 @@ on:
       - develop
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: python:3.7
+    steps:
+    - uses: actions/checkout@v2
+    - name: Test execution
+      run: python -m unittest
+
   simulate:
     runs-on: ubuntu-latest
     container: python:3.7
+    needs: test
     strategy:
       matrix:
         target: [station_a_technogenetics_24,
@@ -35,8 +44,6 @@ jobs:
         apt-get install libsystemd-dev
     - name: Install
       run: python setup.py install
-    - name: Test execution
-      run: python -m unittest
     - name: Simulate the protocol
       run: opentrons_simulate protocols/${{ matrix.target }}.py
 
