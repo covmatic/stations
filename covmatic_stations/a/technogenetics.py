@@ -186,7 +186,6 @@ class StationATechnogenetics48(StationATechnogeneticsReload):
             ) for i, slot in enumerate(self._source_racks_slots)
         ]
 
-
 if __name__ == "__main__":
     StationATechnogenetics48(num_samples=96, metadata={'apiLevel': '2.7'}).simulate()
 

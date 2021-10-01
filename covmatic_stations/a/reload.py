@@ -21,7 +21,7 @@ class StationAReloadMixin(metaclass=StationMeta):
         self._done_samples = 0
         refills = self.sets_of_samples - 1
 
-        destinations = self.non_control_dests()
+        destinations = list(self.non_control_dests())
 
         self.logger.info(self.msg_format("refills", self.max_samples_per_set, refills))
         for set_idx in reversed(range(self.sets_of_samples)):
@@ -31,7 +31,7 @@ class StationAReloadMixin(metaclass=StationMeta):
                     if d in destinations:
                         self.transfer_sample(s, d)
                     else:
-                        self.logger.debug("skipped transfer sample {}: is control".format(d))
+                        self._ctx.comment("Skipping transfer sample {}: is control".format(d))
                 self._done_samples += 1
             if set_idx and self.run_stage("refill {}/{}".format(self.sets_of_samples - set_idx, self.sets_of_samples - 1)):
                 self.dual_pause(self.msg_format("refill", min(self.remaining_samples, self.max_samples_per_set)))
