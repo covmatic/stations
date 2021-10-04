@@ -3,7 +3,8 @@ Covmatic Stations changelog
 
 ## v2.7.7
 ### Fixed
-- [station A] Disabled drop tip count
+- [station A Technogenetics] Disabled drop tip count
+- [station A Technogenetics] Disabled mix after beads transfer
 
 ## v2.7.6
 ### Fixed
