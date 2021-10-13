@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.8.0
+### Added
+- [station B paired pipette] Paired pickup is done with single pipette to avoid pulled up tiprack
+
 ## v2.7.7
 ### Fixed
 - [station A Technogenetics] Disabled drop tip count
