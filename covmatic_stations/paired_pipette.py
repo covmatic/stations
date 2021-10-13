@@ -16,14 +16,18 @@ class PairedPipette:
     labware_height_overhead = 10.0      # mm height over the top of the tallest labware
 
     @classmethod
-    def setup(cls, pipette1, pipette2, stationctx):
+    def setup(cls, pipette1, pipette2, stationctx, pick_up_single: bool = False):
         cls.pips = [pipette1, pipette2]
         cls.pippairedctx = pipette1.pair_with(pipette2)
         cls._stationctx = stationctx
+        cls._pick_up_single = pick_up_single
         cls.max_labware_height = cls.labware_height_overhead + \
             max([labware.highest_z for labware in cls._stationctx._ctx.loaded_labwares.values()])
 
-    def __init__(self, labware, targets, start_at:str = None, **kwargs):
+    def __init__(self, labware,
+                 targets,
+                 start_at: str = None,
+                 **kwargs):
         # dests è un iterabile che contiene le destinazioni
         assert isinstance(labware, Labware), "Paired pipette labware not a labware but a {}".format(type(labware))
         self.labware = labware
@@ -74,13 +78,24 @@ class PairedPipette:
         return self.__class__.pips[0]
 
     def _pick_up_tip(self, pipctx):
-        self._logger.debug("Trying to pick up a tip")
+        if isinstance(pipctx, PairedInstrumentContext):
+            if self.__class__._pick_up_single:
+                self.pick_up_tip_single()
+            else:
+                self.pick_up_tip_paired(pipctx)
+        else:
+            self._stationctx.pick_up(pipctx)
+
+    def pick_up_tip_single(self):
+        for p in self.pips:
+            self._stationctx.pick_up(p)
+
+    def pick_up_tip_paired(self, pipctx):
         try:
             self._stationctx.pick_up(pipctx)
         except PipettePairPickUpTipError:
             self._logger.debug("Paired pipette needed but cannot pickup tips, doing one pipette at a time")
-            for p in self.pips:
-                self._stationctx.pick_up(p)
+            self.pick_up_tip_single()
 
     def _drop_tip(self, pipctx):
         try:

@@ -16,12 +16,19 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
                  drop_height=-10,
                  supernatant_removal_side=1.5,
                  supernatant_removal_side_last_transfer=0.5,
+                 pick_up_single=False,
                  **kwargs):
+        """ Build a :py:class:`.StationBTechnogeneticsPairedPipette`.
+        :param pick_up_single: whether or not to force a single-pipette pick up even when paired operation
+                               is needed. This should mitigate the pulled-up tiprack problem seen expecially
+                               with paired pipette.
+        """
         super(StationBTechnogeneticsPairedPipette, self).__init__(
-            drop_height = drop_height,
+            drop_height=drop_height,
             supernatant_removal_side=supernatant_removal_side,
             supernatant_removal_side_last_transfer=supernatant_removal_side_last_transfer,
             **kwargs)
+        self._pick_up_single = pick_up_single       # Force every paired pickup to be done with one pipette at a time.
 
     @labware_loader(8, "_res12")
     def load_res12(self):
@@ -56,7 +63,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             self._m300r.flow_rate.blow_out = self._bind_blowout_rate
 
     def body(self):
-        PairedPipette.setup(self._m300, self._m300r, self)
+        PairedPipette.setup(self._m300, self._m300r, self, pick_up_single=self._pick_up_single)
         super(StationBTechnogeneticsPairedPipette, self).body()
 
     def mix_samples(self):
