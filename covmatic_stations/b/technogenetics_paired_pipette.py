@@ -16,7 +16,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
                  drop_height=-10,
                  supernatant_removal_side=1.5,
                  supernatant_removal_side_last_transfer=0.5,
-                 pick_up_single=False,
+                 pick_up_single=True,
                  **kwargs):
         """ Build a :py:class:`.StationBTechnogeneticsPairedPipette`.
         :param pick_up_single: whether or not to force a single-pipette pick up even when paired operation
