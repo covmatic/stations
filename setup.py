@@ -42,7 +42,7 @@ setuptools.setup(
     install_requires=[
         'opentrons',
         'cherrypy',
-        'requests',
+        'requests>=2.26.0',
         'ipaddress',
         'typing-extensions',
         'parse'

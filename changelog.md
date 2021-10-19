@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.8.x
+### Added
+- [package] *requests* dependency version added.
+
 ## v2.8.0
 ### Added
 - [station B paired pipette] Paired pickup is done with single pipette to avoid pulled up tiprack
