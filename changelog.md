@@ -1,9 +1,13 @@
 Covmatic Stations changelog
 ===========================
 
-## v2.8.x
+## v2.9.0
 ### Added
-- [package] *requests* dependency version added.
+- [station] Sounds when pause with blinking, run finish and run error.
+- [station B techogenetics] Temperature module is turned on when needed and off when finished.
+
+### Fixed
+- [package] *requests* dependency version added to fix upgrade on Opentrons v4.6.2
 
 ## v2.8.0
 ### Added
