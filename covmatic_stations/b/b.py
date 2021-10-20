@@ -65,6 +65,8 @@ class StationB(Station):
         starting_vol: float = 380,
         tempdeck_slot: str = '1',
         tempdeck_temp: float = 4,
+        tempdeck_auto_turnon: bool = True,
+        tempdeck_auto_turnoff: bool = False,
         tipracks_slots: Tuple[str, ...] = ('3', '6', '7', '8', '9', '10'),
         touch_tip_height: float = -5,
         wait_time_bind_off: float = 5,
@@ -136,7 +138,9 @@ class StationB(Station):
         :param supernatant_removal_last_transfer_max_vol: maximum volume to load into tip during supernatant last transfer
         :param starting_vol: Sample volume at start (volume coming from Station A)
         :param tempdeck_slot: Slot where the tempdeck is positioned 
-        :param tempdeck_temp: tempdeck temperature in Celsius degrees 
+        :param tempdeck_temp: tempdeck temperature in Celsius degrees
+        :param tempdeck_auto_turnon: turn on tempdeck at the beginning of the run
+        :param tempdeck_auto_turnoff: turn off tempdeck at the end of the run
         :param tipracks_slots: Slots where the tipracks are positioned
         :param touch_tip_height: Touch-tip height in mm (should be negative)
         :param wait_time_bind_off: Wait time for bind beads phase off magnet in minutes
@@ -221,6 +225,8 @@ class StationB(Station):
         self._starting_vol = starting_vol
         self._tempdeck_slot = tempdeck_slot
         self._tempdeck_temp = tempdeck_temp
+        self._tempdeck_auto_turnon = tempdeck_auto_turnon
+        self._tempdeck_auto_turnoff = tempdeck_auto_turnoff
         self._tipracks_slots = tipracks_slots
         self._touch_tip_height = touch_tip_height
         self._wait_time_bind_off = wait_time_bind_off
@@ -274,7 +280,7 @@ class StationB(Station):
     @labware_loader(4, "_tempdeck")
     def load_tempdeck(self):
         self._tempdeck = self._ctx.load_module('Temperature Module Gen2', self._tempdeck_slot)
-        if self._tempdeck_temp is not None:
+        if self._tempdeck_temp is not None and self._tempdeck_auto_turnon:
             self.msg = "set temperature"
             self._tempdeck.set_temperature(self._tempdeck_temp)
     
@@ -535,6 +541,11 @@ class StationB(Station):
             self.delay(self._wait_time_dry, 'airdry')
         self.elute()
         self._magdeck.disengage()
+
+    def cleanup(self):
+        if self._tempdeck_temp is not None and self._tempdeck_auto_turnoff:
+            self._tempdeck.deactivate()
+
 
 
 if __name__ == "__main__":
