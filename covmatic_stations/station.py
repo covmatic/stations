@@ -428,7 +428,10 @@ class Station(metaclass=StationMeta):
         
     def body(self):
         pass
-    
+
+    def cleanup(self):
+        pass
+
     def run(self, ctx: ProtocolContext):
         self.status = "running"
         self._ctx = ctx
@@ -461,6 +464,8 @@ class Station(metaclass=StationMeta):
             self.body()
 
             self.assert_run_stage_has_been_executed()
+
+            self.cleanup()
 
             if not self._ctx.is_simulating():
                 self._sound_manager.play("finish")
