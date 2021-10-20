@@ -345,8 +345,6 @@ class StationB(Station):
             self.dual_pause("check module")
 
     def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
-        self._ctx.comment("Pipette volume: {}".format(self._pipette_max_volume))
-
         num_trans, vol_per_trans = uniform_divide(vol-self._vol_last_trans,
                                                   self._pipette_max_volume - self._supernatant_removal_air_gap)
 
