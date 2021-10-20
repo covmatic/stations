@@ -1,6 +1,12 @@
 Covmatic Stations changelog
 ===========================
 
+
+## v2.9.1
+### Fixed
+- [station] Force home movement after run even with gantry in near-home position:
+  this should mitigate homing problem on next run
+
 ## v2.9.0
 ### Added
 - [station] Sounds when pause with blinking, run finish and run error.
