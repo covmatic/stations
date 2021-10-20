@@ -37,6 +37,8 @@ class StationBTechnogenetics(StationB):
                  supernatant_removal_aspiration_rate_first_phase = 94,
                  tempdeck_slot: str = '10',
                  tempdeck_temp: float = 60,
+                 tempdeck_auto_turnon: bool = False,
+                 tempdeck_auto_turnoff: bool = True,
                  thermomixer_incubation_time: float = 5,
                  tipracks_slots: Tuple[str, ...] = ('4', '6', '7', '8', '9'),
                  wash_1_vol: float = 680,
@@ -69,6 +71,8 @@ class StationBTechnogenetics(StationB):
             supernatant_removal_aspiration_rate_first_phase = supernatant_removal_aspiration_rate_first_phase,
             tempdeck_slot=tempdeck_slot,
             tempdeck_temp=tempdeck_temp,
+            tempdeck_auto_turnon=tempdeck_auto_turnon,
+            tempdeck_auto_turnoff=tempdeck_auto_turnoff,
             tipracks_slots=tipracks_slots,
             wash_1_vol=wash_1_vol,
             wash_2_vol=wash_2_vol,
@@ -223,10 +227,13 @@ class StationBTechnogenetics(StationB):
         
         self.remove_wash(self._remove_wash_vol, "remove wash B after spin")
 
+        if self._tempdeck_temp is not None and not self._tempdeck_auto_turnon:
+            self._tempdeck.start_set_temperature(self._tempdeck_temp)
+
         if self.run_stage("remove wash B"):
             self._magdeck.disengage()
             self.dual_pause("Check Wash B removal and empty waste reservoir")
-        
+
         if self.run_stage("deepwell incubation"):
             self.dual_pause("deepwell incubation", between=self.set_external if self._external_deepwell_incubation else None)
             self.set_internal()
