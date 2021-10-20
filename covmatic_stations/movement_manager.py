@@ -11,9 +11,11 @@ class MovementManager:
         self._home_pos: dict = {}
         self._logger = logger
 
-    def move_to_home(self, safety_margin=10):
+    def move_to_home(self, safety_margin=10, force: bool = False):
         ''' Move pipettes near home
             without really homing to save time since homing is not needed
+            :param safety_margin: the distance to keep from home position (not to hit the home switches)
+            :param force: force the movement without checking if the gantry is near home
         '''
         self._ctx.comment("Moving near home")
         if Mount.LEFT not in self._home_pos or Mount.RIGHT not in self._home_pos:
@@ -35,7 +37,7 @@ class MovementManager:
             self._logger.debug("required pos L: {}".format(self._home_pos[Mount.LEFT]))
             self._logger.debug("required pos R: {}".format(self._home_pos[Mount.RIGHT]))
 
-            if self._need_home(actual_pos, safety_margin):
+            if force or self._need_home(actual_pos, safety_margin):
                 target_mount = Mount.RIGHT if self._mount is Mount.RIGHT else Mount.LEFT     # avoiding PairedPipette Mounts
                 target_pos = self._home_pos[target_mount]
                 delta_pos = Point(target_pos.x - actual_pos[target_mount].x - safety_margin,

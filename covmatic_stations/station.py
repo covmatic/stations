@@ -482,7 +482,8 @@ class Station(metaclass=StationMeta):
                 self._request.join(2, 0.5)
             self.track_tip()
             self._button.color = 'blue'
-        self._mov_manager.move_to_home()
+        self._mov_manager.move_to_home(force=True)    # Forcing the gantry to move away from back position
+                                                      # on some robots the home current is not enough to move the gantry
         self._sound_manager.cleanup()
     
     def simulate(self):
