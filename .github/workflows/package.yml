@@ -25,7 +25,7 @@ jobs:
     - name: Install
       run: python setup.py install
     - name: Test execution
-      run: python -m unittest
+      run: python -m unittest discover -s tests
 
   simulate:
     runs-on: ubuntu-latest
