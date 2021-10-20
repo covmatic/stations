@@ -4,6 +4,7 @@ from . import __version__, __file__ as module_path
 
 from .movement_manager import MovementManager
 from .request import StationRESTServerThread, DEFAULT_REST_KWARGS
+from .sound_manager import SoundManager
 from .utils import ProtocolContextLoggingHandler, LocalWebServerLogger
 from .lights import Button, BlinkingLightHTTP, BlinkingLight
 from opentrons.protocol_api import ProtocolContext
@@ -145,6 +146,9 @@ class Station(metaclass=StationMeta):
         self._msg = ""
         self.external = False
         self._run_stage = self._start_at is None
+        self._sound_manager = SoundManager(alarm=os.path.join(os.path.dirname(module_path), 'sounds', 'alarm.mp3'),
+                                           beep=os.path.join(os.path.dirname(module_path), 'sounds', 'beep.mp3'),
+                                           finish=os.path.join(os.path.dirname(module_path), 'sounds', 'finish.mp3'))
     
     def set_external(self, value: bool = True) -> bool:
         self.external = value
@@ -379,6 +383,7 @@ class Station(metaclass=StationMeta):
         if home:
             self._mov_manager.move_to_home()
         if blink and not self._ctx.is_simulating():
+            self._sound_manager.play("beep")
             lt = (BlinkingLightHTTP if self._dummy_lights else BlinkingLight)(self._ctx, t=blink_period/2)
             lt.start()
         if delay_time > 0:
@@ -457,10 +462,14 @@ class Station(metaclass=StationMeta):
 
             self.assert_run_stage_has_been_executed()
 
+            if not self._ctx.is_simulating():
+                self._sound_manager.play("finish")
+
         except Exception as e:
             self.logger.error("Exception occurred during protocol: {}".format(e))
             if not self._ctx.is_simulating():
                 self.log_protocol_exception(e)
+                self._sound_manager.play("alarm")
             raise e     # Propagate the exception
         finally:
             self.status = "finished"
@@ -469,6 +478,7 @@ class Station(metaclass=StationMeta):
             self.track_tip()
             self._button.color = 'blue'
         self._mov_manager.move_to_home()
+        self._sound_manager.cleanup()
     
     def simulate(self):
         from opentrons import simulate
