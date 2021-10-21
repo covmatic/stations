@@ -2,6 +2,10 @@ Covmatic Stations changelog
 ===========================
 
 
+## v2.9.2
+### Fixed
+- [station] Changed beep sound.
+
 ## v2.9.1
 ### Fixed
 - [station] Force home movement after run even with gantry in near-home position:

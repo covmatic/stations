@@ -147,7 +147,7 @@ class Station(metaclass=StationMeta):
         self.external = False
         self._run_stage = self._start_at is None
         self._sound_manager = SoundManager(alarm=os.path.join(os.path.dirname(module_path), 'sounds', 'alarm.mp3'),
-                                           beep=os.path.join(os.path.dirname(module_path), 'sounds', 'beep.mp3'),
+                                           beep=os.path.join(os.path.dirname(module_path), 'sounds', 'beep2.mp3'),
                                            finish=os.path.join(os.path.dirname(module_path), 'sounds', 'finish.mp3'))
     
     def set_external(self, value: bool = True) -> bool:
