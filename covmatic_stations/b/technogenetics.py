@@ -224,11 +224,11 @@ class StationBTechnogenetics(StationB):
         
         if self.run_stage("post spin incubation wash B"):
             self.delay(self._postspin_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
-        
-        self.remove_wash(self._remove_wash_vol, "remove wash B after spin")
 
         if self._tempdeck_temp is not None and not self._tempdeck_auto_turnon:
             self._tempdeck.start_set_temperature(self._tempdeck_temp)
+
+        self.remove_wash(self._remove_wash_vol, "remove wash B after spin")
 
         if self.run_stage("remove wash B"):
             self._magdeck.disengage()
