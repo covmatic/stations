@@ -1,6 +1,9 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.9.3
+### Fixed
+- [station B techogenetics] Tempdeck turn on moved before second wash B removal
 
 ## v2.9.2
 ### Fixed
