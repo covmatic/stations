@@ -1,3 +1,6 @@
+import json
+import os
+
 from opentrons.protocol_api import ProtocolContext
 from opentrons.protocol_api.labware import Well
 from opentrons.types import Location
@@ -166,7 +169,9 @@ class WellWithVolume:
         return final_height
 
 
-
+def get_labware_json_from_filename(filename: str = ""):
+    with open(os.path.join(os.path.dirname(__file__), 'labware', filename)) as f:
+        return json.load(f)
 
 
 # Copyright (c) 2020 Covmatic.
