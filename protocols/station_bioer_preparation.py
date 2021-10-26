@@ -1,8 +1,16 @@
-include covmatic_stations/a/*.json
-include covmatic_stations/b/*.json
-include covmatic_stations/labware/*.json
-include covmatic_stations/msg/*.json
-include covmatic_stations/sounds/*.mp3
+import logging
+from covmatic_stations.bioer.Bioer_full_dw import BioerProtocol
+
+
+logging.getLogger(BioerProtocol.__name__).setLevel(logging.INFO)
+metadata = {'apiLevel': '2.7'}
+station = BioerProtocol(num_samples = 96,
+                        transfer_proteinase_phase = True, mix_beads_phase = False, mastermix_phase = False, transfer_elutes_phase = True,
+                        control_well_positions = ['G12', 'H12'])
+
+
+def run(ctx):
+    return station.run(ctx)
 
 
 # Copyright (c) 2020 Covmatic.
