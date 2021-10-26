@@ -1,3 +1,6 @@
+import json
+import os
+
 from opentrons.protocol_api import ProtocolContext
 from opentrons.protocol_api.labware import Well
 from opentrons.types import Location
@@ -194,7 +197,6 @@ class MoveWithSpeed:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._pip.move_to(self._to_point)       # for safety, since we've a force_direct set on next move_to
         self._pip.move_to(self._from_point, force_direct=True, speed=self._speed if self._go_away else None)
-
 
 def get_labware_json_from_filename(filename: str = ""):
     with open(os.path.join(os.path.dirname(__file__), 'labware', filename)) as f:

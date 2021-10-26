@@ -1,12 +1,10 @@
 import logging
-from covmatic_stations.bioer.Bioer_full_dw import BioerProtocol
+from covmatic_stations.bioer.Bioer_preparation import BioerPreparation
 
 
-logging.getLogger(BioerProtocol.__name__).setLevel(logging.INFO)
+logging.getLogger(BioerPreparation.__name__).setLevel(logging.INFO)
 metadata = {'apiLevel': '2.7'}
-station = BioerProtocol(num_samples = 96,
-                        transfer_proteinase_phase = True, mix_beads_phase = False, mastermix_phase = False, transfer_elutes_phase = True,
-                        control_well_positions = ['G12', 'H12'])
+station = BioerPreparation()
 
 
 def run(ctx):
