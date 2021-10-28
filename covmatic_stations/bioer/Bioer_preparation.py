@@ -1,52 +1,36 @@
 from ..station import Station, labware_loader, instrument_loader
 from ..multi_tube_source import MultiTubeSource
-from ..utils import uniform_divide, get_labware_json_from_filename
+from ..utils import uniform_divide, get_labware_json_from_filename, MoveWithSpeed
 
 
 class BioerPreparation(Station):
     def __init__(self,
-            debug_mode = False,
-            num_samples: int = 16,
-            pk_tube_bottom_height = 2,
-            deepwell_slot = 3,
-            dw_bottom_height = 13.5,
-            mix_bottom_height = 0.5,
-            mix_bottom_height_dw = -1.8,
-            pk_volume_tube = 320,
-            pk_dead_volume = 5,
-            headroom_vol_from_tubes_to_dw = 10,
-            tube_block_model: str = 'opentrons_24_tuberack_nest_1.5ml_screwcap',
-            transfer_proteinase_phase: bool = False,
-            mix_beads_phase: bool = False,
-            vertical_offset = -16,
-            p300_max_volume = 200,
-            ** kwargs):
+                 num_samples: int = 16,
+                 pk_tube_bottom_height: float = 2,
+                 deepwell_slot: int = 3,
+                 pk_dw_bottom_height: float = 13.5,
+                 pk_volume: float = 10,
+                 pk_dead_volume: float = 5,
+                 pk_vertical_speed: float = 20,
+                 sample_vertical_speed: float = 20,
+                 tube_block_model: str = 'opentrons_24_tuberack_nest_1.5ml_screwcap',
+                 p300_max_volume: float = 200,
+                 ** kwargs):
 
         assert num_samples <= 16, "Protocol must be used with 16 or less samples"
 
         super(BioerPreparation, self).__init__(
-            num_samples = num_samples,
+            num_samples=num_samples,
             ** kwargs)
-
-        self._debug_mode = debug_mode
-        self._dests_sample = []
-        self._max_sample_per_dw = 16
-        self._elution_volume = 12
-        self._pk_volume = 10
-        self._pk_volume_tube = pk_volume_tube
-        self._mm_volume = 18
-        self._dw_bottom_height = dw_bottom_height
-        self._mix_bottom_height = mix_bottom_height
-        self._pk_tube_source = MultiTubeSource()
+        self._pk_volume = pk_volume
+        self._pk_vertical_speed = pk_vertical_speed
+        self._sample_vertical_speed = sample_vertical_speed
         self._pk_tube_bottom_height = pk_tube_bottom_height
+        self._pk_dw_bottom_height = pk_dw_bottom_height
         self._pk_dead_volume = pk_dead_volume
         self._deepwell_slot = deepwell_slot
-        self._headroom_vol_from_tubes_to_dw = headroom_vol_from_tubes_to_dw
         self._tube_block_model = tube_block_model
-        self._mix_beads_phase = mix_beads_phase
         self._p300_max_volume = p300_max_volume
-        self.transfer_proteinase_phase = transfer_proteinase_phase
-        self._vertical_offset = vertical_offset
 
     @labware_loader(1, "_tips200")
     def load_tips200(self):
@@ -101,8 +85,11 @@ class BioerPreparation(Station):
         self.log("One PK aspirate of {}ul can dispense to {} destination".format(aspirate_volume, num_samples_per_aspirate))
 
         aspirate_dead_volume = True
-
         self.pick_up(self._p300)
+
+        # Fake aspiration and dispense to avoid a bug that move the pipette to the top of the well.
+        self._p300.aspirate(10, self._tube_rack.wells()[0].top())
+        self._p300.dispense(self._p300.current_volume)
 
         for done_count, sample in enumerate(self.samples_destination_single):
             if self._p300.current_volume - self._pk_dead_volume < self._pk_volume:
@@ -113,8 +100,18 @@ class BioerPreparation(Station):
                 volume_to_aspirate = volume_for_samples + self._pk_dead_volume if aspirate_dead_volume else 0
                 aspirate_dead_volume = False
                 self.log("aspirate {}ul".format(volume_to_aspirate))
-                self._p300.aspirate(volume_to_aspirate, self._tube_rack.wells()[0].bottom(self._pk_tube_bottom_height))
-            self._p300.dispense(self._pk_volume, sample.bottom(self._dw_bottom_height))
+                with MoveWithSpeed(self._p300,
+                                   from_point=self._tube_rack.wells()[0].top(),
+                                   to_point=self._tube_rack.wells()[0].bottom(self._pk_tube_bottom_height),
+                                   speed=self._pk_vertical_speed):
+                    self._p300.aspirate(volume_to_aspirate)
+
+            with MoveWithSpeed(self._p300,
+                               from_point=sample.bottom(self._pk_dw_bottom_height + 5),
+                               to_point=sample.bottom(self._pk_dw_bottom_height),
+                               speed=self._pk_vertical_speed, move_close=False):
+                self._p300.dispense(self._pk_volume)
+
         self.drop(self._p300)
 
     def log(self, s):
