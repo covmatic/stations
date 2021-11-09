@@ -106,7 +106,7 @@ class BioerPreparation(Station):
 
     @property
     def samples_destination_single(self):
-        return [sample for row in self.samples_destination_rows for sample in row]
+        return [sample for row in self.samples_destination_rows for sample in row][:self._num_samples]
 
     @property
     def samples_source_single(self):
