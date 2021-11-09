@@ -1,6 +1,6 @@
 from ..station import Station, labware_loader, instrument_loader
 from ..multi_tube_source import MultiTubeSource
-from ..utils import uniform_divide, get_labware_json_from_filename, MoveWithSpeed
+from ..utils import uniform_divide, get_labware_json_from_filename, MoveWithSpeed, WellWithVolume
 from ..a.copan_48 import copan_48_corrected_specs
 
 
@@ -8,6 +8,7 @@ class BioerPreparation(Station):
     def __init__(self,
                  num_samples: int = 16,
                  deepwell_slot: int = 3,
+                 deepwel_initial_volume: float = 600,
                  pk_tube_bottom_height: float = 2,
                  pk_dw_bottom_height: float = 13.5,
                  pk_rate_aspirate: float = 100,
@@ -19,10 +20,11 @@ class BioerPreparation(Station):
                  sample_air_gap: float = 25,
                  sample_rate_aspirate: float = 200,
                  sample_rate_dispense: float = 200,
-                 sample_volume: float = 200,
+                 sample_volume: float = 300,
                  sample_destination_bottom_height: float = 13.5,
                  source_racks_slots=[1],
-                 source_headroom_height: float = 6,
+                 source_bottom_height_aspirate: float = 6,
+                 source_bottom_height_start: float = 30,
                  tube_block_model: str = 'opentrons_24_tuberack_nest_1.5ml_screwcap',
                  tube_rack_slot: int = 6,
                  p300_max_volume: float = 200,
@@ -42,13 +44,15 @@ class BioerPreparation(Station):
         self._pk_dw_bottom_height = pk_dw_bottom_height
         self._pk_dead_volume = pk_dead_volume
         self._deepwell_slot = deepwell_slot
+        self._deepwel_initial_volume = deepwel_initial_volume
         self._sample_air_gap = sample_air_gap
         self._sample_rate_aspirate = sample_rate_aspirate
         self._sample_rate_dispense = sample_rate_dispense
         self._sample_volume = sample_volume
         self._sample_destination_bottom_height = sample_destination_bottom_height
         self._source_racks_slots = source_racks_slots
-        self._source_headroom_height = source_headroom_height
+        self._source_bottom_height_start = source_bottom_height_start
+        self._source_bottom_height_aspirate = source_bottom_height_aspirate
         self._tube_block_model = tube_block_model
         self._tube_rack_slot = tube_rack_slot
         self._p300_max_volume = p300_max_volume
@@ -121,7 +125,7 @@ class BioerPreparation(Station):
 
         num_samples_per_aspirate = self.p300_available_vol // self._pk_volume
         aspirate_volume = num_samples_per_aspirate*self._pk_volume + self._pk_dead_volume
-        self.log("One PK aspirate of {}ul can dispense to {} destination".format(aspirate_volume, num_samples_per_aspirate))
+        self.logger.info("One PK aspirate of {}ul can dispense to {} destination".format(aspirate_volume, num_samples_per_aspirate))
 
         aspirate_dead_volume = True
         self.pick_up(self._p300)
@@ -133,12 +137,12 @@ class BioerPreparation(Station):
         for done_count, sample in enumerate(self.samples_destination_single):
             if self._p300.current_volume - self._pk_dead_volume < self._pk_volume:
                 remaining_samples = self._num_samples - done_count
-                self.log("remaining {} samples".format(remaining_samples))
+                self.logger.info("remaining {} samples".format(remaining_samples))
                 volume_for_samples = min([self._p300_max_volume,
                                           self._p300.current_volume + remaining_samples * self._pk_volume])
                 volume_to_aspirate = volume_for_samples + self._pk_dead_volume if aspirate_dead_volume else 0
                 aspirate_dead_volume = False
-                self.log("aspirate {}ul".format(volume_to_aspirate))
+                self.logger.info("aspirate {}ul".format(volume_to_aspirate))
                 with MoveWithSpeed(self._p300,
                                    from_point=self._tube_rack.wells()[0].top(),
                                    to_point=self._tube_rack.wells()[0].bottom(self._pk_tube_bottom_height),
@@ -156,22 +160,33 @@ class BioerPreparation(Station):
 
     def transfer_sample(self, source, dest):
         self.logger.debug("transferring from {} to {}".format(source, dest))
-        dest_dispense_air_gap_point = dest.bottom(self._sample_destination_bottom_height + 5)
+        dest_with_volume = WellWithVolume(dest, self._deepwel_initial_volume, headroom_height=0)
+        dest_initial_height = dest_with_volume.height
+
+        print("Inital height: {}".format(dest_initial_height))
 
         self.pick_up(self._p1000)
+        # Aspirating from source tube
         with MoveWithSpeed(self._p1000,
-                           from_point=source.bottom(self._source_headroom_height + 30),
-                           to_point=source.bottom(self._source_headroom_height),
+                           from_point=source.bottom(self._source_bottom_height_start),
+                           to_point=source.bottom(self._source_bottom_height_aspirate),
                            speed=self._sample_vertical_speed, move_close=False):
             self._p1000.aspirate(self._sample_volume)
         self._p1000.air_gap(self._sample_air_gap)
 
-        self._p1000.dispense(self._sample_air_gap, dest_dispense_air_gap_point)
+        # Dispensing at the right height
+        dest_with_volume.fill(self._sample_volume)
+        dest_filled_height = dest_with_volume.height + 2
+
+        self.logger.info("After fill height is: {:.2f}".format(dest_filled_height))
+        self.logger.info("while initial height is: {:.2f}".format(dest_initial_height))
+
         with MoveWithSpeed(self._p1000,
-                           from_point=dest_dispense_air_gap_point,
-                           to_point=dest.bottom(self._sample_destination_bottom_height),
+                           from_point=dest.bottom(dest_filled_height),
+                           to_point=dest.bottom(dest_initial_height),
                            speed=self._sample_vertical_speed, move_close=False):
-            self._p1000.dispense(self._sample_volume)
+            self._p1000.dispense(self._sample_volume + self._sample_air_gap)
+
         self._p1000.air_gap(self._sample_air_gap)
         self.drop(self._p1000)
 
@@ -181,9 +196,6 @@ class BioerPreparation(Station):
 
         for s, d in zip(self.samples_source_single, self.samples_destination_single):
             self.transfer_sample(s, d)
-
-    def log(self, s):
-        self._ctx.comment(s)
 
     def body(self):
         #
