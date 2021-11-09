@@ -154,19 +154,32 @@ class WellWithVolume:
         self._min_height = min_height
         self._headroom_height = headroom_height
 
+    @property
+    def height(self) -> float:
+        if self._well.diameter:
+            remaining_height = self._volume / (math.pi * self._well.diameter**2)
+        else:
+            remaining_height = self._volume / self._well.length**2
+
+        remaining_height -= self._headroom_height
+        final_height = max(remaining_height, self._min_height)
+        return final_height
+
     def extract_vol_and_get_height(self, aspirate_vol: float) -> float:
         """Return the maximum height to aspirate safely a volume from a well
         :param aspirate_vol: The volume to aspirate
         :returns: the maximum height to aspirate safely the volume in the well"""
         self._volume = self._volume - aspirate_vol if self._volume > aspirate_vol else 0
 
-        if self._well.diameter:
-            remaining_height = self._volume / (math.pi * self._well.diameter**2)
-        else:
-            remaining_height = self._volume / self._well.length**2
-        remaining_height -= self._headroom_height
-        final_height = max(remaining_height, self._min_height)
-        return final_height
+        return self.height
+
+    def fill(self, vol: float):
+        """Return the maximum height to aspirate safely a volume from a well
+        :param vol: The volume being dispensed in the well"""
+
+        self._volume = self._volume + vol
+        if self._volume < 0:
+            self._volume = 0
 
 
 class MoveWithSpeed:
