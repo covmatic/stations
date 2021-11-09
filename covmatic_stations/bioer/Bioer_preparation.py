@@ -56,6 +56,7 @@ class BioerPreparation(Station):
         self._tube_block_model = tube_block_model
         self._tube_rack_slot = tube_rack_slot
         self._p300_max_volume = p300_max_volume
+        self._p1000_fake_aspirate = True
 
     @labware_loader(0, "_tips200")
     def load_tips200(self):
@@ -166,6 +167,12 @@ class BioerPreparation(Station):
         print("Inital height: {}".format(dest_initial_height))
 
         self.pick_up(self._p1000)
+
+        if self._p1000_fake_aspirate:
+            self._p1000_fake_aspirate = False
+            self._p1000.aspirate(self._sample_air_gap, source.top())
+            self._p1000.dispense(self._sample_air_gap, source.top())
+
         # Aspirating from source tube
         with MoveWithSpeed(self._p1000,
                            from_point=source.bottom(self._source_bottom_height_start),
