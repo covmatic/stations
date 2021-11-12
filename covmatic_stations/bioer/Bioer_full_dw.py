@@ -366,12 +366,12 @@ class BioerProtocol(Station):
         else:
             super(BioerProtocol, self).drop(pip)
 
-class BioerPreparationToBioer(BioerProtocol):
-    def __init__(self, ** kwargs):
-        super(BioerPreparationToBioer, self).__init__(
-            mix_beads_phase = False,
-            transfer_proteinase_phase = True,
-            ** kwargs)
+# class BioerPreparationToBioer(BioerProtocol):
+#     def __init__(self, ** kwargs):
+#         super(BioerPreparationToBioer, self).__init__(
+#             mix_beads_phase = False,
+#             transfer_proteinase_phase = True,
+#             ** kwargs)
 
 class BioerPreparationToPcr(BioerProtocol):
     def __init__(self, ** kwargs):

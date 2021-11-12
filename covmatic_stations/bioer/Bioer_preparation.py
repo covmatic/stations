@@ -24,7 +24,7 @@ class BioerPreparation(Station):
                  sample_destination_bottom_height: float = 13.5,
                  source_racks_slots=[1],
                  source_bottom_height_aspirate: float = 6,
-                 source_bottom_height_start: float = 30,
+                 source_bottom_height_start: float = 40,
                  tube_block_model: str = 'opentrons_24_tuberack_nest_1.5ml_screwcap',
                  tube_rack_slot: int = 6,
                  p300_max_volume: float = 200,
@@ -61,12 +61,12 @@ class BioerPreparation(Station):
     @labware_loader(0, "_tips200")
     def load_tips200(self):
         self._tips200 = [self._ctx.load_labware('opentrons_96_filtertiprack_200ul', slot, '200ul filter tiprack')
-                                for slot in ['11']]
+                                for slot in ['10']]
 
     @labware_loader(1, "_tips1000")
     def load_tips1000(self):
         self._tips1000 = [self._ctx.load_labware('opentrons_96_filtertiprack_1000ul', slot, '1000ul filter tiprack')
-                                for slot in ['10']]
+                                for slot in ['11']]
 
     @labware_loader(2, "_source_racks")
     def load_source_racks(self):
@@ -186,7 +186,7 @@ class BioerPreparation(Station):
 
         # Dispensing at the right height
         dest_with_volume.fill(self._sample_volume)
-        dest_filled_height = dest_with_volume.height + 2
+        dest_filled_height = dest_with_volume.height + 10
 
         with MoveWithSpeed(self._p1000,
                            from_point=dest.bottom(dest_filled_height),
