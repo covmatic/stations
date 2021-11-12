@@ -120,7 +120,7 @@ class BioerPreparation(Station):
     def p300_available_vol(self):
         return self._p300_max_volume - self._pk_dead_volume
 
-    def transfer_proteinase(self):
+    def transfer_proteinase(self, stage: str = "transfer proteinase"):
         self._p300.flow_rate.aspirate = self._pk_rate_aspirate
         self._p300.flow_rate.dispense = self._pk_rate_dispense
 
@@ -129,42 +129,45 @@ class BioerPreparation(Station):
         self.logger.info("One PK aspirate of {}ul can dispense to {} destination".format(aspirate_volume, num_samples_per_aspirate))
 
         aspirate_dead_volume = True
-        self.pick_up(self._p300)
-
-        # Fake aspiration and dispense to avoid a bug that move the pipette to the top of the well.
-        self._p300.aspirate(10, self._tube_rack.wells()[0].top())
-        self._p300.dispense(self._p300.current_volume)
+        p300_fake_aspirate = True
 
         for done_count, sample in enumerate(self.samples_destination_single):
-            if self._p300.current_volume - self._pk_dead_volume < self._pk_volume:
-                remaining_samples = self._num_samples - done_count
-                self.logger.info("remaining {} samples".format(remaining_samples))
-                volume_for_samples = min([self._p300_max_volume,
-                                          self._p300.current_volume + remaining_samples * self._pk_volume])
-                volume_to_aspirate = volume_for_samples + self._pk_dead_volume if aspirate_dead_volume else 0
-                aspirate_dead_volume = False
-                self.logger.info("aspirate {}ul".format(volume_to_aspirate))
+            if self.run_stage("{} {}/{}".format(stage, done_count+1, len(self.samples_destination_single))):
+                if not self._p300.has_tip:
+                    self.pick_up(self._p300)
+                if self._p300.current_volume - self._pk_dead_volume < self._pk_volume:
+                    # Fake aspiration and dispense to avoid a bug that moves the pipette to the top of the well.
+                    if p300_fake_aspirate:
+                        p300_fake_aspirate = False
+                        self._p300.aspirate(10, self._tube_rack.wells()[0].top())
+                        self._p300.dispense(self._p300.current_volume)
+
+                    remaining_samples = self._num_samples - done_count
+                    volume_for_samples = min([self._p300_max_volume,
+                                              self._p300.current_volume + remaining_samples * self._pk_volume])
+                    volume_to_aspirate = volume_for_samples + self._pk_dead_volume if aspirate_dead_volume else 0
+                    aspirate_dead_volume = False
+
+                    with MoveWithSpeed(self._p300,
+                                       from_point=self._tube_rack.wells()[0].top(),
+                                       to_point=self._tube_rack.wells()[0].bottom(self._pk_tube_bottom_height),
+                                       speed=self._pk_vertical_speed):
+                        self._p300.aspirate(volume_to_aspirate)
+
                 with MoveWithSpeed(self._p300,
-                                   from_point=self._tube_rack.wells()[0].top(),
-                                   to_point=self._tube_rack.wells()[0].bottom(self._pk_tube_bottom_height),
-                                   speed=self._pk_vertical_speed):
-                    self._p300.aspirate(volume_to_aspirate)
+                                   from_point=sample.bottom(self._pk_dw_bottom_height + 5),
+                                   to_point=sample.bottom(self._pk_dw_bottom_height),
+                                   speed=self._pk_vertical_speed, move_close=False):
+                    self._p300.dispense(self._pk_volume)
 
-            with MoveWithSpeed(self._p300,
-                               from_point=sample.bottom(self._pk_dw_bottom_height + 5),
-                               to_point=sample.bottom(self._pk_dw_bottom_height),
-                               speed=self._pk_vertical_speed, move_close=False):
-                self._p300.dispense(self._pk_volume)
-
-        self._p300.blow_out(self._tube_rack.wells()[0].top())
-        self.drop(self._p300)
+        if self._p300.has_tip:          # at least one stage has been executed
+            self._p300.blow_out(self._tube_rack.wells()[0].top())
+            self.drop(self._p300)
 
     def transfer_sample(self, source, dest):
         self.logger.debug("transferring from {} to {}".format(source, dest))
         dest_with_volume = WellWithVolume(dest, self._deepwel_initial_volume, headroom_height=0)
         dest_initial_height = dest_with_volume.height
-
-        print("Inital height: {}".format(dest_initial_height))
 
         self.pick_up(self._p1000)
 
@@ -185,9 +188,6 @@ class BioerPreparation(Station):
         dest_with_volume.fill(self._sample_volume)
         dest_filled_height = dest_with_volume.height + 2
 
-        self.logger.info("After fill height is: {:.2f}".format(dest_filled_height))
-        self.logger.info("while initial height is: {:.2f}".format(dest_initial_height))
-
         with MoveWithSpeed(self._p1000,
                            from_point=dest.bottom(dest_filled_height),
                            to_point=dest.bottom(dest_initial_height),
@@ -197,95 +197,18 @@ class BioerPreparation(Station):
         self._p1000.air_gap(self._sample_air_gap)
         self.drop(self._p1000)
 
-    def transfer_samples(self):
+    def transfer_samples(self, stage: str = "transfer samples"):
         self._p1000.flow_rate.aspirate = self._sample_rate_aspirate
         self._p1000.flow_rate.dispense = self._sample_rate_dispense
 
-        for s, d in zip(self.samples_source_single, self.samples_destination_single):
-            self.transfer_sample(s, d)
+        sources_and_dest_list = list(zip(self.samples_source_single, self.samples_destination_single))
+        for done_count, (s, d) in enumerate(sources_and_dest_list):
+            if self.run_stage("{} {}/{}".format(stage, done_count+1, len(sources_and_dest_list))):
+                self.transfer_sample(s, d)
 
     def body(self):
-        #
-        # num_dw = math.ceil(self._num_samples / self._max_sample_per_dw)
-        #
-        # self.logger.info("Controls in {}".format(self._control_well_positions))
-
-        # #proteinase_destinations
-        # dests_pk_unique = []
-        # for d in self.proteinase_destinations:
-        #     dests_pk_unique += d
-        # #self.logger.info("dests_pk_unique: {}".format(dests_pk_unique))
-
-        # #tube_block_pk
-        # volume_for_samples = self._pk_volume * self._num_samples
-        # volume_to_distribute_to_dw = volume_for_samples
-        # num_pk_tube = math.ceil(volume_for_samples / self._pk_volume_tube)
-        #
-        # [self._pk_tube_source.append_tube_with_vol(t, self._pk_volume_tube) for t in self._tube_block.wells()[0:num_pk_tube]]
-        # self.logger.info("We need {} tubes with {}ul of proteinase each in {}".format(num_pk_tube,
-        #                                                                               self._pk_volume_tube,
-        #                                                                               self._pk_tube_source.locations_str))
-        #
-        # pk_requirements = self.get_msg_format("load pk tubes",
-        #                                    num_pk_tube,
-        #                                    self._pk_volume_tube,
-        #                                    self._pk_tube_source.locations_str)
-        #
-        #
-        # #tube_block_mm
-        # volume_for_controls = len(self.control_wells_not_in_samples) * self._mm_volume
-        # volume_for_samples = self._mm_volume * self._num_samples
-        # volume_to_distribute_to_pcr_plate = volume_for_samples + volume_for_controls
-        # num_tubes, vol_per_tube = uniform_divide(
-        #     volume_to_distribute_to_pcr_plate + self._headroom_vol_from_tubes_to_pcr, self._mm_volume_tube)
-        # mm_tubes = self._tube_block.wells()[:num_tubes]
-        # available_volume = volume_to_distribute_to_pcr_plate / len(mm_tubes)
-        # if self._headroom_vol_from_tubes_to_pcr > 0:
-        #     if self._vol_mm_offset < (self._headroom_vol_from_tubes_to_pcr / len(mm_tubes)):
-        #         available_volume += self._vol_mm_offset
-        # assert vol_per_tube > available_volume, \
-        #     "Error in volume calculations: requested {}ul while total in tubes {}ul".format(available_volume, vol_per_tube)
-        #
-        # [self._mm_tube_source.append_tube_with_vol(t, available_volume) for t in self._tube_block.wells()[len(self._tube_block.wells())-num_tubes::]]
-        #
-        # self.logger.info("We need {} tubes with {}ul of mastermix each in {}".format(num_tubes,
-        #                                                                               vol_per_tube,
-        #                                                                               self._mm_tube_source.locations_str))
-        # mmix_requirements = self.get_msg_format("load mm tubes",
-        #                                    num_tubes,
-        #                                    vol_per_tube,
-        #                                    self._mm_tube_source.locations_str)
-        #
-        # control_positions = self.get_msg_format("control positions",
-        #                                         self._control_well_positions)
-        #
-        # #transfer_proteinase
-        # if self.transfer_proteinase_phase:
-        #     self.pause(pk_requirements, home=False)
-        self.stage = "Transfer proteinase"
-        self.transfer_proteinase()
-        self.transfer_samples()
-        #
-        # #mix_beads
-        # if self._mix_beads_phase:
-        #     self.stage = "Mix beads"
-        #     self.mix_beads()
-        #
-        # #Bioer phase
-        # if (self.transfer_proteinase_phase or self._mix_beads_phase) and (self._mastermix_phase or self.transfer_elutes_phase):
-        #     self.dual_pause("Move deepwells to Bioer")
-        #
-        # #transfer mastermix
-        # if self._mastermix_phase:
-        #     self.pause(control_positions, home=False)
-        #     self.pause(mmix_requirements, home=False)
-        #     self.stage = "Transfer mastermix"
-        #     self.transfer_mastermix()
-        #
-        # #transfer elutes
-        # if self.transfer_elutes_phase:
-        #     self.stage = "Transfer elutes"
-        #     self.transfer_elutes()
+        self.transfer_proteinase(stage="transfer proteinase")
+        self.transfer_samples(stage="transfer samples")
 
 # protocol for loading in Opentrons App or opentrons_simulate
 # =====================================
