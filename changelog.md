@@ -1,6 +1,11 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.10.0
+### Added
+- [Bioer preparation] New protocol to prepare one Bioer deepwell plate
+- [station] added MovieWithSpeed class to move at desidered speed to and from wells.
+
 ## v2.9.3
 ### Fixed
 - [station B techogenetics] Tempdeck turn on moved before second wash B removal
