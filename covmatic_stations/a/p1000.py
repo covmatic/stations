@@ -8,7 +8,7 @@ class StationAP1000(StationA):
     
     def __init__(
         self,
-        air_gap_sample: float = 100,
+        air_gap_sample: float = 25,
         main_pipette: str = 'p1000_single_gen2',
         main_tiprack: str = 'opentrons_96_filtertiprack_1000ul',
         main_tiprack_label: str = '1000µl filter tiprack',
@@ -46,7 +46,8 @@ class StationAP1000(StationA):
     def transfer_sample(self, source, dest):
         self.logger.debug("transferring from {} to {}".format(source, dest))
         self.pick_up(self._p_main)
-        self._p_main.mix(self._mix_repeats, self._mix_volume, source.bottom(self._source_headroom_height))
+        if self._mix_repeats:
+            self._p_main.mix(self._mix_repeats, self._mix_volume, source.bottom(self._source_headroom_height))
         self._p_main.transfer(
             self._sample_volume,
             source.bottom(self._source_headroom_height),
