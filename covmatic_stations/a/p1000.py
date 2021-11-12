@@ -1,3 +1,4 @@
+from ..utils import MoveWithSpeed, WellWithVolume
 from .a import StationA
 import json
 import os
@@ -9,12 +10,15 @@ class StationAP1000(StationA):
     def __init__(
         self,
         air_gap_sample: float = 25,
+        dest_above_liquid_height: float = 15,
         main_pipette: str = 'p1000_single_gen2',
         main_tiprack: str = 'opentrons_96_filtertiprack_1000ul',
         main_tiprack_label: str = '1000µl filter tiprack',
+        sample_vertical_speed: float = 40,
         source_headroom_height: float = 6,
+        source_height_start_slow: float = 40,
         source_racks: str = 'copan_15_tuberack_14000ul',
-        source_racks_definition_filepath: str = os.path.join(os.path.split(__file__)[0], "COPAN 15 Tube Rack 14000 µL.json"), 
+        source_racks_definition_filepath: str = os.path.join(os.path.split(__file__)[0], "COPAN 15 Tube Rack 14000 µL.json"),
         **kwargs
     ):
         super(StationAP1000, self).__init__(
@@ -27,6 +31,10 @@ class StationAP1000(StationA):
             source_racks_definition_filepath=source_racks_definition_filepath,
             **kwargs
         )
+        self._dest_above_liquid_height = dest_above_liquid_height
+        self._sample_vertical_speed = sample_vertical_speed
+        self._source_height_start_slow = source_height_start_slow
+        self._p_main_fake_aspirate = True
     
     def _load_source_racks(self):
         if self.jupyter:
@@ -46,17 +54,36 @@ class StationAP1000(StationA):
     def transfer_sample(self, source, dest):
         self.logger.debug("transferring from {} to {}".format(source, dest))
         self.pick_up(self._p_main)
-        if self._mix_repeats:
-            self._p_main.mix(self._mix_repeats, self._mix_volume, source.bottom(self._source_headroom_height))
-        self._p_main.transfer(
-            self._sample_volume,
-            source.bottom(self._source_headroom_height),
-            dest.bottom(self._dest_headroom_height),
-            air_gap=self._air_gap_sample,
-            new_tip='never'
-        )
+
+        # Fake aspirate to avoid pipette going up the first time
+        if self._p_main_fake_aspirate:
+            self._p_main_fake_aspirate = False
+            self._p_main.aspirate(self._air_gap_sample, source.top())
+            self._p_main.dispense(self._air_gap_sample, source.top())
+
+        # Aspirating sample
+        with MoveWithSpeed(self._p_main,
+                           from_point=source.bottom(self._source_height_start_slow),
+                           to_point=source.bottom(self._source_headroom_height),
+                           speed=self._sample_vertical_speed, move_close=False):
+            if self._mix_repeats:
+                self._p_main.mix(self._mix_repeats, self._mix_volume)
+            self._p_main.aspirate(self._sample_volume)
         self._p_main.air_gap(self._air_gap_sample)
-        #self._p_main.drop_tip()
+
+        # Dispensing sample
+        dest_with_volume = WellWithVolume(dest, initial_vol=self._sample_volume, headroom_height=0)
+        dispense_top_point = dest.bottom(dest_with_volume.height + self._dest_above_liquid_height)    # we must not go too high not to contaminate the well
+
+        self._p_main.dispense(self._air_gap_sample, dispense_top_point)
+        with MoveWithSpeed(self._p_main,
+                           from_point=dispense_top_point,
+                           to_point= dest.bottom(dest_with_volume.height),
+                           speed=self._sample_vertical_speed, move_close=False):
+            self._p_main.dispense(self._sample_volume)
+        self._p_main.blow_out(location=dispense_top_point)
+        self._p_main.air_gap(self._air_gap_sample, height=0)
+
         self.drop(self._p_main)
 
 

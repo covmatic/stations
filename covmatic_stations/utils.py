@@ -185,7 +185,13 @@ class WellWithVolume:
 class MoveWithSpeed:
     """Class to make easy aspirate and dispense approaching with a defined speed.
     This should be useful with viscous liquid in order not to break the external meniscus on tip avoiding drops"""
-    def __init__(self, pip: Union[InstrumentContext, PairedInstrumentContext], from_point: Location, to_point: Location, speed, move_close: bool = True, go_away: bool = True):
+    def __init__(self, pip: Union[InstrumentContext, PairedInstrumentContext],
+                 from_point: Location,
+                 to_point: Location,
+                 speed,
+                 move_close: bool = True,
+                 go_away: bool = True,
+                 logger: logging.Logger = logging.getLogger("MovieWithSpeed")):
         """Class initialization
         :param pip: pipette to move;
         :param from_point: first point to reach at default speed and last point to leave;
@@ -199,14 +205,19 @@ class MoveWithSpeed:
         self._from_point = from_point
         self._to_point = to_point
         self._speed = speed
+        self._logger = logger
 
         # We want to force_direct only if from and to point are on the same well.
         if self._to_point.labware.is_well and self._from_point.labware.is_well:
+            self._logger.info("Both labware are well")
             self._force_direct = self._to_point.labware.as_well() == self._from_point.labware.as_well()
         else:
+            self._logger.info("One labware is not well {}, {}".format(self._from_point.labware, self._to_point.labware))
             self._force_direct = False
+        self._logger.info("Force direct is: {}".format(self._force_direct))
 
     def __enter__(self):
+        self._logger.info("Moving close. Force direct is: {}".format(self._force_direct))
         if self._move_close:
             self._pip.move_to(self._from_point)
             self._pip.move_to(self._to_point, force_direct=self._force_direct, speed=self._speed)
@@ -214,6 +225,7 @@ class MoveWithSpeed:
             self._pip.move_to(self._to_point)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self._logger.info("Moving close. Force direct is: {}".format(self._force_direct))
         self._pip.move_to(self._to_point)       # for safety, since we've a force_direct set on next move_to
         self._pip.move_to(self._from_point, force_direct=self._force_direct, speed=self._speed if self._go_away else None)
 
