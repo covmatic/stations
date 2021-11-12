@@ -17,7 +17,7 @@ class StationATechnogenetics(StationAP1000):
         lys_mix_volume: float = 100,
         lysis_volume: float = 400,
         lysis_in_controls: bool = True,
-        mix_repeats: int = 1,
+        mix_repeats: int = 0,
         negative_control_well='A1',
         positive_control_well=None,
         prot_k_capacity: float = 180,
