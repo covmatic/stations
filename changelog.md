@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.10.1
+### Fixed
+- [station A techogenetics] fixed sample aspiration movement speed.
+
 ## v2.10.0
 ### Added
 - [Bioer preparation] New protocol to prepare one Bioer deepwell plate
