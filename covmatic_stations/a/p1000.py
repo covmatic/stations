@@ -15,6 +15,7 @@ class StationAP1000(StationA):
         main_tiprack: str = 'opentrons_96_filtertiprack_1000ul',
         main_tiprack_label: str = '1000µl filter tiprack',
         sample_vertical_speed: float = 40,
+        deepwell_vertical_speed: float = 20,
         source_headroom_height: float = 6,
         source_height_start_slow: float = 40,
         source_racks: str = 'copan_15_tuberack_14000ul',
@@ -33,6 +34,7 @@ class StationAP1000(StationA):
         )
         self._dest_above_liquid_height = dest_above_liquid_height
         self._sample_vertical_speed = sample_vertical_speed
+        self._deepwell_vertical_speed = deepwell_vertical_speed
         self._source_height_start_slow = source_height_start_slow
         self._p_main_fake_aspirate = True
     
@@ -75,12 +77,11 @@ class StationAP1000(StationA):
         dest_with_volume = WellWithVolume(dest, initial_vol=self._sample_volume, headroom_height=0)
         dispense_top_point = dest.bottom(dest_with_volume.height + self._dest_above_liquid_height)    # we must not go too high not to contaminate the well
 
-        self._p_main.dispense(self._air_gap_sample, dispense_top_point)
         with MoveWithSpeed(self._p_main,
                            from_point=dispense_top_point,
                            to_point= dest.bottom(dest_with_volume.height),
-                           speed=self._sample_vertical_speed, move_close=False):
-            self._p_main.dispense(self._sample_volume)
+                           speed=self._deepwell_vertical_speed, move_close=False):
+            self._p_main.dispense(self._sample_volume + self._air_gap_sample)
         self._p_main.blow_out(location=dispense_top_point)
         self._p_main.air_gap(self._air_gap_sample, height=0)
 
