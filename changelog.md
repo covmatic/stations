@@ -1,9 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
-## v2.10.1
+## v2.10.2
 ### Fixed
-- [station A techogenetics] fixed sample aspiration movement speed.
+- [station A technogenetics] fixed sample aspiration movement speed.
+- [station A technogenetics] cleaner sample transfer with delay to avoid bubbles in tip ejecting.
 
 ## v2.10.0
 ### Added
