@@ -209,15 +209,15 @@ class MoveWithSpeed:
 
         # We want to force_direct only if from and to point are on the same well.
         if self._to_point.labware.is_well and self._from_point.labware.is_well:
-            self._logger.info("Both labware are well")
+            self._logger.debug("Both labware are well")
             self._force_direct = self._to_point.labware.as_well() == self._from_point.labware.as_well()
         else:
-            self._logger.info("One labware is not well {}, {}".format(self._from_point.labware, self._to_point.labware))
+            self._logger.debug("One labware is not well {}, {}".format(self._from_point.labware, self._to_point.labware))
             self._force_direct = False
-        self._logger.info("Force direct is: {}".format(self._force_direct))
+        self._logger.debug("Force direct is: {}".format(self._force_direct))
 
     def __enter__(self):
-        self._logger.info("Moving close. Force direct is: {}".format(self._force_direct))
+        self._logger.debug("Moving close. Force direct is: {}".format(self._force_direct))
         if self._move_close:
             self._pip.move_to(self._from_point)
             self._pip.move_to(self._to_point, force_direct=self._force_direct, speed=self._speed)
@@ -225,7 +225,7 @@ class MoveWithSpeed:
             self._pip.move_to(self._to_point)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._logger.info("Moving close. Force direct is: {}".format(self._force_direct))
+        self._logger.debug("Moving close. Force direct is: {}".format(self._force_direct))
         self._pip.move_to(self._to_point)       # for safety, since we've a force_direct set on next move_to
         self._pip.move_to(self._from_point, force_direct=self._force_direct, speed=self._speed if self._go_away else None)
 
