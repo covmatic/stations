@@ -14,8 +14,8 @@ class StationAP1000(StationA):
         main_pipette: str = 'p1000_single_gen2',
         main_tiprack: str = 'opentrons_96_filtertiprack_1000ul',
         main_tiprack_label: str = '1000µl filter tiprack',
-        sample_vertical_speed: float = 40,
-        deepwell_vertical_speed: float = 20,
+        sample_vertical_speed: float = 50,
+        deepwell_vertical_speed: float = 50,
         source_headroom_height: float = 6,
         source_height_start_slow: float = 40,
         source_racks: str = 'copan_15_tuberack_14000ul',
@@ -82,6 +82,7 @@ class StationAP1000(StationA):
                            to_point= dest.bottom(dest_with_volume.height),
                            speed=self._deepwell_vertical_speed, move_close=False):
             self._p_main.dispense(self._sample_volume + self._air_gap_sample)
+        self._ctx.delay(seconds=1)
         self._p_main.blow_out(location=dispense_top_point)
         self._p_main.air_gap(self._air_gap_sample, height=0)
 
