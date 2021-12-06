@@ -161,7 +161,6 @@ class BioerPreparation(Station):
                     self._p300.dispense(self._pk_volume)
 
         if self._p300.has_tip:          # at least one stage has been executed
-            self._p300.blow_out(self._tube_rack.wells()[0].top())
             self.drop(self._p300)
 
     def transfer_sample(self, source, dest):
