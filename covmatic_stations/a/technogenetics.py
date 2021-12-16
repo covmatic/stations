@@ -22,7 +22,7 @@ class StationATechnogenetics(StationAP1000):
         positive_control_well=None,
         prot_k_capacity: float = 180,
         prot_k_headroom: float = 1.1,
-        prot_k_vol: float = 30,
+        prot_k_vol: float = 20,
         sample_aspirate: float = 100,
         sample_dispense: float = 100,
         tempdeck_temp: Optional[float] = None,
