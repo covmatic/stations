@@ -187,8 +187,8 @@ class BioerProtocol(Station):
             vol_pk = len(samples_to_do) * self._pk_volume
             if num_cycle == 1:
                 self._s300.aspirate(self._vol_pk_offset, self._tube_block.wells()[0].bottom(self._pk_tube_bottom_height))
-            self._pk_tube_source.calculate_aspirate_volume(vol_pk)
-            self._pk_tube_source.aspirate(self._s300, self._pk_tube_bottom_height)
+            self._pk_tube_source.prepare_aspiration(vol_pk, self._pk_tube_bottom_height)
+            self._pk_tube_source.aspirate(self._s300)
             #self.logger.info("Aspirating {} at: {} mm".format(vol_pk, self._pk_tube_bottom_height))
             for s, ss in enumerate(samples_to_do):
                 self._s300.dispense(self._pk_volume, ss.bottom(self._dw_bottom_height))
@@ -233,8 +233,8 @@ class BioerProtocol(Station):
             if num_cycle > 1:
                 self._vol_mm_offset = 0
             vol_mm = (len(samples_to_do) * self._mm_volume) + self._vol_mm_offset
-            self._mm_tube_source.calculate_aspirate_volume(vol_mm)
-            self._mm_tube_source.aspirate(self._s300, self._mm_tube_bottom_height)
+            self._mm_tube_source.prepare_aspiration(vol_mm, min_height=self._mm_tube_bottom_height)
+            self._mm_tube_source.aspirate(self._s300)
             # self.logger.info("Aspirating at: {} mm".format(self._mm_tube_bottom_height))
             for s, ss in enumerate(samples_to_do):
                 self._s300.dispense(self._mm_volume, ss.bottom(self._mm_plate_bottom_height))

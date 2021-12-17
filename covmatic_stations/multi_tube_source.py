@@ -22,7 +22,11 @@ class MultiTubeSource(object):
         self.logger.debug("{}: appended {} with {}ul".format(self._name, source, available_volume))
         self.logger.debug("Now sources is: {}".format(self._source_tubes_and_vol))
 
-    def calculate_aspirate_volume(self, volume, aspirate_height_from_bottom: float = None) -> list():
+    def prepare_aspiration(self, volume, fixed_height: float = None, min_height: float = 0.5):
+        """ Prepare the aspiration list for the requested volume
+        @parameter volume: the volume in ul to aspirate;
+        @parameter fixed_height: if set force the aspiration at this height from bottom;
+        @parameter min_height: the minimum height to reach from bottom with automatic height calculation"""
         self._aspirate_list = []
         left_volume = volume
         for source_and_vol in self._source_tubes_and_vol:
@@ -34,15 +38,14 @@ class MultiTubeSource(object):
             left_volume -= aspirate_vol
             source_and_vol["available_volume"] -= aspirate_vol
             if aspirate_vol != 0:
-                print("Initializing source with vol {}".format(source_and_vol["available_volume"]))
-                if aspirate_height_from_bottom is None:
+                if fixed_height is None:
                     height = WellWithVolume(
                         well=source_and_vol["source"],
-                        initial_vol=source_and_vol["available_volume"]).height
+                        initial_vol=source_and_vol["available_volume"],
+                        min_height=min_height).height
                 else:
-                    height = aspirate_height_from_bottom
-                print("aspirating at: {} from {}".format(height, source_and_vol["source"]));
-                self._aspirate_list.append(dict(source=source_and_vol["source"], vol=aspirate_vol))
+                    height = fixed_height
+                self._aspirate_list.append(dict(source=source_and_vol["source"], vol=aspirate_vol, height=height))
 
             if left_volume == 0:
                 break
@@ -54,13 +57,14 @@ class MultiTubeSource(object):
     def aspirate(self, pip, aspirate_height_from_bottom: float = 2):
         assert self._aspirate_list, "You must call calculate_aspirate_volume before aspirate"
         for a in self._aspirate_list:
-            pip.aspirate(a["vol"], a["source"].bottom(aspirate_height_from_bottom))
+            pip.aspirate(a["vol"], a["source"].bottom(a["height"]))
 
     @property
     def locations_str(self):
         return "{}: ".format(self._name) + \
                " ".join(["{}; ".format(sv['source'])
                          for sv in self._source_tubes_and_vol])
+
     def __str__(self):
         return "{}: ".format(self._name) +\
                " ".join(["{} with volume {}ul;".format(sv['source'], sv['available_volume'])
