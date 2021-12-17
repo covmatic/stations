@@ -1,5 +1,8 @@
 import logging
 
+from covmatic_stations.utils import WellWithVolume
+
+
 class MultiTubeSource(object):
     """
 
@@ -19,7 +22,7 @@ class MultiTubeSource(object):
         self.logger.debug("{}: appended {} with {}ul".format(self._name, source, available_volume))
         self.logger.debug("Now sources is: {}".format(self._source_tubes_and_vol))
 
-    def calculate_aspirate_volume(self, volume) -> list():
+    def calculate_aspirate_volume(self, volume, aspirate_height_from_bottom: float = None) -> list():
         self._aspirate_list = []
         left_volume = volume
         for source_and_vol in self._source_tubes_and_vol:
@@ -31,6 +34,14 @@ class MultiTubeSource(object):
             left_volume -= aspirate_vol
             source_and_vol["available_volume"] -= aspirate_vol
             if aspirate_vol != 0:
+                print("Initializing source with vol {}".format(source_and_vol["available_volume"]))
+                if aspirate_height_from_bottom is None:
+                    height = WellWithVolume(
+                        well=source_and_vol["source"],
+                        initial_vol=source_and_vol["available_volume"]).height
+                else:
+                    height = aspirate_height_from_bottom
+                print("aspirating at: {} from {}".format(height, source_and_vol["source"]));
                 self._aspirate_list.append(dict(source=source_and_vol["source"], vol=aspirate_vol))
 
             if left_volume == 0:
