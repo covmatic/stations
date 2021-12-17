@@ -157,7 +157,7 @@ class WellWithVolume:
     @property
     def height(self) -> float:
         if self._well.diameter:
-            remaining_height = self._volume / (math.pi * self._well.diameter**2)
+            remaining_height = self._volume / (math.pi * (self._well.diameter/2)**2)
         else:
             remaining_height = self._volume / self._well.length**2
 
