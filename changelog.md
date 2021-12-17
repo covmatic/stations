@@ -1,6 +1,12 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.11.0
+### Added
+- [station A techogenetics] PK volume set to 20ul
+- [Bioer mastermix prep] Aspirate from mastermix tube is done at gradual height not to overflow.
+- [Bioer mastermix prep] Uses 1 tube for 96 samples to reflect mastermix preparation instruction.
+
 ## v2.10.2
 ### Fixed
 - [station A technogenetics] fixed sample aspiration movement speed.
