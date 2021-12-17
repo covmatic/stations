@@ -20,7 +20,8 @@ class BioerProtocol(Station):
             pk_volume_tube = 320,
             vol_pk_offset = 5,
             vol_mm_offset = 10,
-            mm_volume_tube = 1380,
+            mm_volume = 17,
+            mm_volume_tube = 1800,
             headroom_vol_from_tubes_to_pcr = 60,
             headroom_vol_from_tubes_to_dw = 10,
             control_well_positions = ['G12', 'H12'],
@@ -43,7 +44,7 @@ class BioerProtocol(Station):
         self._elution_volume = 12
         self._pk_volume = 10
         self._pk_volume_tube = pk_volume_tube
-        self._mm_volume = 18
+        self._mm_volume = mm_volume
         self._mm_volume_tube = mm_volume_tube
         self._mm_tube_bottom_height = mm_tube_bottom_height
         self._dw_bottom_height = dw_bottom_height
