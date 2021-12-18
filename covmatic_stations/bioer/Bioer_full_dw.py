@@ -33,6 +33,8 @@ class BioerProtocol(Station):
             mastermix_phase: bool = False,
             vertical_offset = -16,
             slow_vertical_speed: float = 25,
+            elution_air_gap = 10,
+            final_mix_blow_out_height = -2,
             ** kwargs):
 
         super(BioerProtocol, self).__init__(
@@ -70,6 +72,8 @@ class BioerProtocol(Station):
         self._vol_pk_offset = vol_pk_offset
         self._vol_mm_offset = vol_mm_offset
         self._slow_vertical_speed = slow_vertical_speed
+        self._elution_air_gap = elution_air_gap
+        self._final_mix_blow_out_height = final_mix_blow_out_height
 
         if self._num_samples > 80:
             self._dws = ['8', '9', '5', '6', '2', '3']
@@ -280,8 +284,13 @@ class BioerProtocol(Station):
                 for t, o in samples:
                     #self.logger.info("samples:{}".format(samples))
                     self.pick_up(pipette)
-                    pipette.transfer(self._elution_volume, t.bottom(self._dw_elutes_bottom_height), o.bottom(self._pcr_bottom_headroom_height), new_tip='never')
+                    pipette.aspirate(self._elution_volume, t.bottom(self._dw_elutes_bottom_height))
+                    pipette.air_gap(self._elution_air_gap)
+                    pipette.dispense(self._elution_air_gap, o.top())
+                    pipette.dispense(self._elution_volume, o.bottom(self._pcr_bottom_headroom_height))
                     pipette.mix(5, 20, o.bottom(self._mix_bottom_height))
+                    pipette.blow_out(o.top(self._final_mix_blow_out_height))
+                    pipette.air_gap(self._elution_air_gap)
                     self.drop(pipette)
                 done_col = done_col + len(source_plate)
 
