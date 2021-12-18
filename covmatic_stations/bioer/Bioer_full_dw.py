@@ -1,6 +1,6 @@
 from ..station import Station, labware_loader, instrument_loader
 from ..multi_tube_source import MultiTubeSource
-from ..utils import uniform_divide
+from ..utils import uniform_divide, MoveWithSpeed
 import math
 import logging
 
@@ -32,6 +32,7 @@ class BioerProtocol(Station):
             mix_beads_phase: bool = False,
             mastermix_phase: bool = False,
             vertical_offset = -16,
+            slow_vertical_speed: float = 25,
             ** kwargs):
 
         super(BioerProtocol, self).__init__(
@@ -68,6 +69,7 @@ class BioerProtocol(Station):
         self._vertical_offset = vertical_offset
         self._vol_pk_offset = vol_pk_offset
         self._vol_mm_offset = vol_mm_offset
+        self._slow_vertical_speed = slow_vertical_speed
 
         if self._num_samples > 80:
             self._dws = ['8', '9', '5', '6', '2', '3']
@@ -237,7 +239,11 @@ class BioerProtocol(Station):
             self._mm_tube_source.aspirate(self._s300)
             # self.logger.info("Aspirating at: {} mm".format(self._mm_tube_bottom_height))
             for s, ss in enumerate(samples_to_do):
-                self._s300.dispense(self._mm_volume, ss.bottom(self._mm_plate_bottom_height))
+                with MoveWithSpeed(self._s300,
+                                   from_point=ss.bottom(self._mm_plate_bottom_height + 5),
+                                   to_point=ss.bottom(self._mm_plate_bottom_height),
+                                   speed=self._slow_vertical_speed, move_close=False):
+                    self._s300.dispense(self._mm_volume)
             done_samples += num_samples_per_fill
             # self.logger.info("MM:Cycle {} - after distribution: samples done: {}".format(num_cycle, done_samples))
             num_cycle += 1
