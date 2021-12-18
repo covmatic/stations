@@ -1,5 +1,12 @@
 Covmatic Stations changelog
 ===========================
+## v2.11.1
+### Added
+- [station A] added protocol to fill Bioer deepwell with samples.
+
+### Fixed
+- [Bioer mastermix prep] Added slow movement to avoid drops in mastermix dispense.
+- [Bioer mastermix prep] Added air_gap and blow_out to elutes transfer.
 
 ## v2.11.0
 ### Added
