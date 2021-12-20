@@ -268,9 +268,12 @@ class Station(metaclass=StationMeta):
         self._tip_log['count'] = {t: sum(map(lambda x: not x.has_tip, self._tip_log['tips'][t])) for t in self._tipracks().keys()}
 
     def _reset_tips(self):
-        for key, tips in self._tip_log['tips'].items():
-            for t in tips:
-                t.has_tip = True
+        for key, tiprack in self._tip_log['tips'].items():
+            self._reset_tips_in_tiprack(tiprack)
+
+    def _reset_tips_in_tiprack(self, tiprack):
+        for t in tiprack:
+            t.has_tip = True
 
     def setup_tip_log(self):
         data_tip_status = {}
@@ -334,7 +337,7 @@ class Station(metaclass=StationMeta):
             self._update_tip_log_count()
             if self._tip_log['count'][tiprack] == self._tip_log['max'][tiprack]:
                 # If empty, wait for refill
-                self._reset_tips()
+                self._reset_tips_in_tiprack(self._tip_log['tips'][tiprack])
                 self._update_tip_log_count()
                 self.track_tip()
                 self.pause(self.get_msg_format("refill tips", "\n".join(map(str, getattr(self, tiprack)))))
