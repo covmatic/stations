@@ -1,5 +1,11 @@
 Covmatic Stations changelog
 ===========================
+
+## v2.11.2
+### Fixed
+- [stations] Resolved bug that reset every tipracks present upon only one type is finished
+- [Bioer preparation] Increased vertical speed to avoid resonance.
+
 ## v2.11.1
 ### Added
 - [station A] added protocol to fill Bioer deepwell with samples.
