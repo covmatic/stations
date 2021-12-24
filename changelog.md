@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.12.0
+### Added
+- [station] Added watchdog for *start_at* stages and *delays*. Do not support OT-App *pause* command
+
 ## v2.11.2
 ### Fixed
 - [stations] Resolved bug that reset every tipracks present upon only one type is finished
