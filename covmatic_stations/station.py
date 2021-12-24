@@ -1,4 +1,5 @@
 from json import JSONDecodeError
+from threading import Timer
 
 from . import __version__, __file__ as module_path
 
@@ -21,6 +22,7 @@ import math
 import os
 import logging
 import time
+import signal
 
 
 def loader(key):
@@ -105,6 +107,8 @@ class Station(metaclass=StationMeta):
         tip_log_folder_path: str = '/var/lib/jupyter/notebooks/outputs',
         tip_track: bool = True,
         wait_first_log: bool = False,
+        watchdog_enable: bool = False,
+        watchdog_timeout: int = 180,   # timeout in seconds
         **kwargs,
     ):
         self._debug_mode = debug_mode
@@ -141,6 +145,9 @@ class Station(metaclass=StationMeta):
         self._simulation_log_lws = simulation_log_lws
         self._wait_first_log = wait_first_log
         self._waiting_first_log = False
+        self._watchdog_enable = watchdog_enable
+        self._watchdog_timeout = watchdog_timeout
+        self._watchdog = WatchDog(self.log_timeout_exception_and_kill_if_running)
         self.status = "initializing"
         self.stage = None
         self._msg = ""
@@ -149,7 +156,7 @@ class Station(metaclass=StationMeta):
         self._sound_manager = SoundManager(alarm=os.path.join(os.path.dirname(module_path), 'sounds', 'alarm.mp3'),
                                            beep=os.path.join(os.path.dirname(module_path), 'sounds', 'beep2.mp3'),
                                            finish=os.path.join(os.path.dirname(module_path), 'sounds', 'finish.mp3'))
-    
+
     def set_external(self, value: bool = True) -> bool:
         self.external = value
         return self.external
@@ -179,6 +186,10 @@ class Station(metaclass=StationMeta):
         if self._start_at == self.stage:
             self._run_stage = True
         self.logger.info("[{}] Stage: {}".format("x" if self._run_stage else " ", self.stage))
+
+        if self._watchdog_enable and not self._ctx.is_simulating():
+            self._watchdog.reset(self._watchdog_timeout)
+
         return self._run_stage
 
     def assert_run_stage_has_been_executed(self):
@@ -212,6 +223,12 @@ class Station(metaclass=StationMeta):
     def log_protocol_exception(self, e: Exception):
         with open(self._protocol_exception_filepath, 'w') as f:
             f.write(json.dumps({"error": "{}".format(e)}))
+
+    def log_timeout_exception_and_kill_if_running(self):
+        self._logger.error("Stage timeout reached! Killing.")
+        self.log_protocol_exception(Exception("Timeout reached"))
+        self._sound_manager.play("alarm")
+        os.kill(os.getpid(), signal.SIGTERM)
 
     @property
     def logger_name(self) -> str:
@@ -380,6 +397,11 @@ class Station(metaclass=StationMeta):
         self.status = "pause"
         old_color = self._button.color
         self._button.color = color
+
+        if self._watchdog_enable and not self._ctx.is_simulating():
+            self._ctx.comment("Disabling watchdog")
+            self._watchdog.stop()
+
         if msg:
             self.msg = msg
             self.logger.log(level, self.msg)
@@ -391,7 +413,10 @@ class Station(metaclass=StationMeta):
             lt.start()
         if delay_time > 0:
             self.status = "delay"
+            if self._watchdog_enable and not self._ctx.is_simulating():
+                self._watchdog.start(delay_time * 1.2)
             self._ctx.delay(delay_time)
+            self._watchdog.stop()
         if pause:
             self._ctx.pause()
             self._ctx.delay(0.1)  # pad to avoid pause leaking
@@ -443,7 +468,7 @@ class Station(metaclass=StationMeta):
         if self._simulation_log_lws or not self._ctx.is_simulating():
             self._request = StationRESTServerThread(ctx, station=self, **self._rest_server_kwargs)
             self._request.start()
-        
+
         self.setup_opentrons_logger()
         if self._wait_first_log:
             self._waiting_first_log = True
@@ -483,6 +508,7 @@ class Station(metaclass=StationMeta):
             self.status = "finished"
             if not self._ctx.is_simulating():
                 self._request.join(2, 0.5)
+            self._watchdog.stop()
             self.track_tip()
             self._button.color = 'blue'
         self._mov_manager.move_to_home(force=True)    # Forcing the gantry to move away from back position
@@ -492,6 +518,32 @@ class Station(metaclass=StationMeta):
     def simulate(self):
         from opentrons import simulate
         self.run(simulate.get_protocol_api(self.metadata["apiLevel"]))
+
+
+class WatchDog(Exception):
+    def __init__(self, handler=None, logger=logging.getLogger(__name__)):
+        self._logger = logger
+        self._handler = handler if handler is not None else self.default_handler
+        self._timer = None
+        self._logger.debug("Initialization finished :-)")
+
+    def start(self, timeout: int = 180):
+        self._logger.debug("Starting watchdog with timeout time {}s".format(timeout))
+        self._timer = Timer(timeout, self._handler)
+        self._timer.start()
+
+    def stop(self):
+        self._logger.debug("Stopping watchdog")
+        if self._timer is not None:
+            self._timer.cancel()
+
+    def reset(self, timeout: int = 180):
+        self.stop()
+        self.start(timeout)
+
+    def default_handler(self):
+        self._logger.info("Default timeout handler reached.")
+
 
 
 # Copyright (c) 2020 Covmatic.

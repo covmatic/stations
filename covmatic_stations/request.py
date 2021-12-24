@@ -93,6 +93,9 @@ class StationRESTServer:
     @cherrypy.expose
     def pause(self):
         self._status = "pause"
+        watchdog = getattr(self._station, "_watchdog", None)
+        if watchdog is not None:
+            watchdog.stop()
         self._ctx.pause()
     
     @cherrypy.expose
