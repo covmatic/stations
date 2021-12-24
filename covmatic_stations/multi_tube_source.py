@@ -1,15 +1,19 @@
 import logging
 
-from covmatic_stations.utils import WellWithVolume
+from .utils import WellWithVolume, MoveWithSpeed
 
 
 class MultiTubeSource(object):
     """
 
     """
-    def __init__(self, name="", logger=None):
+    def __init__(self, name="", logger=None,
+                 vertical_speed: int = None,
+                 vertical_slow_start_overheight: int = 10):
         self._source_tubes_and_vol = []
         self._name = name
+        self._vertical_speed = vertical_speed
+        self._vertical_slow_start_overheight = vertical_slow_start_overheight
         if logger:
             self.logger = logger
         else:
@@ -54,10 +58,17 @@ class MultiTubeSource(object):
 
         self.logger.debug("{} sources: {}".format(self._name, self._source_tubes_and_vol))
 
-    def aspirate(self, pip, aspirate_height_from_bottom: float = 2):
+    def aspirate(self, pip):
         assert self._aspirate_list, "You must call calculate_aspirate_volume before aspirate"
         for a in self._aspirate_list:
-            pip.aspirate(a["vol"], a["source"].bottom(a["height"]))
+            if self._vertical_speed is not None:
+                with MoveWithSpeed(pip,
+                                   from_point=a["source"].bottom(a["height"] + self._vertical_slow_start_overheight),
+                                   to_point=a["source"].bottom(a["height"]),
+                                   speed=self._vertical_speed, move_close=False):
+                    pip.aspirate(a["vol"])
+            else:
+                pip.aspirate(a["vol"], a["source"].bottom(a["height"]))
 
     @property
     def locations_str(self):

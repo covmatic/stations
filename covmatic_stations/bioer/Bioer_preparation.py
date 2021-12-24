@@ -15,7 +15,8 @@ class BioerPreparation(Station):
                  pk_rate_dispense: float = 100,
                  pk_volume: float = 10,
                  pk_dead_volume: float = 5,
-                 pk_vertical_speed: float = 50,
+                 pk_vertical_speed: float = 25,
+                 pk_in_deepwell_vertical_speed: float = 50,
                  sample_vertical_speed: float = 50,
                  sample_air_gap: float = 25,
                  sample_rate_aspirate: float = 200,
@@ -39,6 +40,7 @@ class BioerPreparation(Station):
         self._pk_rate_aspirate = pk_rate_aspirate
         self._pk_rate_dispense = pk_rate_dispense
         self._pk_vertical_speed = pk_vertical_speed
+        self._pk_in_deepwell_vertical_speed = pk_in_deepwell_vertical_speed
         self._sample_vertical_speed = sample_vertical_speed
         self._pk_tube_bottom_height = pk_tube_bottom_height
         self._pk_dw_bottom_height = pk_dw_bottom_height
@@ -157,7 +159,7 @@ class BioerPreparation(Station):
                 with MoveWithSpeed(self._p300,
                                    from_point=sample.bottom(self._pk_dw_bottom_height + 5),
                                    to_point=sample.bottom(self._pk_dw_bottom_height),
-                                   speed=self._pk_vertical_speed, move_close=False):
+                                   speed=self._pk_in_deepwell_vertical_speed, move_close=False):
                     self._p300.dispense(self._pk_volume)
 
         if self._p300.has_tip:          # at least one stage has been executed

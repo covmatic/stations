@@ -23,6 +23,7 @@ class BioerProtocol(Station):
             elution_volume = 12,
             mm_volume = 17,
             mm_volume_tube = 1800,
+            mm_tube_vertical_speed = 25,
             headroom_vol_from_tubes_to_pcr = 60,
             headroom_vol_from_tubes_to_dw = 10,
             control_well_positions = ['G12', 'H12'],
@@ -51,6 +52,7 @@ class BioerProtocol(Station):
         self._mm_volume = mm_volume
         self._mm_volume_tube = mm_volume_tube
         self._mm_tube_bottom_height = mm_tube_bottom_height
+        self._mm_tube_vertical_speed = mm_tube_vertical_speed
         self._dw_bottom_height = dw_bottom_height
         self._mix_bottom_height_dw = mix_bottom_height_dw
         self._pcr_bottom_headroom_height = pcr_bottom_headroom_height
@@ -58,7 +60,7 @@ class BioerProtocol(Station):
         self._mm_plate_bottom_height = mm_plate_bottom_height
         self._dw_elutes_bottom_height = dw_elutes_bottom_height
         self._pk_tube_source = MultiTubeSource()
-        self._mm_tube_source = MultiTubeSource()
+        self._mm_tube_source = MultiTubeSource(vertical_speed=25)
         self._control_well_positions = control_well_positions
         self._pk_tube_bottom_height = pk_tube_bottom_height
         self._headroom_vol_from_tubes_to_pcr = headroom_vol_from_tubes_to_pcr
@@ -75,6 +77,7 @@ class BioerProtocol(Station):
         self._slow_vertical_speed = slow_vertical_speed
         self._elution_air_gap = elution_air_gap
         self._final_mix_blow_out_height = final_mix_blow_out_height
+        self._s300_fake_aspirate: bool = True
 
         if self._num_samples > 80:
             self._dws = ['8', '9', '5', '6', '2', '3']
@@ -232,11 +235,17 @@ class BioerProtocol(Station):
         self.logger.info("Trasferring mastermix from tube to pcr plate")
 
         self.pick_up(self._s300)
+
         while done_samples < self._num_samples + len(self.control_wells_not_in_samples):
             samples_to_do = samples_with_controls[done_samples:(done_samples + num_samples_per_fill)]
             # self.logger.info("Cycle {} - samples to do: {}".format(num_cycle, samples_to_do))
             # self.logger.info("MM:Cycle {} - before filling: samples done: {}, samples to do: {}".format(num_cycle,
             #                                                                     done_samples, len(samples_to_do)))
+
+            if self._s300_fake_aspirate:
+                self._s300_fake_aspirate = False
+                self._s300.aspirate(10, self._tube_block.wells()[0].top())
+                self._s300.dispense(10)
             if num_cycle > 1:
                 self._vol_mm_offset = 0
             vol_mm = (len(samples_to_do) * self._mm_volume) + self._vol_mm_offset
