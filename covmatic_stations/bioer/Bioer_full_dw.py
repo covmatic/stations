@@ -406,6 +406,15 @@ class BioerPreparationToPcr(BioerProtocol):
             transfer_elutes_phase = True,
             ** kwargs)
 
+
+class BioerPreparationToPcrTechogenetics(BioerPreparationToPcr):
+    def __init__(self, ** kwargs):
+        super(BioerPreparationToPcrTechogenetics, self).__init__(
+            mm_volume = 20,
+            elution_volume = 20,
+            mm_volume_tube = 1300,
+            **kwargs)
+
 # protocol for loading in Opentrons App or opentrons_simulate
 # =====================================
 logging.getLogger(BioerProtocol.__name__).setLevel(logging.INFO)
