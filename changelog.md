@@ -1,6 +1,13 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.12.2
+### Fixed
+- MultiTubeSource now support a vertical speed to avoid bubbles when aspirating.
+- [Bioer mastermix prep] Added support for KHB mastermix
+- [Bioer mastermix prep] added slow vertical speed when aspirating from mastermix tube
+- [Bioer preparation] revised vertical speed in PK aspiation to avoid bubbles.
+
 ## v2.12.0
 ### Added
 - [station] Added watchdog for *start_at* stages and *delays*. Do not support OT-App *pause* command
