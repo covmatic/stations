@@ -20,6 +20,7 @@ class BioerProtocol(Station):
             pk_volume_tube = 320,
             vol_pk_offset = 5,
             vol_mm_offset = 10,
+            elution_volume = 12,
             mm_volume = 17,
             mm_volume_tube = 1800,
             headroom_vol_from_tubes_to_pcr = 60,
@@ -44,7 +45,7 @@ class BioerProtocol(Station):
         self._debug_mode = debug_mode
         self._dests_sample = []
         self._max_sample_per_dw = 16
-        self._elution_volume = 12
+        self._elution_volume = elution_volume
         self._pk_volume = 10
         self._pk_volume_tube = pk_volume_tube
         self._mm_volume = mm_volume
