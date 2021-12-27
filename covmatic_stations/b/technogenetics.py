@@ -8,7 +8,7 @@ class StationBTechnogenetics(StationB):
     _protocol_description = "station B protocol for Technogenetics kit"
 
     def __init__(self,
-                 elute_mix_times: int = 15,
+                 elute_mix_times: int = 0,
                  elution_vol: float = 50,
                  elute_incubate: bool = False,
                  external_deepwell_incubation: bool = True,
