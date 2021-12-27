@@ -13,7 +13,7 @@ class BioerPreparation(Station):
                  pk_dw_bottom_height: float = 13.5,
                  pk_rate_aspirate: float = 100,
                  pk_rate_dispense: float = 100,
-                 pk_volume: float = 10,
+                 pk_volume: float = 9,
                  pk_dead_volume: float = 5,
                  pk_vertical_speed: float = 25,
                  pk_in_deepwell_vertical_speed: float = 50,

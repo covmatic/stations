@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.12.3
+### Fixed
+- [Bioer preparation] Pk volume diminished to 9 to have dead volume.
+
 ## v2.12.2
 ### Fixed
 - MultiTubeSource now support a vertical speed to avoid bubbles when aspirating.
