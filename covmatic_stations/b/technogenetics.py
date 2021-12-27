@@ -119,22 +119,23 @@ class StationBTechnogenetics(StationB):
         return self._tempplate.rows()[0][:self.num_cols]
     
     def load_etoh(self): pass
-    
+
+    @labware_loader(9, "_elut12")
+    def load_elut12(self):
+        self._elut12 = self._ctx.load_labware('nest_12_reservoir_15ml', '2', 'Trough with Elution')
+
+    @property
+    def water(self):
+        return self._elut12.wells()[11]
+
     @property
     def wash1(self):
         return self._res12.wells()[:6]
     
     @property
     def wash2(self):
-        return self._res12.wells()[-6:]
-    
-    @labware_loader(9, "_elut12")
-    def load_elut12(self):
-        self._elut12 = self._ctx.load_labware('nest_12_reservoir_15ml', '2', 'Trough with Elution')
-    
-    @property
-    def water(self):
-        return self._elut12.wells()[11]
+        return self._elut12.wells()[:6]
+
     
     @staticmethod
     def wash_getcol(sample_col_idx: int, wash_cols: int, source):
