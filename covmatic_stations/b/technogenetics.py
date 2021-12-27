@@ -128,7 +128,7 @@ class StationBTechnogenetics(StationB):
 
     @labware_loader(9, "_elut12")
     def load_elut12(self):
-        self._elut12 = self._ctx.load_labware('nest_12_reservoir_15ml', '2', 'Trough with Elution')
+        self._elut12 = self._ctx.load_labware('nest_12_reservoir_15ml', '2', 'Trough with Wash B and Elution')
 
     @property
     def water(self):
