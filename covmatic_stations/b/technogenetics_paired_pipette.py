@@ -30,14 +30,22 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             **kwargs)
         self._pick_up_single = pick_up_single       # Force every paired pickup to be done with one pipette at a time.
 
-    @labware_loader(8, "_res12")
-    def load_res12(self):
+    @property
+    def _res12_labware_def(self):
         # re-loading labware to avoid bug on reagent reservoir (see https://github.com/Opentrons/opentrons/issues/7793)
         reservoir_file = os.path.join(os.path.split(__file__)[0], "nest_12_reservoir_15ml_modified.json")
         self.logger.info("Loading reservoir labware from: {}".format(reservoir_file))
         with open(reservoir_file) as labware_file:
             labware_def = json.load(labware_file)
-        self._res12 = self._ctx.load_labware_from_definition(labware_def, 5, 'Trough with WashReagents')
+        return labware_def
+
+    @labware_loader(8, "_res12")
+    def load_res12(self):
+        self._res12 = self._ctx.load_labware_from_definition(self._res12_labware_def, 5, 'Trough with WashReagent A')
+
+    @labware_loader(9, "_elut12")
+    def load_elut12(self):
+        self._elut12 = self._ctx.load_labware_from_definition(self._res12_labware_def, 2, 'Trough with Wash B and Elution buffer')
 
     @property
     def wash1(self):
