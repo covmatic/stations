@@ -1,7 +1,7 @@
 Covmatic Stations changelog
 ===========================
 
-## v2.12.3
+## v2.12.4
 ### Fixed
 - [Bioer preparation] Pk volume diminished to 9 to have dead volume.
 
