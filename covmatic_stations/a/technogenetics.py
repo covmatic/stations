@@ -1,3 +1,4 @@
+from ..utils import MoveWithSpeed
 from .p1000 import StationAP1000
 from .reload import StationAReloadMixin
 from .copan_24 import Copan24Specs
@@ -10,6 +11,7 @@ class StationATechnogenetics(StationAP1000):
         beads_mix_repeats: int = 0,
         beads_mix_volume: float = 20,
         beads_vol: float = 9,
+        beads_headroom_bottom: float = 0.5,
         drop_threshold: int = 5000,
         ic_headroom_bottom = 1,
         lysis_first: bool = False,
@@ -25,6 +27,7 @@ class StationATechnogenetics(StationAP1000):
         prot_k_vol: float = 20,
         sample_aspirate: float = 100,
         sample_dispense: float = 100,
+        strip_vertical_speed: float = 5,
         tempdeck_temp: Optional[float] = None,
         tempdeck_bool: bool = False,
         tipracks_slots: Tuple[str, ...] = ('10', '11'),
@@ -71,7 +74,10 @@ class StationATechnogenetics(StationAP1000):
         self._beads_mix_repeats = beads_mix_repeats
         self._beads_mix_volume = beads_mix_volume
         self._beads_vol = beads_vol
+        self._beads_headroom_bottom = beads_headroom_bottom
         self._drop_threshold = drop_threshold
+        self._m20_fake_aspirate = True
+        self._strip_vertical_speed = strip_vertical_speed
         self._tempdeck_bool = tempdeck_bool
         self._touch_tip_height = touch_tip_height
         if self._lysis_first != lysis_first:
@@ -121,7 +127,21 @@ class StationATechnogenetics(StationAP1000):
         for i, d in enumerate(self._dests_multi):
             if self.run_stage("transfer beads {}/{}".format(i + 1, len(self._dests_multi))):
                 self.pick_up(self._m20)
-                self._m20.transfer(self._beads_vol, self._beads, d.bottom(self._dest_multi_headroom_height), air_gap=self._air_gap_dest_multi, new_tip='never')
+                # Fake aspiration to avoid up and down movement
+                if self._m20_fake_aspirate:
+                    self._m20_fake_aspirate = False
+                    self._m20.aspirate(5, self._beads.top())
+                    self._m20.dispense(5)
+
+                with MoveWithSpeed(self._m20,
+                                   from_point=self._beads.bottom(self._beads_headroom_bottom + 5),
+                                   to_point=self._beads.bottom(self._beads_headroom_bottom),
+                                   speed=self._strip_vertical_speed, move_close=False):
+                    self._m20.aspirate(self._beads_vol)
+                self._m20.air_gap(self._air_gap_dest_multi)
+                self._m20.dispense(self._air_gap_dest_multi, d.top())
+                self._m20.dispense(self._beads_vol, d.bottom(self._dest_multi_headroom_height))
+
                 if self._beads_mix_repeats:
                     self._m20.mix(self._beads_mix_repeats, self._beads_mix_volume, d.bottom(self._dest_multi_headroom_height))
                 self._m20.air_gap(self._air_gap_dest_multi)
