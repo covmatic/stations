@@ -10,7 +10,7 @@ from typing import Optional, Tuple
 class StationA(Station):
     def __init__(
             self,
-            air_gap_dest_multi: float = 5,
+            air_gap_dest_multi: float = 2,
             air_gap_sample: float = 20,
             air_gap_lys: float = 10,
             dest_headroom_height: float = 2,
