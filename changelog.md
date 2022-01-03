@@ -1,6 +1,9 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.12.5
+- [Station B technogenetics] Disabled unuseful mix on elute phase.
+
 ## v2.12.4
 ### Fixed
 - [Bioer preparation] Pk volume diminished to 9 to have dead volume.
