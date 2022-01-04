@@ -12,7 +12,7 @@ class StationATechnogenetics(StationAP1000):
         beads_mix_volume: float = 20,
         beads_vol: float = 9,
         drop_threshold: int = 5000,
-        ic_headroom_bottom = 1,
+        deepwell_headroom_bottom = 1,
         lysis_first: bool = False,
         lys_mix_repeats: int = 2,
         lys_mix_volume: float = 100,
@@ -64,7 +64,7 @@ class StationATechnogenetics(StationAP1000):
             sample_dispense=sample_dispense,
             iec_volume=prot_k_vol,
             ic_capacity=prot_k_capacity,
-            ic_headroom_bottom=ic_headroom_bottom,
+            deepwell_headroom_bottom=deepwell_headroom_bottom,
             ic_lys_headroom=prot_k_headroom,
             tempdeck_temp=tempdeck_temp,
             tipracks_slots=tipracks_slots,
@@ -133,8 +133,8 @@ class StationATechnogenetics(StationAP1000):
                     self._m20.aspirate(self._prot_k_volume)
 
                 with MoveWithSpeed(self._m20,
-                                   from_point=d.bottom(self._ic_headroom_bottom + 5),
-                                   to_point=d.bottom(self._ic_headroom_bottom),
+                                   from_point=d.bottom(self._deepwell_headroom_bottom + 5),
+                                   to_point=d.bottom(self._deepwell_headroom_bottom),
                                    speed=self._strip_vertical_speed, move_close=False):
                     self._m20.dispense(self._prot_k_volume)
 
