@@ -22,7 +22,7 @@ class StationA(Station):
             hover_height: float = -2,
             ic_capacity: float = 180,
             ic_lys_headroom: float = 1.1,
-            ic_headroom_bottom: float = 2,
+            ic_headroom_bottom: float = 1,
             ic_mix_repeats: int = 5,
             ic_mix_volume: float = 20,
             iec_volume: float = 19,
