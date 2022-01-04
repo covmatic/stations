@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.12.6
+- [Station A technogenetics] Beads volume diminished to 9ul to have dead volume.
+- [Station A technogenetics] Better beads aspiration with slow movement going up.
+
 ## v2.12.5
 - [Station B technogenetics] Disabled unuseful mix on elute phase.
 
