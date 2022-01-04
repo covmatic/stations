@@ -11,7 +11,6 @@ class StationATechnogenetics(StationAP1000):
         beads_mix_repeats: int = 0,
         beads_mix_volume: float = 20,
         beads_vol: float = 9,
-        beads_headroom_bottom: float = 0.5,
         drop_threshold: int = 5000,
         ic_headroom_bottom = 1,
         lysis_first: bool = False,
@@ -27,6 +26,7 @@ class StationATechnogenetics(StationAP1000):
         prot_k_vol: float = 18,
         sample_aspirate: float = 100,
         sample_dispense: float = 100,
+        strip_headroom_bottom: float = 0.5,
         strip_vertical_speed: float = 5,
         tempdeck_temp: Optional[float] = None,
         tempdeck_bool: bool = False,
@@ -74,7 +74,7 @@ class StationATechnogenetics(StationAP1000):
         self._beads_mix_repeats = beads_mix_repeats
         self._beads_mix_volume = beads_mix_volume
         self._beads_vol = beads_vol
-        self._beads_headroom_bottom = beads_headroom_bottom
+        self._strip_headroom_bottom = strip_headroom_bottom
         self._drop_threshold = drop_threshold
         self._m20_fake_aspirate = True
         self._strip_vertical_speed = strip_vertical_speed
@@ -127,8 +127,8 @@ class StationATechnogenetics(StationAP1000):
                     self._m20.dispense(2)
 
                 with MoveWithSpeed(self._m20,
-                                   from_point=pk_strip.bottom(self._beads_headroom_bottom + 5),
-                                   to_point=pk_strip.bottom(self._beads_headroom_bottom),
+                                   from_point=pk_strip.bottom(self._strip_headroom_bottom + 5),
+                                   to_point=pk_strip.bottom(self._strip_headroom_bottom),
                                    speed=self._strip_vertical_speed, move_close=False):
                     self._m20.aspirate(self._prot_k_volume)
 
@@ -152,8 +152,8 @@ class StationATechnogenetics(StationAP1000):
                     self._m20.dispense(2)
 
                 with MoveWithSpeed(self._m20,
-                                   from_point=self._beads.bottom(self._beads_headroom_bottom + 5),
-                                   to_point=self._beads.bottom(self._beads_headroom_bottom),
+                                   from_point=self._beads.bottom(self._strip_headroom_bottom + 5),
+                                   to_point=self._beads.bottom(self._strip_headroom_bottom),
                                    speed=self._strip_vertical_speed, move_close=False):
                     self._m20.aspirate(self._beads_vol)
                 self._m20.air_gap(self._air_gap_dest_multi)
