@@ -46,5 +46,7 @@ class ParkTipsManager:
 
     @property
     def tips(self):
-        return self._tips
+        tips = [t for t, _ in self._tips]
+        self._logger.info("T is: {}".format(tips))
+        return tips
 
