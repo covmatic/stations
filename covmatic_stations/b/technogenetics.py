@@ -134,7 +134,7 @@ class StationBTechnogenetics(StationB):
     
     @property
     def wash2(self):
-        return self._elut12.wells()[:6]
+        return self._res12.wells()[-6:]
 
     
     @staticmethod
