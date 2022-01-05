@@ -1,5 +1,7 @@
 Covmatic Stations changelog
 ===========================
+## v2.12.7
+- [Station B technogenetics] Reverted wash B moved to slot 2 wrongly inserted for single pipette.
 
 ## v2.12.6
 - [Station A technogenetics] Beads volume diminished to 9ul to have dead volume.

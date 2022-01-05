@@ -1,6 +1,6 @@
 import logging
 
-__version__ = "2.12.6"
+__version__ = "2.12.7"
 
 logging.basicConfig(
     level=logging.INFO,
