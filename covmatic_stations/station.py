@@ -8,6 +8,7 @@ from .request import StationRESTServerThread, DEFAULT_REST_KWARGS
 from .sound_manager import SoundManager
 from .utils import ProtocolContextLoggingHandler, LocalWebServerLogger
 from .lights import Button, BlinkingLightHTTP, BlinkingLight
+from .park_tips_manager import ParkTipsManager
 from opentrons.protocol_api import ProtocolContext
 from opentrons.protocol_api.paired_instrument_context import PairedInstrumentContext
 from opentrons.types import Point
@@ -157,6 +158,8 @@ class Station(metaclass=StationMeta):
                                            beep=os.path.join(os.path.dirname(module_path), 'sounds', 'beep2.mp3'),
                                            finish=os.path.join(os.path.dirname(module_path), 'sounds', 'finish.mp3'))
 
+        self._park_manager = ParkTipsManager()
+
     def set_external(self, value: bool = True) -> bool:
         self.external = value
         return self.external
@@ -284,13 +287,17 @@ class Station(metaclass=StationMeta):
         """Count the number of used tips"""
         self._tip_log['count'] = {t: sum(map(lambda x: not x.has_tip, self._tip_log['tips'][t])) for t in self._tipracks().keys()}
 
-    def _reset_tips(self):
+    def _reset_tips(self, reset_also_parked: bool = False):
         for key, tiprack in self._tip_log['tips'].items():
-            self._reset_tips_in_tiprack(tiprack)
+            self._reset_tips_in_tiprack(tiprack, reset_also_parked)
 
-    def _reset_tips_in_tiprack(self, tiprack):
-        for t in tiprack:
+    def _reset_tips_in_tiprack(self, tiprack, reset_also_parked: bool = False):
+        tip_to_reset = tiprack if reset_also_parked else self._filter_out_park_tip_in_tiprack(tiprack)
+        for t in tip_to_reset:
             t.has_tip = True
+
+    def _filter_out_park_tip_in_tiprack(self, tiprack):
+        return list(filter(lambda x: x not in self._park_manager.tips, tiprack))
 
     def setup_tip_log(self):
         data_tip_status = {}
@@ -319,7 +326,7 @@ class Station(metaclass=StationMeta):
                     self._tip_log['tips'][tiprack][i].has_tip = tip.get("has_tip", False)
         self._tip_log['max'] = {t: len(p) for t, p in self._tip_log['tips'].items()}
         self._update_tip_log_count()
-    
+
     def track_tip(self):
         if self._tip_track and not self._ctx.is_simulating():
             self.logger.debug(self.get_msg_format("tip log dump", self._tip_log_filepath))
@@ -363,6 +370,12 @@ class Station(metaclass=StationMeta):
         pip.pick_up_tip(loc)
         self._update_tip_log_count()
         self.track_tip()
+
+    def park_tip(self, pip, dest_well):
+        return self._park_manager.park_tip(pip, dest_well)
+
+    def reuse_tip(self, pip, dest_well):
+        return self._park_manager.reuse_tip(pip, dest_well)
 
     @staticmethod
     def _get_pipette_num_channels(pip):
