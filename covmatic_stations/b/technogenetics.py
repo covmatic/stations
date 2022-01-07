@@ -1,6 +1,5 @@
 from .b import StationB, labware_loader
 from typing import Tuple
-from ..utils import uniform_divide
 from opentrons.types import Point
 
 
@@ -43,6 +42,7 @@ class StationBTechnogenetics(StationB):
                  tipracks_slots: Tuple[str, ...] = ('4', '6', '7', '8', '9'),
                  wash_1_vol: float = 680,
                  wash_2_vol: float = 680,
+                 watchdog_serial_timeout_seconds: int = 30,
                  **kwargs
                  ):
         """ Build a :py:class:`.StationBTechnogenetics`.
@@ -101,6 +101,7 @@ class StationBTechnogenetics(StationB):
         self._sample_mix_times = sample_mix_times
         self._sample_mix_vol = sample_mix_vol
         self._thermomixer_incubation_time = thermomixer_incubation_time
+        self._watchdog_serial_timeout_seconds = watchdog_serial_timeout_seconds
     
     @labware_loader(5, "_flatplate")
     def load_flatplate(self):
@@ -227,7 +228,8 @@ class StationBTechnogenetics(StationB):
             self.delay(self._postspin_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
 
         if self._tempdeck_temp is not None and not self._tempdeck_auto_turnon:
-            self._tempdeck.start_set_temperature(self._tempdeck_temp)
+            # self._tempdeck.start_set_temperature(self._tempdeck_temp)
+            self.tempdeck_set_temperature(self._tempdeck_temp)
 
         self.remove_wash(self._remove_wash_vol, "remove wash B after spin")
 
@@ -258,6 +260,15 @@ class StationBTechnogenetics(StationB):
         self._magdeck.disengage()
         self.logger.info(self.msg_format("move to PCR"))
 
+    def tempdeck_set_temperature(self, temperature):
+        self.watchdog_reset(self._watchdog_serial_timeout_seconds)
+        self._tempdeck.start_set_temperature(temperature)
+        self.watchdog_stop()
+
+    def tempdeck_deactivate(self):
+        self.watchdog_reset(self._watchdog_serial_timeout_seconds)
+        self._tempdeck.deactivate()
+        self.watchdog_stop()
 
 if __name__ == "__main__":
     StationBTechnogenetics(metadata={'apiLevel': '2.3'}).simulate()

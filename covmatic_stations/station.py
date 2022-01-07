@@ -186,17 +186,26 @@ class Station(metaclass=StationMeta):
         if self._start_at == self.stage:
             self._run_stage = True
         self.logger.info("[{}] Stage: {}".format("x" if self._run_stage else " ", self.stage))
-
-        if self._watchdog_enable and not self._ctx.is_simulating():
-            self._watchdog.reset(self._watchdog_timeout)
-
+        self.watchdog_reset(self._watchdog_timeout)
         return self._run_stage
 
     def assert_run_stage_has_been_executed(self):
         ''' If a _start_at_ value was requested, check it at least a corresponding stage was found in protocol.'''
         if not self._run_stage:
             raise Exception("Stage '{}' not found.".format(self._start_at))
-    
+
+    def watchdog_reset(self, timeout_seconds):
+        if self._watchdog_enable and not self._ctx.is_simulating():
+            self._watchdog.reset(timeout_seconds)
+
+    def watchdog_stop(self):
+        if self._watchdog_enable and not self._ctx.is_simulating():
+            self._watchdog.stop()
+
+    def watchdog_start(self, timeout_seconds):
+        if self._watchdog_enable and not self._ctx.is_simulating():
+            self._watchdog.start(timeout_seconds)
+
     @property
     def logger(self) -> logging.getLoggerClass():
         if ((not hasattr(self, "_logger")) or self._logger is None) and self._ctx is not None:
@@ -398,9 +407,7 @@ class Station(metaclass=StationMeta):
         old_color = self._button.color
         self._button.color = color
 
-        if self._watchdog_enable and not self._ctx.is_simulating():
-            self._ctx.comment("Disabling watchdog")
-            self._watchdog.stop()
+        self.watchdog_stop()
 
         if msg:
             self.msg = msg
@@ -413,10 +420,9 @@ class Station(metaclass=StationMeta):
             lt.start()
         if delay_time > 0:
             self.status = "delay"
-            if self._watchdog_enable and not self._ctx.is_simulating():
-                self._watchdog.start(delay_time * 1.2)
+            self.watchdog_start(delay_time * 1.2)
             self._ctx.delay(delay_time)
-            self._watchdog.stop()
+            self.watchdog_stop()
         if pause:
             self._ctx.pause()
             self._ctx.delay(0.1)  # pad to avoid pause leaking
