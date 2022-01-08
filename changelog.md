@@ -1,5 +1,11 @@
 Covmatic Stations changelog
 ===========================
+
+## v2.12.8
+### Fixed
+- [Station] Disabled sounds in test mode
+- [Station B technogenetics] Added watchdog on tempdeck serial command.
+
 ## v2.12.7
 - [Station B technogenetics] Reverted wash B moved to slot 2 wrongly inserted for single pipette.
 
