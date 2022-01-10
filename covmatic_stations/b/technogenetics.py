@@ -40,8 +40,9 @@ class StationBTechnogenetics(StationB):
                  tempdeck_auto_turnoff: bool = True,
                  thermomixer_incubation_time: float = 5,
                  tipracks_slots: Tuple[str, ...] = ('4', '6', '7', '8', '9'),
-                 wash_1_vol: float = 680,
-                 wash_2_vol: float = 680,
+                 wash_1_vol: float = 650,
+                 wash_2_vol: float = 650,
+                 wash_headroom: float = 1.05,
                  watchdog_serial_timeout_seconds: int = 30,
                  **kwargs
                  ):
@@ -76,6 +77,7 @@ class StationBTechnogenetics(StationB):
             tipracks_slots=tipracks_slots,
             wash_1_vol=wash_1_vol,
             wash_2_vol=wash_2_vol,
+            wash_headroom=wash_headroom,
             **kwargs
         )
         self._external_deepwell_incubation = external_deepwell_incubation
