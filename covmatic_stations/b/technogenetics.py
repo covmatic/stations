@@ -149,7 +149,8 @@ class StationBTechnogenetics(StationB):
                 self.pick_up(self._m300)
                 self._m300.mix(self._sample_mix_times, self._sample_mix_vol, m.bottom(self._sample_mix_height))
                 self._m300.air_gap(self._bind_air_gap)
-                self.drop(self._m300)
+                # self.drop(self._m300)
+                self.park_tip(self._m300, m)
     
     def elute(self, positions=None, transfer: bool = False, stage: str = "elute"):
         if positions is None:

@@ -154,7 +154,8 @@ class Station(metaclass=StationMeta):
         self._msg = ""
         self.external = False
         self._run_stage = self._start_at is None
-        self._sound_manager = SoundManager(alarm=os.path.join(os.path.dirname(module_path), 'sounds', 'alarm.mp3'),
+        self._sound_manager = SoundManager() if self._debug_mode else SoundManager(
+                                           alarm=os.path.join(os.path.dirname(module_path), 'sounds', 'alarm.mp3'),
                                            beep=os.path.join(os.path.dirname(module_path), 'sounds', 'beep2.mp3'),
                                            finish=os.path.join(os.path.dirname(module_path), 'sounds', 'finish.mp3'))
 
@@ -293,6 +294,7 @@ class Station(metaclass=StationMeta):
 
     def _reset_tips_in_tiprack(self, tiprack, reset_also_parked: bool = False):
         tip_to_reset = tiprack if reset_also_parked else self._filter_out_park_tip_in_tiprack(tiprack)
+        self.logger.info("Resetting tips: {}".format(tip_to_reset))
         for t in tip_to_reset:
             t.has_tip = True
 

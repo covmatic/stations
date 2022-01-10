@@ -355,7 +355,8 @@ class StationB(Station):
             self._m300.flow_rate.dispense = self._supernatant_removal_dispense_rate
             well_with_volume = WellWithVolume(m, vol, min_height=self._h_bottom)
             if self.run_stage("{} {}/{}".format(stage, i + 1, len(self.mag_samples_m))):
-                self.pick_up(self._m300)
+                # self.pick_up(self._m300)
+                self.reuse_tip(self._m300, m)
                 self._ctx.comment("Supernatant removal: {} transfer with {}ul each.".format(num_trans, vol_per_trans))
                 side = -1 if i % 2 == 0 else 1
                 for _ in range(num_trans):
