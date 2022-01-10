@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.12.9
+- [Station B technogenetics] Washes volume decreased to 650 to allow dead volume;
+- [Station B technogenetics] Disabled touch tip on elute phase.
+
 ## v2.12.8
 ### Fixed
 - [Station] Disabled sounds in test mode
