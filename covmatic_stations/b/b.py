@@ -505,7 +505,7 @@ class StationB(Station):
                 self._m300.dispense(self._elution_vol, loc)
                 if self._elute_mix_times > 0:
                     self._m300.mix(self._elute_mix_times, self._elute_mix_vol, loc)
-                self._m300.touch_tip(v_offset=self._touch_tip_height)
+                # self._m300.touch_tip(v_offset=self._touch_tip_height)
                 self._m300.air_gap(self._elute_air_gap)
                 self.drop(self._m300)
         

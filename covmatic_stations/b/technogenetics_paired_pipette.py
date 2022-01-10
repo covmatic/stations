@@ -164,7 +164,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             tp.dispense(self._elution_vol, locationFrom="side_locs")
             if self._elute_mix_times > 0:
                 tp.mix(self._elute_mix_times, self._elute_mix_vol, locationFrom="side_locs")
-            tp.touch_tip(v_offset=self._touch_tip_height)
+            # tp.touch_tip(v_offset=self._touch_tip_height)
             tp.air_gap(self._elute_air_gap)
             tp.drop_tip()
 
