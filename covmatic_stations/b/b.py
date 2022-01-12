@@ -481,17 +481,24 @@ class StationB(Station):
                                        speed=vertical_speed):
                         self._m300.aspirate(vol_per_trans)
                     self._m300.dispense(vol_per_trans, m.top())
-                
-                # Mix
-                if self._wash_mix_walk:
-                    a_locs = [m.bottom(self._bottom_headroom_height).move(Point(x=2*(-1 if i % 2 else +1), y=2*(2*j/(mix_reps - 1) - 1))) for j in range(mix_reps)]
-                    mix_walk(self._m300, mix_reps, self._wash_mix_vol, a_locs, speed=self._wash_mix_speed, logger=self.logger)
-                else:
-                    loc = m.bottom(self._bottom_headroom_height).move(Point(x=2*(-1 if i % 2 else +1)))
-                    self._m300.mix(mix_reps, self._wash_mix_vol, loc)
-                #self._m300.flow_rate.aspirate = self._default_aspiration_rate
-                #self._m300.flow_rate.dispense = dispense_rate
-                
+
+                # For mix_walk
+                a_locs = [m.bottom(self._bottom_headroom_height).move(
+                    Point(x=2 * (-1 if i % 2 else +1), y=2 * (2 * j / (mix_reps - 1) - 1))) for j in range(mix_reps)]
+                # For mix
+                loc = m.bottom(self._bottom_headroom_height).move(Point(x=2 * (-1 if i % 2 else +1)))
+
+                with MoveWithSpeed(self._m300,
+                                   from_point=m.top(),
+                                   to_point=loc,
+                                   move_close=False,
+                                   speed=vertical_speed):
+                    # Mix
+                    if self._wash_mix_walk:
+                        mix_walk(self._m300, mix_reps, self._wash_mix_vol, a_locs, speed=self._wash_mix_speed, logger=self.logger)
+                    else:
+                        self._m300.mix(mix_reps, self._wash_mix_vol, loc)
+
                 self._m300.air_gap(self._wash_air_gap)
                 self.drop(self._m300)
 
