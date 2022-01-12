@@ -1,8 +1,8 @@
 import json
 import logging
 
-from covmatic_stations.station import instrument_loader, labware_loader
-from covmatic_stations.utils import uniform_divide, WellWithVolume
+from ..station import instrument_loader, labware_loader
+from ..utils import uniform_divide, WellWithVolume, MoveWithSpeed
 from .technogenetics import StationBTechnogenetics
 from ..paired_pipette import PairedPipette
 from opentrons.types import Point
