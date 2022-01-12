@@ -1,5 +1,5 @@
 from ..station import Station, labware_loader, instrument_loader
-from ..utils import mix_bottom_top, uniform_divide, mix_walk, WellWithVolume
+from ..utils import mix_bottom_top, uniform_divide, mix_walk, WellWithVolume, MoveWithSpeed
 from . import magnets
 from opentrons.types import Point
 from typing import Optional, Tuple
@@ -78,6 +78,7 @@ class StationB(Station):
         wash_air_gap: float = 20,
         wash_etoh_times: int = 4,
         wash_etoh_vol: float = 800,
+        wash_bottom_height: float = 1,
         wash_headroom: float = 1.1,
         wash_max_transfer_vol: float = 200,
         wash_mix_speed: float = 20,
@@ -91,6 +92,8 @@ class StationB(Station):
         wash_2_mix_dispense_rate: float = 230,
         wash_1_mix_aspiration_rate: float = 230,
         wash_1_mix_dispense_rate: float = 230,
+        wash_1_vertical_speed: float = 25,
+        wash_2_vertical_speed: float = 25,
         **kwargs
     ):
         """ Build a :py:class:`.StationB`.
@@ -150,6 +153,7 @@ class StationB(Station):
         :param wait_time_elute_on: Wait time for elution phase on magnet in minutes
         :param wait_time_wash_on: Wait time for wash phase on magnet in minutes
         :param wash_air_gap: Air gap for wash in uL
+        .param wash_bottom_height: Height to have from bottom in reagents through
         :param wash_etoh_times: Mix times for ethanol
         :param wash_etoh_vol: Volume of ethanol in uL
         :param wash_headroom: Headroom for wash buffers (as a multiplier)
@@ -236,6 +240,7 @@ class StationB(Station):
         self._wait_time_elute_on = wait_time_elute_on
         self._wait_time_wash_on = wait_time_wash_on
         self._wash_air_gap = wash_air_gap
+        self._wash_bottom_height = wash_bottom_height
         self._wash_etoh_times = wash_etoh_times
         self._wash_etoh_vol = wash_etoh_vol
         self._wash_headroom = wash_headroom
@@ -251,6 +256,8 @@ class StationB(Station):
         self._wash_1_vol = wash_1_vol
         self._wash_2_times = wash_2_times
         self._wash_2_vol = wash_2_vol
+        self._wash_1_vertical_speed = wash_1_vertical_speed
+        self._wash_2_vertical_speed = wash_2_vertical_speed
     
     @labware_loader(0, "_tips300")
     def load_tips300(self):
@@ -449,11 +456,13 @@ class StationB(Station):
             dispense_rate = self._wash_1_mix_dispense_rate
             self._m300.flow_rate.dispense = self._wash_1_mix_dispense_rate
             self._m300.flow_rate.aspirate = self._wash_1_mix_aspiration_rate
+            vertical_speed = self._wash_1_vertical_speed
         if wash_name == "wash B":
             self._default_aspiration_rate = self._wash_2_mix_aspiration_rate
             dispense_rate = self._wash_2_mix_dispense_rate
             self._m300.flow_rate.dispense = self._wash_2_mix_dispense_rate
             self._m300.flow_rate.aspirate = self._wash_2_mix_aspiration_rate
+            vertical_speed = self._wash_2_vertical_speed
         self._magdeck.disengage()
         num_trans, vol_per_trans = uniform_divide(vol, self._wash_max_transfer_vol)
         
@@ -465,9 +474,13 @@ class StationB(Station):
                 for n in range(num_trans):
                     if self._m300.current_volume > 0:
                         self._m300.dispense(self._m300.current_volume, src.top())
-                    self._m300.transfer(vol_per_trans, src, m.top(), air_gap=20, new_tip='never')
-                    if n < num_trans - 1:  # only air_gap if going back to source
-                        self._m300.air_gap(self._wash_air_gap)
+                    with MoveWithSpeed(self._m300,
+                                       from_point=src.top(),
+                                       to_point=src.bottom(self._wash_bottom_height),
+                                       move_close=False,
+                                       speed=vertical_speed):
+                        self._m300.aspirate(vol_per_trans)
+                    self._m300.dispense(vol_per_trans, m.top())
                 
                 # Mix
                 if self._wash_mix_walk:
