@@ -1,6 +1,9 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.12.10
+- [Station B] Lowered aspirate height in wash reagents.
+
 ## v2.12.9
 - [Station B technogenetics] Washes volume decreased to 650 to allow dead volume;
 - [Station B technogenetics] Disabled touch tip on elute phase.
