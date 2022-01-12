@@ -76,6 +76,7 @@ class StationB(Station):
         wait_time_elute_on: float = 3,
         wait_time_wash_on: float = 5,
         wash_air_gap: float = 20,
+        wash_bottom_height: float = 1,
         wash_etoh_times: int = 4,
         wash_etoh_vol: float = 800,
         wash_headroom: float = 1.1,
@@ -150,6 +151,7 @@ class StationB(Station):
         :param wait_time_elute_on: Wait time for elution phase on magnet in minutes
         :param wait_time_wash_on: Wait time for wash phase on magnet in minutes
         :param wash_air_gap: Air gap for wash in uL
+        :param wash_bottom_height: Height to have from bottom in reagents through
         :param wash_etoh_times: Mix times for ethanol
         :param wash_etoh_vol: Volume of ethanol in uL
         :param wash_headroom: Headroom for wash buffers (as a multiplier)
@@ -236,6 +238,7 @@ class StationB(Station):
         self._wait_time_elute_on = wait_time_elute_on
         self._wait_time_wash_on = wait_time_wash_on
         self._wash_air_gap = wash_air_gap
+        self._wash_bottom_height = wash_bottom_height
         self._wash_etoh_times = wash_etoh_times
         self._wash_etoh_vol = wash_etoh_vol
         self._wash_headroom = wash_headroom
@@ -465,7 +468,7 @@ class StationB(Station):
                 for n in range(num_trans):
                     if self._m300.current_volume > 0:
                         self._m300.dispense(self._m300.current_volume, src.top())
-                    self._m300.transfer(vol_per_trans, src, m.top(), air_gap=20, new_tip='never')
+                    self._m300.transfer(vol_per_trans, src.bottom(self._wash_bottom_height), m.top(), air_gap=20, new_tip='never')
                     if n < num_trans - 1:  # only air_gap if going back to source
                         self._m300.air_gap(self._wash_air_gap)
                 
