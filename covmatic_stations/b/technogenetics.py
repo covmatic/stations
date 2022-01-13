@@ -154,6 +154,7 @@ class StationBTechnogenetics(StationB):
             if self.run_stage("mix sample {}/{}".format(i + 1, len(self.mag_samples_m))):
                 self.pick_up(self._m300)
                 self._m300.mix(self._sample_mix_times, self._sample_mix_vol, m.bottom(self._sample_mix_height))
+                self._m300.move_to(m.top(0), speed=self._sample_vertical_speed)
                 self._m300.air_gap(self._bind_air_gap)
                 self.drop(self._m300)
     
