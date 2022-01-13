@@ -30,6 +30,7 @@ class StationBTechnogenetics(StationB):
                  sample_mix_height: float = 0.3,
                  sample_mix_times: float = 10,
                  sample_mix_vol: float = 180,
+                 sample_vertical_speed: float = 35,
                  mix_samples_rate_aspirate = 200,
                  mix_samples_rate_dispense = 200,
                  starting_vol: float = 650,
@@ -61,7 +62,8 @@ class StationBTechnogenetics(StationB):
         :param sample_mix_times: Mixing height for samples in mm from the bottom
         :param sample_mix_times: Mixing repetitions for samples
         :param sample_mix_vol: Mixing volume for samples in uL
-        :param thermomixer_incubation_time: Time for incubation after thermomixer in minutes 
+        :param sample_vertical_speed: speed of vertical movement exiting well
+        :param thermomixer_incubation_time: Time for incubation after thermomixer in minutes
         """
         super(StationBTechnogenetics, self).__init__(
             elute_mix_times=elute_mix_times,
@@ -102,6 +104,7 @@ class StationBTechnogenetics(StationB):
         self._sample_mix_height = sample_mix_height
         self._sample_mix_times = sample_mix_times
         self._sample_mix_vol = sample_mix_vol
+        self._sample_vertical_speed = sample_vertical_speed
         self._thermomixer_incubation_time = thermomixer_incubation_time
         self._watchdog_serial_timeout_seconds = watchdog_serial_timeout_seconds
     
