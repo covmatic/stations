@@ -1,5 +1,7 @@
 Covmatic Stations changelog
 ===========================
+## v2.12.11
+- [Station B] Slowed down moving out of wells and reagents to avoid liquid on tip's external surface.
 
 ## v2.12.10
 - [Station B] Lowered aspirate height in wash reagents.
