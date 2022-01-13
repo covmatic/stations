@@ -79,7 +79,6 @@ class StationB(Station):
         wash_bottom_height: float = 1,
         wash_etoh_times: int = 4,
         wash_etoh_vol: float = 800,
-        wash_bottom_height: float = 1,
         wash_headroom: float = 1.1,
         wash_max_transfer_vol: float = 200,
         wash_mix_speed: float = 20,
