@@ -232,6 +232,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
             # Mix
             tp.mix(mix_reps, self._wash_mix_vol, locationFrom="mix_locs")
+            tp.move_to(locationFrom="target", well_modifier="top(0)", speed=vertical_speed)
             tp.air_gap(self._wash_air_gap)
             tp.drop_tip()
 
