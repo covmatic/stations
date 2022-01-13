@@ -1,8 +1,8 @@
 import json
 import logging
 
-from covmatic_stations.station import instrument_loader, labware_loader
-from covmatic_stations.utils import uniform_divide, WellWithVolume
+from ..station import instrument_loader, labware_loader
+from ..utils import uniform_divide, WellWithVolume, MoveWithSpeed
 from .technogenetics import StationBTechnogenetics
 from ..paired_pipette import PairedPipette
 from opentrons.types import Point
@@ -198,11 +198,13 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             self._m300r.flow_rate.dispense = self._wash_1_mix_dispense_rate
             self._m300.flow_rate.aspirate = self._wash_1_mix_aspiration_rate
             self._m300r.flow_rate.aspirate = self._wash_1_mix_aspiration_rate
+            vertical_speed = self._wash_1_vertical_speed
         elif wash_name == "wash B":
             self._m300.flow_rate.dispense = self._wash_2_mix_dispense_rate
             self._m300r.flow_rate.dispense = self._wash_2_mix_dispense_rate
             self._m300.flow_rate.aspirate = self._wash_2_mix_aspiration_rate
             self._m300r.flow_rate.aspirate = self._wash_2_mix_aspiration_rate
+            vertical_speed = self._wash_2_vertical_speed
         self._magdeck.disengage()
 
         num_trans, vol_per_trans = uniform_divide(vol, self._wash_max_transfer_vol)
@@ -225,7 +227,9 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             for n in range(num_trans):
                 if n > 0:
                     tp.dispense(self._wash_air_gap, locationFrom="wash_locs", well_modifier="top(0)")
+
                 tp.aspirate(vol_per_trans, locationFrom="wash_locs")
+                tp.move_to(locationFrom="wash_locs", well_modifier="top(0)", speed=vertical_speed)
                 tp.air_gap(self._wash_air_gap)
                 tp.dispense(vol_per_trans+self._wash_air_gap, locationFrom="target", well_modifier="top(0)")
                 if n < num_trans-1:
