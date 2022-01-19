@@ -1,0 +1,92 @@
+{
+    "ordering": [
+        [
+            "A1"
+        ],
+        [
+            "A2"
+        ],
+        [
+            "A3"
+        ]
+    ],
+    "brand": {
+        "brand": "BIOFIL",
+        "brandId": [
+            "ZEROTIP 1000ul base rack"
+        ]
+    },
+    "metadata": {
+        "displayName": "BIOFIL 3 Reservoir 200000 µL",
+        "displayCategory": "reservoir",
+        "displayVolumeUnits": "µL",
+        "tags": []
+    },
+    "dimensions": {
+        "xDimension": 127,
+        "yDimension": 85,
+        "zDimension": 85
+    },
+    "wells": {
+        "A1": {
+            "depth": 83,
+            "totalLiquidVolume": 200000,
+            "shape": "rectangular",
+            "xDimension": 46,
+            "yDimension": 88,
+            "x": 21,
+            "y": 41,
+            "z": 2
+        },
+        "A2": {
+            "depth": 83,
+            "totalLiquidVolume": 200000,
+            "shape": "rectangular",
+            "xDimension": 46,
+            "yDimension": 88,
+            "x": 63,
+            "y": 41,
+            "z": 2
+        },
+        "A3": {
+            "depth": 83,
+            "totalLiquidVolume": 200000,
+            "shape": "rectangular",
+            "xDimension": 46,
+            "yDimension": 88,
+            "x": 105,
+            "y": 41,
+            "z": 2
+        }
+    },
+    "groups": [
+        {
+            "metadata": {
+                "wellBottomShape": "flat"
+            },
+            "wells": [
+                "A1",
+                "A2",
+                "A3"
+            ]
+        }
+    ],
+    "parameters": {
+        "format": "irregular",
+        "quirks": [
+            "centerMultichannelOnWells",
+            "touchTipDisabled"
+        ],
+        "isTiprack": false,
+        "isMagneticModuleCompatible": false,
+        "loadName": "biofil_3_reservoir_200000ul"
+    },
+    "namespace": "custom_beta",
+    "version": 1,
+    "schemaVersion": 2,
+    "cornerOffsetFromSlot": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+    }
+}

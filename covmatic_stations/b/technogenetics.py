@@ -1,6 +1,7 @@
 from .b import StationB, labware_loader
 from typing import Tuple
 from opentrons.types import Point
+from ..utils import get_labware_json_from_filename
 
 
 class StationBTechnogenetics(StationB):
@@ -115,7 +116,12 @@ class StationBTechnogenetics(StationB):
     @labware_loader(5, "_tempplate")
     def load_tempplate(self):
         self._tempplate = self._tempdeck.load_labware(self._magplate_model)
-    
+
+    @labware_loader(6, "_waste")
+    def load_waste(self):
+        self._waste = self._ctx.load_labware_from_definition(
+            get_labware_json_from_filename("biofil_3_reservoir_200000ul.json"), '11', 'Liquid Waste').wells()[0].top()
+
     @property
     def pcr_samples_m(self):
         return self._flatplate.rows()[0][:self.num_cols]
