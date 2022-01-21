@@ -482,6 +482,7 @@ class StationB(Station):
                                        speed=vertical_speed):
                         self._m300.aspirate(vol_per_trans)
                     self._m300.dispense(vol_per_trans, m.top())
+                    self._m300.air_gap(self._wash_air_gap)
 
                 # For mix_walk
                 a_locs = [m.bottom(self._bottom_headroom_height).move(
