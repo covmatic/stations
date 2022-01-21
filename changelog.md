@@ -1,5 +1,9 @@
 Covmatic Stations changelog
 ===========================
+
+## v2.13.0
+- [Station B] Using Biofil 1000ul base rack as waste reservoir.
+
 ## v2.12.11
 - [Station B] Slowed down moving out of wells and reagents to avoid liquid on tip's external surface.
 
