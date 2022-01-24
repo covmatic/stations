@@ -120,7 +120,7 @@ class StationBTechnogenetics(StationB):
     @labware_loader(6, "_waste")
     def load_waste(self):
         self._waste = self._ctx.load_labware_from_definition(
-            get_labware_json_from_filename("biofil_3_reservoir_200000ul.json"), '11', 'Liquid Waste').wells()[0].top()
+            get_labware_json_from_filename("biofil_1_reservoir_500000ul.json"), '11', 'Liquid Waste').wells()[0].top()
 
     @property
     def pcr_samples_m(self):
