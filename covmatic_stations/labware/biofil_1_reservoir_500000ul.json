@@ -1,0 +1,64 @@
+{
+    "ordering": [
+        [
+            "A1"
+        ]
+    ],
+    "brand": {
+        "brand": "BIOFIL",
+        "brandId": [
+            "ZEROTIP 1000ul base rack 1 WELL"
+        ]
+    },
+    "metadata": {
+        "displayName": "BIOFIL 1 Reservoir 500000 µL",
+        "displayCategory": "reservoir",
+        "displayVolumeUnits": "µL",
+        "tags": []
+    },
+    "dimensions": {
+        "xDimension": 127,
+        "yDimension": 85,
+        "zDimension": 64
+    },
+    "wells": {
+        "A1": {
+            "depth": 63,
+            "totalLiquidVolume": 500000,
+            "shape": "rectangular",
+            "xDimension": 126,
+            "yDimension": 81,
+            "x": 63,
+            "y": 43,
+            "z": 1
+        }
+    },
+    "groups": [
+        {
+            "metadata": {
+                "wellBottomShape": "flat"
+            },
+            "wells": [
+                "A1"
+            ]
+        }
+    ],
+    "parameters": {
+        "format": "irregular",
+        "quirks": [
+            "centerMultichannelOnWells",
+            "touchTipDisabled"
+        ],
+        "isTiprack": false,
+        "isMagneticModuleCompatible": false,
+        "loadName": "biofil_1_reservoir_500000ul"
+    },
+    "namespace": "custom_beta",
+    "version": 1,
+    "schemaVersion": 2,
+    "cornerOffsetFromSlot": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+    }
+}
