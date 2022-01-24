@@ -1,5 +1,4 @@
 import json
-import logging
 
 from ..station import instrument_loader, labware_loader
 from ..utils import uniform_divide, WellWithVolume, MoveWithSpeed
@@ -7,8 +6,8 @@ from .technogenetics import StationBTechnogenetics
 from ..paired_pipette import PairedPipette
 from opentrons.types import Point
 from itertools import repeat
-import math
 import os
+
 
 class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
