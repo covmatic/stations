@@ -237,7 +237,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
 
                 tp.aspirate(vol_per_trans, locationFrom="wash_locs")
                 tp.move_to(locationFrom="wash_locs", well_modifier="top(0)", speed=vertical_speed)
-                tp.dispense(vol_per_trans+self._wash_air_gap, locationFrom="target", well_modifier="top(0)")
+                tp.dispense(vol_per_trans, locationFrom="target", well_modifier="top(0)")
                 if n < num_trans-1:
                     tp.air_gap(self._wash_air_gap)
 
