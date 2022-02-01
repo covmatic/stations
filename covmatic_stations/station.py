@@ -404,7 +404,6 @@ class Station(metaclass=StationMeta):
     ):
         # Note: changed default homing method to 'move_to_home' Agos, 2021-09-13
 
-        self.status = "pause"
         old_color = self._button.color
         self._button.color = color
 
@@ -425,6 +424,7 @@ class Station(metaclass=StationMeta):
             self._ctx.delay(delay_time)
             self.watchdog_stop()
         if pause:
+            self.status = "pause"
             self._ctx.pause()
             self._ctx.delay(0.1)  # pad to avoid pause leaking
         if blink and not self._ctx.is_simulating():
