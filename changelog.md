@@ -1,6 +1,9 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.13.1
+- [stations] Avoided *pause* message when delay is called.
+
 ## v2.13.0
 - [Station B technogenetics] **Wash B** moved to reservoir in slot 2 same as elution buffer.
 - [Station B technogenetics] Using Biofil 1000ul base rack as waste reservoir.
