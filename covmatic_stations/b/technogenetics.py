@@ -253,7 +253,7 @@ class StationBTechnogenetics(StationB):
             self.dual_pause("deepwell incubation", between=self.set_external if self._external_deepwell_incubation else None)
             self.set_internal()
         
-        self.elute()
+        self.elute(self.mag_samples_m)
         
         if self.run_stage("thermomixer"):
             self.dual_pause("seal the deepwell", between=self.set_external)
