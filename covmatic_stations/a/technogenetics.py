@@ -155,7 +155,7 @@ class StationATechnogenetics(StationAP1000):
                                    from_point=d.bottom(self._deepwell_headroom_bottom + 5),
                                    to_point=d.bottom(self._deepwell_headroom_bottom),
                                    speed=self._prot_k_vertical_speed, move_close=False):
-                    self._m20.dispense(self._prot_k_volume)
+                    self._m20.blow_out()
 
         if self._m20.has_tip:
             self._m20.drop_tip()
