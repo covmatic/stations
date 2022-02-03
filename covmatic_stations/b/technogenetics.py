@@ -212,15 +212,16 @@ class StationBTechnogenetics(StationB):
         self.remove_supernatant(self._starting_vol)
         self.wash(self._wash_1_vol, self.wash1, self._wash_1_times, "wash A")
 
+        self._magdeck.disengage()
+
         if self.run_stage("spin deepwell wash A"):
-            self._magdeck.disengage()
             self.dual_pause("spin the deepwell", between=self.set_external)
             self.set_internal()
             self.pause("Add wash B and elute buffer in slot {}{}".format(
                 self.wash2[0].parent, " and {}".format(self.water.parent) if self.wash2[0].parent != self.water.parent else ""))
 
-            self._magdeck.engage(height=self._magheight)
-            self.check()
+        self._magdeck.engage(height=self._magheight)
+        self.check()
 
         if self.run_stage("post spin incubation wash A"):
             self.delay(self._postspin_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
@@ -230,13 +231,14 @@ class StationBTechnogenetics(StationB):
         self._magdeck.disengage()
 
         self.wash(self._wash_2_vol, self.wash2, self._wash_2_times, "wash B")
-        
+
+        self._magdeck.disengage()
         if self.run_stage("spin deepwell wash B"):
-            self._magdeck.disengage()
             self.dual_pause("spin the deepwell", between=self.set_external)
             self.set_internal()
-            self._magdeck.engage(height=self._magheight)
-            self.check()
+            
+        self._magdeck.engage(height=self._magheight)
+        self.check()
         
         if self.run_stage("post spin incubation wash B"):
             self.delay(self._postspin_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
