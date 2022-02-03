@@ -129,6 +129,10 @@ class StationATechnogenetics(StationAP1000):
             self.logger.info("APPENDING {} with {}ul".format(self._prot_k[i], volume_per_strip))
             self._pk_tube_source.append_tube_with_vol(self._prot_k[i], volume_per_strip)
 
+    def fake_aspirate(self, pip, volume, location=None):
+        pip.aspirate(volume, location)
+        pip.dispense(volume, location)
+
     def transfer_proteinase(self):
         for i, d in enumerate(self._dests_multi):
             if self.run_stage("transfer proteinase {}/{}".format(i + 1, len(self._dests_multi))):
@@ -137,8 +141,7 @@ class StationATechnogenetics(StationAP1000):
 
                 if self._m20_fake_aspirate:
                     self._m20_fake_aspirate = False
-                    self._m20.aspirate(2,  self._prot_k[0].top())
-                    self._m20.dispense(2)
+                    self.fake_aspirate(self._m20, 0.5, self._prot_k[0].top())
 
                 self._pk_tube_source.prepare_aspiration(self._prot_k_volume, min_height=self._strip_headroom_bottom)
                 self._pk_tube_source.aspirate(self._m20)
@@ -148,6 +151,7 @@ class StationATechnogenetics(StationAP1000):
                                    to_point=d.bottom(self._deepwell_headroom_bottom),
                                    speed=self._prot_k_vertical_speed, move_close=False):
                     self._m20.blow_out()
+                self.fake_aspirate(self._m20, 0.5, d.top())
 
         if self._m20.has_tip:
             self._m20.drop_tip()
