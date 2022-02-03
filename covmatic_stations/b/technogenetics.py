@@ -236,10 +236,10 @@ class StationBTechnogenetics(StationB):
         if self.run_stage("spin deepwell wash B"):
             self.dual_pause("spin the deepwell", between=self.set_external)
             self.set_internal()
-            
+
         self._magdeck.engage(height=self._magheight)
         self.check()
-        
+
         if self.run_stage("post spin incubation wash B"):
             self.delay(self._postspin_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
 
