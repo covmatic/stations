@@ -9,6 +9,7 @@ from typing import Tuple, Optional
 
 class StationATechnogenetics(StationAP1000):
     def __init__(self,
+        beads_flow_rate: float = 7.6,
         beads_mix_repeats: int = 0,
         beads_mix_volume: float = 20,
         beads_vol: float = 9,
@@ -23,6 +24,7 @@ class StationATechnogenetics(StationAP1000):
         negative_control_well='A1',
         positive_control_well=None,
         prot_k_capacity: float = 180,
+        prot_k_flow_rate: float = 20,
         prot_k_headroom: float = 1.1,
         prot_k_vertical_speed = 15,
         prot_k_vol: float = 20,
@@ -39,10 +41,12 @@ class StationATechnogenetics(StationAP1000):
         **kwargs
     ):
         """
+        :param beads_flow_rate: pipette flow rate in ul/s for aspirate, dipsense and blow_out
         :param beads_mix_repeats: number of repetitions during mixing the beads
         :param beads_mix_volume: volume aspirated for mixing the beads in uL
         :param beads_vol: volume of beads per sample in uL
         :param lysis_volume: volume of lysis buffer per sample in uL
+        :param prot_k_flow_rate: pipette flow rate in ul/s for aspirate, dispense and blow_out
         :param prot_k_headroom: headroom for proteinase K (as a multiplier)
         :param prot_k_vol: volume of proteinase K per sample in uL
         :param sample_aspirate: aspiration rate for sampeles in uL/s
@@ -73,6 +77,7 @@ class StationATechnogenetics(StationAP1000):
             tipracks_slots_20=tipracks_slots_20,
             **kwargs
         )
+        self._beads_flow_rate = beads_flow_rate
         self._beads_mix_repeats = beads_mix_repeats
         self._beads_mix_volume = beads_mix_volume
         self._beads_vol = beads_vol
@@ -83,6 +88,7 @@ class StationATechnogenetics(StationAP1000):
         self._tempdeck_bool = tempdeck_bool
         self._touch_tip_height = touch_tip_height
         self._prot_k_vertical_speed = prot_k_vertical_speed
+        self._prot_k_flow_rate = prot_k_flow_rate
         self._pk_tube_source = MultiTubeSource(vertical_speed=self._prot_k_vertical_speed)
         if self._lysis_first != lysis_first:
             self.logger.error("lysis_first=True is not supported for this protocol")
@@ -134,6 +140,10 @@ class StationATechnogenetics(StationAP1000):
         pip.dispense(volume, location)
 
     def transfer_proteinase(self):
+        self._m20.flow_rate.aspirate = self._prot_k_flow_rate
+        self._m20.flow_rate.dispense = self._prot_k_flow_rate
+        self._m20.flow_rate.blow_out = self._prot_k_flow_rate
+
         for i, d in enumerate(self._dests_multi):
             if self.run_stage("transfer proteinase {}/{}".format(i + 1, len(self._dests_multi))):
                 if not self._m20.has_tip:
@@ -157,6 +167,10 @@ class StationATechnogenetics(StationAP1000):
             self._m20.drop_tip()
     
     def transfer_beads(self):
+        self._m20.flow_rate.aspirate = self._beads_flow_rate
+        self._m20.flow_rate.dispense = self._beads_flow_rate
+        self._m20.flow_rate.blow_out = self._beads_flow_rate
+
         for i, d in enumerate(self._dests_multi):
             if self.run_stage("transfer beads {}/{}".format(i + 1, len(self._dests_multi))):
                 self.pick_up(self._m20)
