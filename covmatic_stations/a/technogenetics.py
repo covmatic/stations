@@ -1,3 +1,4 @@
+from ..multi_tube_source import MultiTubeSource
 from ..utils import MoveWithSpeed
 from .p1000 import StationAP1000
 from .reload import StationAReloadMixin
@@ -11,9 +12,8 @@ class StationATechnogenetics(StationAP1000):
         beads_mix_repeats: int = 0,
         beads_mix_volume: float = 20,
         beads_vol: float = 9,
-        beads_headroom_bottom: float = 0.5,
         drop_threshold: int = 5000,
-        ic_headroom_bottom = 1,
+        deepwell_headroom_bottom: float = 1,
         lysis_first: bool = False,
         lys_mix_repeats: int = 2,
         lys_mix_volume: float = 100,
@@ -24,10 +24,12 @@ class StationATechnogenetics(StationAP1000):
         positive_control_well=None,
         prot_k_capacity: float = 180,
         prot_k_headroom: float = 1.1,
+        prot_k_vertical_speed = 15,
         prot_k_vol: float = 20,
         sample_aspirate: float = 100,
         sample_dispense: float = 100,
-        strip_vertical_speed: float = 5,
+        strip_headroom_bottom: float = 0.5,
+        beads_vertical_speed: float = 5,
         tempdeck_temp: Optional[float] = None,
         tempdeck_bool: bool = False,
         tipracks_slots: Tuple[str, ...] = ('10', '11'),
@@ -64,7 +66,7 @@ class StationATechnogenetics(StationAP1000):
             sample_dispense=sample_dispense,
             iec_volume=prot_k_vol,
             ic_capacity=prot_k_capacity,
-            ic_headroom_bottom=ic_headroom_bottom,
+            deepwell_headroom_bottom=deepwell_headroom_bottom,
             ic_lys_headroom=prot_k_headroom,
             tempdeck_temp=tempdeck_temp,
             tipracks_slots=tipracks_slots,
@@ -74,12 +76,14 @@ class StationATechnogenetics(StationAP1000):
         self._beads_mix_repeats = beads_mix_repeats
         self._beads_mix_volume = beads_mix_volume
         self._beads_vol = beads_vol
-        self._beads_headroom_bottom = beads_headroom_bottom
+        self._strip_headroom_bottom = strip_headroom_bottom
         self._drop_threshold = drop_threshold
         self._m20_fake_aspirate = True
-        self._strip_vertical_speed = strip_vertical_speed
+        self._beads_vertical_speed = beads_vertical_speed
         self._tempdeck_bool = tempdeck_bool
         self._touch_tip_height = touch_tip_height
+        self._prot_k_vertical_speed = prot_k_vertical_speed
+        self._pk_tube_source = MultiTubeSource(vertical_speed=self._prot_k_vertical_speed)
         if self._lysis_first != lysis_first:
             self.logger.error("lysis_first=True is not supported for this protocol")
     
@@ -112,14 +116,39 @@ class StationATechnogenetics(StationAP1000):
     @property
     def _beads(self):
         return self._strips_block.rows()[0][-1]
-    
+
+    def setup_pk(self):
+        pk_volume_usable_in_strip = self.num_cols * self._prot_k_volume
+        volume_per_strip = pk_volume_usable_in_strip / self.num_pk_strips
+        requested_volume_per_strip = volume_per_strip * self._prot_k_headroom
+
+        self.logger.info("Proteinase K: using {} strip{} with {}ul each".format(
+            self.num_pk_strips, "s" if self.num_pk_strips > 1 else "", requested_volume_per_strip))
+
+        for i in range(self.num_pk_strips):
+            self.logger.info("APPENDING {} with {}ul".format(self._prot_k[i], volume_per_strip))
+            self._pk_tube_source.append_tube_with_vol(self._prot_k[i], volume_per_strip)
+
     def transfer_proteinase(self):
         for i, d in enumerate(self._dests_multi):
             if self.run_stage("transfer proteinase {}/{}".format(i + 1, len(self._dests_multi))):
                 if not self._m20.has_tip:
                     self.pick_up(self._m20)
-                self._m20.transfer(self._prot_k_volume, self._prot_k[i // self.cols_per_strip], d.bottom(self._ic_headroom_bottom), new_tip='never', touch_tip=True)
-                #self._m20.touch_tip(v_offset=self._touch_tip_height)
+
+                if self._m20_fake_aspirate:
+                    self._m20_fake_aspirate = False
+                    self._m20.aspirate(2,  self._prot_k[0].top())
+                    self._m20.dispense(2)
+
+                self._pk_tube_source.prepare_aspiration(self._prot_k_volume, min_height=self._strip_headroom_bottom)
+                self._pk_tube_source.aspirate(self._m20)
+
+                with MoveWithSpeed(self._m20,
+                                   from_point=d.bottom(self._deepwell_headroom_bottom + 5),
+                                   to_point=d.bottom(self._deepwell_headroom_bottom),
+                                   speed=self._prot_k_vertical_speed, move_close=False):
+                    self._m20.blow_out()
+
         if self._m20.has_tip:
             self._m20.drop_tip()
     
@@ -134,9 +163,9 @@ class StationATechnogenetics(StationAP1000):
                     self._m20.dispense(2)
 
                 with MoveWithSpeed(self._m20,
-                                   from_point=self._beads.bottom(self._beads_headroom_bottom + 5),
-                                   to_point=self._beads.bottom(self._beads_headroom_bottom),
-                                   speed=self._strip_vertical_speed, move_close=False):
+                                   from_point=self._beads.bottom(self._strip_headroom_bottom + 5),
+                                   to_point=self._beads.bottom(self._strip_headroom_bottom),
+                                   speed=self._beads_vertical_speed, move_close=False):
                     self._m20.aspirate(self._beads_vol)
                 self._m20.air_gap(self._air_gap_dest_multi)
                 self._m20.dispense(self._air_gap_dest_multi, d.top())
@@ -148,10 +177,11 @@ class StationATechnogenetics(StationAP1000):
                 self._m20.drop_tip()
     
     def body(self):
+        self.setup_pk()
         self.setup_samples()
         self.setup_lys_tube()
         self.msg = ""
-        
+
         self.transfer_proteinase()
         if self.run_stage("check proteinase"):
             self.dual_pause("proteinase check")

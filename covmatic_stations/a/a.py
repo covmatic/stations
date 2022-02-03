@@ -13,6 +13,7 @@ class StationA(Station):
             air_gap_dest_multi: float = 2,
             air_gap_sample: float = 20,
             air_gap_lys: float = 10,
+            deepwell_headroom_bottom: float = 1,
             dest_headroom_height: float = 2,
             dest_top_height: float = 5,
             dest_multi_headroom_height: float = 2,
@@ -22,7 +23,6 @@ class StationA(Station):
             hover_height: float = -2,
             ic_capacity: float = 180,
             ic_lys_headroom: float = 1.1,
-            ic_headroom_bottom: float = 2,
             ic_mix_repeats: int = 5,
             ic_mix_volume: float = 20,
             iec_volume: float = 19,
@@ -77,7 +77,7 @@ class StationA(Station):
         :param hover_height: height from the top at which to hover (should be negative) in mm
         :param ic_capacity: capacity of the internal control tube
         :param ic_lys_headroom: headroom for the internal control and lysis tube (multiplier)
-        :param ic_headroom_bottom: headroom always to keep from the bottom of the internal control tube in mm
+        :param deepwell_headroom_bottom: headroom always to keep from the bottom of the deepwell in mm
         :param ic_mix_repeats: number of repetitions during mixing the internal control
         :param ic_mix_volume: volume aspirated for mixing the internal control in uL
         :param iec_volume: The volume of lysis buffer to use per sample in uL
@@ -136,7 +136,7 @@ class StationA(Station):
         self._dest_top_height = dest_top_height
         self._hover_height = hover_height
         self._ic_capacity = ic_capacity
-        self._ic_headroom_bottom = ic_headroom_bottom
+        self._deepwell_headroom_bottom = deepwell_headroom_bottom
         self._ic_lys_headroom = ic_lys_headroom
         self._ic_mix_repeats = ic_mix_repeats
         self._ic_mix_volume = ic_mix_volume
@@ -413,7 +413,7 @@ class StationA(Station):
         internal_control = self._strips_block.rows()[0][strip_ind]
         self.pick_up(self._m20)
         # no air gap to use 1 transfer only avoiding drop during multiple transfers
-        self._m20.transfer(self._iec_volume, internal_control, dest.bottom(self._ic_headroom_bottom), new_tip='never')
+        self._m20.transfer(self._iec_volume, internal_control, dest.bottom(self._deepwell_headroom_bottom), new_tip='never')
         self._m20.mix(self._ic_mix_repeats, self._ic_mix_volume, dest.bottom(self._dest_multi_headroom_height))
         self._m20.air_gap(self._air_gap_dest_multi)
         self.drop(self._m20)
