@@ -37,7 +37,7 @@ class StationBTechnogenetics(StationB):
                  starting_vol: float = 650,
                  supernatant_removal_aspiration_rate_first_phase = 94,
                  tempdeck_slot: str = '10',
-                 tempdeck_temp: float = 60,
+                 tempdeck_temp: float = None,
                  tempdeck_auto_turnon: bool = False,
                  tempdeck_auto_turnoff: bool = True,
                  thermomixer_incubation_time: float = 5,
