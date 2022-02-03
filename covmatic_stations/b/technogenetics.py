@@ -217,7 +217,7 @@ class StationBTechnogenetics(StationB):
         if self.run_stage("spin deepwell wash A"):
             self.dual_pause("spin the deepwell", between=self.set_external)
             self.set_internal()
-            self.pause("Add wash B and elute buffer in slot {}{}".format(
+            self.dual_pause("Add wash B and elute buffer in slot {}{}".format(
                 self.wash2[0].parent, " and {}".format(self.water.parent) if self.wash2[0].parent != self.water.parent else ""))
 
         self._magdeck.engage(height=self._magheight)
