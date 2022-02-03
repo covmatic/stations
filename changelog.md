@@ -1,6 +1,12 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.13.2
+- [station A technogenetics] PK is aspirated with slow movement to avoid bubbles;
+- [station A technogenetics] PK deleted touch tip both in aspirate and dispense;
+- [station A technogenetics] PK blows out in deepwell to avoid liquid carried back in tip.
+- [station A technogenetics] PK increased flow rate.
+
 ## v2.13.1
 - [stations] Avoided *pause* message when delay is called.
 
