@@ -1,6 +1,11 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.14.0
+- [station B technogenetics] moved *deepwell incubation* (now *beads drying*) from TempDeck to MagDeck;
+- [station B technogenetics] inserted delay of 5 minutes for beads drying on MagDeck;
+- [station B technogenetics] removed *check wash A after spin* since it is not needed now.
+
 ## v2.13.2
 - [station A technogenetics] PK is aspirated with slow movement to avoid bubbles;
 - [station A technogenetics] PK deleted touch tip both in aspirate and dispense;
