@@ -8,10 +8,10 @@ class StationBTechnogenetics(StationB):
     _protocol_description = "station B protocol for Technogenetics kit"
 
     def __init__(self,
+                 beads_drying_time: float = 5,
                  elute_mix_times: int = 0,
                  elution_vol: float = 50,
                  elute_incubate: bool = False,
-                 external_deepwell_incubation: bool = True,
                  final_mix_height: float = 0.5,
                  final_mix_times: int = 5,
                  final_mix_vol: float = 20,
@@ -37,7 +37,7 @@ class StationBTechnogenetics(StationB):
                  starting_vol: float = 650,
                  supernatant_removal_aspiration_rate_first_phase = 94,
                  tempdeck_slot: str = '10',
-                 tempdeck_temp: float = 60,
+                 tempdeck_temp: float = None,
                  tempdeck_auto_turnon: bool = False,
                  tempdeck_auto_turnoff: bool = True,
                  thermomixer_incubation_time: float = 5,
@@ -49,6 +49,7 @@ class StationBTechnogenetics(StationB):
                  **kwargs
                  ):
         """ Build a :py:class:`.StationBTechnogenetics`.
+        :param beads_drying_time: [minutes] time to wait for beads to try in air
         :param external_deepwell_incubation: whether or not to perform deepwell incubation outside the robot
         :param final_mix_height: Mixing height (from the bottom) for final transfer in mm
         :param final_mix_times: Mixing repetitions for final transfer
@@ -83,7 +84,7 @@ class StationBTechnogenetics(StationB):
             wash_headroom=wash_headroom,
             **kwargs
         )
-        self._external_deepwell_incubation = external_deepwell_incubation
+        self._beads_drying_time = beads_drying_time
         self._final_mix_blow_out_height = final_mix_blow_out_height
         self._final_mix_height = final_mix_height
         self._final_mix_times = final_mix_times
@@ -211,31 +212,34 @@ class StationBTechnogenetics(StationB):
         self.remove_supernatant(self._starting_vol)
         self.wash(self._wash_1_vol, self.wash1, self._wash_1_times, "wash A")
 
+        self._magdeck.disengage()
+
         if self.run_stage("spin deepwell wash A"):
-            self._magdeck.disengage()
             self.dual_pause("spin the deepwell", between=self.set_external)
             self.set_internal()
-            self._magdeck.engage(height=self._magheight)
-            self.check()
+            self.dual_pause("Add wash B and elute buffer in slot {}{}".format(
+                self.wash2[0].parent, " and {}".format(self.water.parent) if self.wash2[0].parent != self.water.parent else ""))
+
+        self._magdeck.engage(height=self._magheight)
+        self.check()
 
         if self.run_stage("post spin incubation wash A"):
             self.delay(self._postspin_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
 
         self.remove_wash(self._remove_wash_vol, "remove wash A after spin")
 
-        if self.run_stage("remove wash A"):
-            self._magdeck.disengage()
-            self.dual_pause("Check Wash A removal and empty waste reservoir")
+        self._magdeck.disengage()
 
         self.wash(self._wash_2_vol, self.wash2, self._wash_2_times, "wash B")
-        
+
+        self._magdeck.disengage()
         if self.run_stage("spin deepwell wash B"):
-            self._magdeck.disengage()
             self.dual_pause("spin the deepwell", between=self.set_external)
             self.set_internal()
-            self._magdeck.engage(height=self._magheight)
-            self.check()
-        
+
+        self._magdeck.engage(height=self._magheight)
+        self.check()
+
         if self.run_stage("post spin incubation wash B"):
             self.delay(self._postspin_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
 
@@ -245,15 +249,12 @@ class StationBTechnogenetics(StationB):
 
         self.remove_wash(self._remove_wash_vol, "remove wash B after spin")
 
-        if self.run_stage("remove wash B"):
-            self._magdeck.disengage()
-            self.dual_pause("Check Wash B removal and empty waste reservoir")
+        self._magdeck.disengage()
 
-        if self.run_stage("deepwell incubation"):
-            self.dual_pause("deepwell incubation", between=self.set_external if self._external_deepwell_incubation else None)
-            self.set_internal()
+        if self.run_stage("beads drying"):
+            self.delay(self._beads_drying_time, msg="beads drying")
         
-        self.elute()
+        self.elute(self.mag_samples_m)
         
         if self.run_stage("thermomixer"):
             self.dual_pause("seal the deepwell", between=self.set_external)

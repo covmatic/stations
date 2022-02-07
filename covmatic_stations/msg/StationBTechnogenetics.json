@@ -38,5 +38,9 @@
   "move to PCR": {
 	"ENG": "move the PCR plate to the RT-PCR",
 	"ITA": "spostare la PCR plate nella RT-PCR"
+  },
+  "beads drying": {
+    "ENG": "beads drying",
+    "ITA": "asciugatura delle beads"
   }
 }
