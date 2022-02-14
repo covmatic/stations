@@ -119,6 +119,7 @@ class Station(metaclass=StationMeta):
         self._drop_threshold = drop_threshold
         self._dummy_lights = dummy_lights
         self.jupyter = jupyter
+        self.dashboard_input_request = False
         self._language = language
         self._log_filepath = log_filepath.format(time.strftime("%Y_%m_%d__%H_%M_%S"))
         self._log_file_format = log_file_format
@@ -163,6 +164,10 @@ class Station(metaclass=StationMeta):
         return self.external
     
     set_internal = partialmethod(set_external, value=False)
+
+    def set_dashboard_input(self, value: bool = True) -> bool:
+        self.dashboard_input_request = value
+        return self.dashboard_input_request
     
     def get_msg(self, value: str) -> str:
         return str(type(self).get_message(value, self._language))
@@ -443,7 +448,12 @@ class Station(metaclass=StationMeta):
             between()
         self._msg = "{}.\n{}".format(msg, self.get_msg("continue"))
         self.pause(self.msg, blink=False, color=cols[1], home=home[1])
-    
+
+    def request_dashboard_input(self, msg: str, home: Tuple[bool, bool] = (True, False)):
+        self.logger.info("Requesting external barcode")
+        self.dual_pause(msg=msg, home=home, between=self.set_dashboard_input)
+        self.set_dashboard_input(False)
+
     def delay(self,
         mins: float,
         msg: str = "",

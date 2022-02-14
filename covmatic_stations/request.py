@@ -83,6 +83,7 @@ class StationRESTServer:
             "stage": getattr(self._station, "stage", None),
             "msg": getattr(self._station, "msg", None),
             "external": getattr(self._station, "external", False),
+            "dashboard_input": getattr(self._station, "dashboard_input_request", False),
             "time": datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S:%f"),
             # "temp": temp,
             "tips": tip_log_for_log,
