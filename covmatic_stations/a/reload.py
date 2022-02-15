@@ -34,7 +34,7 @@ class StationAReloadMixin(metaclass=StationMeta):
                         self._ctx.comment("Skipping transfer sample {}: is control".format(d))
                 self._done_samples += 1
             if set_idx and self.run_stage("refill {}/{}".format(self.sets_of_samples - set_idx, self.sets_of_samples - 1)):
-                self.dual_pause(self.msg_format("refill", min(self.remaining_samples, self.max_samples_per_set)))
+                self.request_dashboard_input(self.msg_format("refill", min(self.remaining_samples, self.max_samples_per_set)))
 
 # Subclass is more straightforward
 class StationAReload(StationAReloadMixin, StationA):
