@@ -1,6 +1,16 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.15.0
+### Note
+- Needs **localwebserver >= v2.9.0**
+- Needs **webserver >= v0.9.0**
+- Needs **dashboard >= v0.10.0**
+
+### Added
+- [stations] Added *dashboard_input* to make the *dashboard* ask something in the middle of the run;
+- [station A technogenetics] Second rack is requested with *dashboard_input*
+
 ## v2.14.0
 - [station B technogenetics] moved *deepwell incubation* (now *beads drying*) from TempDeck to MagDeck;
 - [station B technogenetics] inserted delay of 5 minutes for beads drying on MagDeck;
