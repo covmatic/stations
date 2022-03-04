@@ -209,6 +209,8 @@ class StationATechnogenetics(StationAP1000):
             self.dual_pause("proteinase check")
         self.transfer_samples()
         self.transfer_lys()
+        if self.run_stage("add beads"):
+            self.pause("add beads")
         self.transfer_beads()
 
         

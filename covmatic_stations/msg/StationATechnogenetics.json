@@ -1,4 +1,8 @@
 {
+  "add beads": {
+	"ENG": "Please add beads before continuing.",
+	"ITA": "Aggiungi le beads prima di continuare."
+  },
   "chilled tubeblock content": {
 	"ENG": "proteinase K (first {} strips{}) and beads (last strip)",
 	"ITA": "proteinase K (prime {} strips{}) e beads (ultima strip)"
