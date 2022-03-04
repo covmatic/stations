@@ -209,12 +209,13 @@ class StationATechnogenetics(StationAP1000):
             self.dual_pause("proteinase check")
         self.transfer_samples()
         self.transfer_lys()
+        self.transfer_beads()
+
         
         if self.run_stage("incubation"):
             self.dual_pause("incubate", between=self.set_external)
             self.set_internal()
-        
-        self.transfer_beads()
+
         self.logger.info(self.msg_format("move to B"))
 
 
