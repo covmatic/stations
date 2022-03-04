@@ -202,8 +202,8 @@ class StationBTechnogenetics(StationB):
         self.logger.info(self.get_msg_format("volume", "elution buffer", self._wash_headroom * self._elution_vol * self._num_samples / 1000))
         self.mix_samples()
         
-        if self.run_stage("mix incubate on"):
-            self.delay(self._mix_incubate_on_time, self.get_msg_format("incubate on magdeck", self.get_msg("off")))
+        # if self.run_stage("mix incubate on"):
+        #     self.delay(self._mix_incubate_on_time, self.get_msg_format("incubate on magdeck", self.get_msg("off")))
         self._magdeck.engage(height=self._magheight)
         self.check()
         if self.run_stage("mix incubate off"):
