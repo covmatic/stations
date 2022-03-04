@@ -166,14 +166,15 @@ class StationATechnogenetics(StationAP1000):
         if self._m20.has_tip:
             self._m20.drop_tip()
     
-    def transfer_beads(self):
+    def transfer_beads(self, new_tip: bool=True):
         self._m20.flow_rate.aspirate = self._beads_flow_rate
         self._m20.flow_rate.dispense = self._beads_flow_rate
         self._m20.flow_rate.blow_out = self._beads_flow_rate
 
         for i, d in enumerate(self._dests_multi):
             if self.run_stage("transfer beads {}/{}".format(i + 1, len(self._dests_multi))):
-                self.pick_up(self._m20)
+                if new_tip or not self._m20.has_tip:
+                    self.pick_up(self._m20)
                 # Fake aspiration to avoid up and down movement
                 if self._m20_fake_aspirate:
                     self._m20_fake_aspirate = False
@@ -191,8 +192,11 @@ class StationATechnogenetics(StationAP1000):
 
                 if self._beads_mix_repeats:
                     self._m20.mix(self._beads_mix_repeats, self._beads_mix_volume, d.bottom(self._dest_multi_headroom_height))
-                self._m20.air_gap(self._air_gap_dest_multi)
-                self._m20.drop_tip()
+                if new_tip:
+                    self._m20.air_gap(self._air_gap_dest_multi)
+                    self._m20.drop_tip()
+        if self._m20.has_tip:
+            self._m20.drop_tip()
     
     def body(self):
         self.setup_pk()
