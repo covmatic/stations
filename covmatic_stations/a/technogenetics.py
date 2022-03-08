@@ -172,34 +172,70 @@ class StationATechnogenetics(StationAP1000):
         self._m20.flow_rate.blow_out = self._beads_flow_rate
 
         for i, d in enumerate(self._dests_multi):
+            remaining = len(self._dests_multi) - i
             if self.run_stage("transfer beads {}/{}".format(i + 1, len(self._dests_multi))):
-                if new_tip or not self._m20.has_tip:
-                    self.pick_up(self._m20)
-                # Fake aspiration to avoid up and down movement
-                if self._m20_fake_aspirate:
-                    self._m20_fake_aspirate = False
-                    self._m20.aspirate(2, self._beads.top())
-                    self._m20.dispense(2)
-
-                with MoveWithSpeed(self._m20,
-                                   from_point=self._beads.bottom(self._strip_headroom_bottom + 5),
-                                   to_point=self._beads.bottom(self._strip_headroom_bottom),
-                                   speed=self._beads_vertical_speed, move_close=False):
-                    self._m20.aspirate(self._beads_vol)
-                self._m20.air_gap(self._air_gap_dest_multi)
-                self._m20.dispense(self._air_gap_dest_multi, d.top())
-                self._m20.dispense(self._beads_vol, d.bottom(self._dest_multi_headroom_height))
-
-                if self._beads_mix_repeats:
-                    self._m20.mix(self._beads_mix_repeats, self._beads_mix_volume, d.bottom(self._dest_multi_headroom_height))
                 if new_tip:
-                    self._m20.air_gap(self._air_gap_dest_multi)
-                    self._m20.drop_tip()
+                    self.transfer_beads_new_tip(d)
                 else:
-                    self._m20.blow_out(d.top())
-
+                    self.distribute_beads(d, remaining)
         if self._m20.has_tip:
             self._m20.drop_tip()
+
+    def transfer_beads_new_tip(self, dest):
+        self.pick_up(self._m20)
+
+        # Fake aspiration to avoid up and down movement
+        if self._m20_fake_aspirate:
+            self._m20_fake_aspirate = False
+            self._m20.aspirate(2, self._beads.top())
+            self._m20.dispense(2)
+
+        with MoveWithSpeed(self._m20,
+                           from_point=self._beads.bottom(self._strip_headroom_bottom + 5),
+                           to_point=self._beads.bottom(self._strip_headroom_bottom),
+                           speed=self._beads_vertical_speed, move_close=False):
+            self._m20.aspirate(self._beads_vol)
+        self._m20.air_gap(self._air_gap_dest_multi)
+        self._m20.dispense(self._air_gap_dest_multi, dest.top())
+        self._m20.dispense(self._beads_vol, dest.bottom(self._dest_multi_headroom_height))
+
+        if self._beads_mix_repeats:
+            self._m20.mix(self._beads_mix_repeats, self._beads_mix_volume, dest.bottom(self._dest_multi_headroom_height))
+
+        self._m20.air_gap(self._air_gap_dest_multi)
+        self._m20.drop_tip()
+
+    def distribute_beads(self, dest, remaining: int):
+
+        if not self._m20.has_tip:
+            self.pick_up(self._m20)
+
+        # Fake aspiration to avoid up and down movement
+        if self._m20_fake_aspirate:
+            self._m20_fake_aspirate = False
+            self._m20.aspirate(2, self._beads.top())
+            self._m20.dispense(2)
+
+        if self._m20.current_volume < self._beads_vol:
+            # we need to fill the tip
+            well_per_tip = min(self._m20.max_volume // self._beads_vol, remaining)
+            volume_to_aspirate = well_per_tip * self._beads_vol
+            self.logger.info("We aspirate {}ul to distribute to {} well".format(volume_to_aspirate, well_per_tip))
+
+            if self._m20.current_volume > 0:
+                self._m20.blow_out(self._beads.top())
+
+            with MoveWithSpeed(self._m20,
+                               from_point=self._beads.bottom(self._strip_headroom_bottom + 5),
+                               to_point=self._beads.bottom(self._strip_headroom_bottom),
+                               speed=self._beads_vertical_speed, move_close=False):
+                self._m20.aspirate(volume_to_aspirate)
+
+        self._m20.dispense(self._beads_vol, dest.bottom(self._dest_multi_headroom_height))
+
+        if self._beads_mix_repeats:
+            self._m20.mix(self._beads_mix_repeats, self._beads_mix_volume, dest.bottom(self._dest_multi_headroom_height))
+        # Do not drop tip, we reuse the one we have
 
     def body(self):
         self.setup_pk()
