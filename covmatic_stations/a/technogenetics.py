@@ -14,7 +14,7 @@ class StationATechnogenetics(StationAP1000):
         beads_mix_volume: float = 20,
         beads_vol: float = 9,
         drop_threshold: int = 5000,
-        deepwell_headroom_bottom: float = 1,
+        deepwell_headroom_bottom: float = 2,
         lysis_first: bool = False,
         lys_mix_repeats: int = 2,
         lys_mix_volume: float = 100,
@@ -195,28 +195,28 @@ class StationATechnogenetics(StationAP1000):
                 if new_tip:
                     self._m20.air_gap(self._air_gap_dest_multi)
                     self._m20.drop_tip()
+                else:
+                    self._m20.blow_out(d.top())
+
         if self._m20.has_tip:
             self._m20.drop_tip()
-    
+
     def body(self):
         self.setup_pk()
         self.setup_samples()
         self.setup_lys_tube()
         self.msg = ""
 
-        self.transfer_proteinase()
-        if self.run_stage("check proteinase"):
-            self.dual_pause("proteinase check")
-        self.transfer_samples()
-        self.transfer_lys()
         if self.run_stage("add beads"):
-            self.pause("add beads")
-        self.transfer_beads()
+            self.pause("add beads", home=False)
 
+        self.transfer_lys()
+        self.transfer_beads(new_tip=False)
+        self.transfer_proteinase()
+        self.transfer_samples()
         
         if self.run_stage("incubation"):
-            self.dual_pause("incubate", between=self.set_external)
-            self.set_internal()
+            self.dual_pause("incubate")
 
         self.logger.info(self.msg_format("move to B"))
 
