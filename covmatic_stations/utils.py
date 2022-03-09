@@ -174,8 +174,7 @@ class WellWithVolume:
         return self.height
 
     def fill(self, vol: float):
-        """Return the maximum height to aspirate safely a volume from a well
-        :param vol: The volume being dispensed in the well"""
+        """Add the volume passed to the well"""
 
         self._volume = self._volume + vol
         if self._volume < 0:

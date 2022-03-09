@@ -187,8 +187,7 @@ class StationATechnogenetics(StationAP1000):
         # Fake aspiration to avoid up and down movement
         if self._m20_fake_aspirate:
             self._m20_fake_aspirate = False
-            self._m20.aspirate(2, self._beads.top())
-            self._m20.dispense(2)
+            self.fake_aspirate(self._m20, 2, self._beads.top())
 
         with MoveWithSpeed(self._m20,
                            from_point=self._beads.bottom(self._strip_headroom_bottom + 5),

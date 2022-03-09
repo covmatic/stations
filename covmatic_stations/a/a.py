@@ -35,6 +35,7 @@ class StationA(Station):
             lysis_in_controls: bool = False,
             lysis_rate_aspirate: float = 100,
             lysis_rate_dispense: float = 100,
+            lysis_rate_mix: float = 100,
             lysis_volume: float = 160,
             lys_mix_repeats: int = 10,
             lys_mix_volume: float = 100,
@@ -148,6 +149,7 @@ class StationA(Station):
         self._lysis_in_controls = lysis_in_controls
         self._lysis_rate_aspirate = lysis_rate_aspirate
         self._lysis_rate_dispense = lysis_rate_dispense
+        self._lysis_rate_mix = lysis_rate_mix
         self._lysis_volume = lysis_volume
         self._lys_mix_repeats = lys_mix_repeats
         self._lys_mix_volume = lys_mix_volume
@@ -310,8 +312,8 @@ class StationA(Station):
         self._p_main.dispense(self._sample_volume, dest.bottom(self._dest_top_height))
 
         if self._lysis_first:
-            self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
-            self._p_main.flow_rate.dispense = self._lysis_rate_dispense
+            self._p_main.flow_rate.aspirate = self._lysis_rate_mix
+            self._p_main.flow_rate.dispense = self._lysis_rate_mix
 
             # Mix with lysis buffer
             mix_bottom_top(
@@ -360,15 +362,15 @@ class StationA(Station):
         return dests
 
     def transfer_samples(self):
-        self._p_main.flow_rate.aspirate = self._sample_aspirate
-        self._p_main.flow_rate.dispense = self._sample_dispense
-
         n = len(list(self.non_control_positions()))
         for i, (s, d) in enumerate(self.non_control_positions()):
             if self.run_stage("transfer sample {}/{}".format(i + 1, n)):
                 self.transfer_sample(s, d)
 
     def transfer_lys(self):
+        self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
+        self._p_main.flow_rate.dispense = self._lysis_rate_dispense
+
         num_samples_per_aspirate = self._p_main.max_volume // self._lysis_volume
         self.logger.info(
             "1 aspirate can dispense {} times of {}ul.".format(num_samples_per_aspirate, self._lysis_volume))
