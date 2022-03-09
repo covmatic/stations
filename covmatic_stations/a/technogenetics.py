@@ -15,7 +15,6 @@ class StationATechnogenetics(StationAP1000):
         beads_vol: float = 9,
         drop_threshold: int = 5000,
         deepwell_headroom_bottom: float = 2,
-        lysis_first: bool = True,
         lys_mix_repeats: int = 2,
         lys_mix_volume: float = 400,
         lysis_volume: float = 400,
@@ -61,7 +60,7 @@ class StationATechnogenetics(StationAP1000):
         """
         super(StationATechnogenetics, self).__init__(
             *args,
-            lysis_first=lysis_first,
+            lysis_first=True,       # This not an option for this protocol
             lys_mix_repeats=lys_mix_repeats,
             lys_mix_volume=lys_mix_volume,
             lysis_volume=lysis_volume,
@@ -253,7 +252,7 @@ class StationATechnogenetics(StationAP1000):
         self.transfer_beads(new_tip=False)
         self.transfer_proteinase()
         self.transfer_samples()
-        
+
         if self.run_stage("incubation"):
             self.dual_pause("incubate")
 
