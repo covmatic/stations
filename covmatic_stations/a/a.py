@@ -404,9 +404,6 @@ class StationA(Station):
             self.drop(self._p_main)
 
     def transfer_internal_control(self, idx: int, dest):
-        self._p_main.flow_rate.aspirate = self._lysis_rate_aspirate
-        self._p_main.flow_rate.dispense = self._lysis_rate_dispense
-
         strip_ind = idx // self.cols_per_strip
         self.logger.debug(
             "transferring internal control strip {}/{} to {}".format(strip_ind + 1, self.num_ic_strips, dest))
