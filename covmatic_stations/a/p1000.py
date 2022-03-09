@@ -1,4 +1,4 @@
-from ..utils import MoveWithSpeed, WellWithVolume
+from ..utils import MoveWithSpeed, WellWithVolume, mix_bottom_top
 from .a import StationA
 import json
 import os
@@ -54,6 +54,9 @@ class StationAP1000(StationA):
             super(StationAP1000, self)._load_source_racks()
 
     def transfer_sample(self, source, dest):
+        self._p_main.flow_rate.aspirate = self._sample_aspirate
+        self._p_main.flow_rate.dispense = self._sample_dispense
+
         self.logger.debug("transferring from {} to {}".format(source, dest))
         self.pick_up(self._p_main)
 
@@ -74,14 +77,31 @@ class StationAP1000(StationA):
         self._p_main.air_gap(self._air_gap_sample)
 
         # Dispensing sample
-        dest_with_volume = WellWithVolume(dest, initial_vol=self._sample_volume, headroom_height=0)
+        dest_with_volume = WellWithVolume(dest,
+                                          initial_vol=self._sample_volume + self._lysis_volume if self._lysis_first else 0,
+                                          headroom_height=0)
         dispense_top_point = dest.bottom(dest_with_volume.height + self._dest_above_liquid_height)    # we must not go too high not to contaminate the well
 
-        with MoveWithSpeed(self._p_main,
-                           from_point=dispense_top_point,
-                           to_point= dest.bottom(dest_with_volume.height),
-                           speed=self._deepwell_vertical_speed, move_close=False):
-            self._p_main.dispense(self._sample_volume + self._air_gap_sample)
+        if self._lys_mix_repeats:   # if we will mix, just dispense sample as fast as mixing.
+            self._p_main.flow_rate.dispense = self._lysis_rate_mix
+
+        self._p_main.dispense(self._sample_volume + self._air_gap_sample, dest.bottom(dest_with_volume.height))
+
+        self._p_main.flow_rate.aspirate = self._lysis_rate_mix
+        self._p_main.flow_rate.dispense = self._lysis_rate_mix
+
+        mix_bottom_top(
+            pip=self._p_main,
+            reps=self._lys_mix_repeats,
+            vol=self._lys_mix_volume,
+            pos=dest.bottom,
+            bottom=self._dest_headroom_height,
+            top=dest_with_volume.height,
+            last_dispense_rate=self._sample_dispense
+        )
+
+        self._p_main.move_to(dispense_top_point, speed=self._deepwell_vertical_speed)
+
         self._ctx.delay(seconds=1)
         self._p_main.blow_out(location=dispense_top_point)
         self._p_main.air_gap(self._air_gap_sample, height=0)

@@ -1,6 +1,6 @@
 from ..station import Station, labware_loader, instrument_loader
 from ..geometry import LysisTube
-from ..utils import mix_bottom_top
+from ..utils import mix_bottom_top, WellWithVolume
 from itertools import chain, islice, repeat
 import math
 import logging
@@ -289,6 +289,13 @@ class StationA(Station):
         self._lysis_tube.height -= self._ic_lys_headroom
 
     def transfer_sample(self, source, dest):
+        self._p_main.flow_rate.aspirate = self._sample_aspirate
+        self._p_main.flow_rate.dispense = self._sample_dispense
+
+        dest_well_with_volume = WellWithVolume(dest,
+                                               self._lysis_volume if self._lysis_first else 0,
+                                               self._dest_headroom_height)
+
         self.logger.debug("transferring from {} to {}".format(source, dest))
         self.pick_up(self._p_main)
 
@@ -309,7 +316,8 @@ class StationA(Station):
         self._p_main.air_gap(self._air_gap_sample)
 
         self._p_main.dispense(self._air_gap_sample, dest.top(self._hover_height))
-        self._p_main.dispense(self._sample_volume, dest.bottom(self._dest_top_height))
+        self._p_main.dispense(self._sample_volume, dest.bottom(dest_well_with_volume.height))
+        dest_well_with_volume.fill(self._sample_volume)
 
         if self._lysis_first:
             self._p_main.flow_rate.aspirate = self._lysis_rate_mix
@@ -318,7 +326,7 @@ class StationA(Station):
             # Mix with lysis buffer
             mix_bottom_top(
                 self._p_main, self._lys_mix_repeats, self._lys_mix_volume,
-                dest.bottom, self._dest_headroom_height, self._dest_top_height
+                dest.bottom, self._dest_headroom_height, dest_well_with_volume.height
             )
 
             self._p_main.flow_rate.aspirate = self._sample_aspirate

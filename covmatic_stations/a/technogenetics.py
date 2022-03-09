@@ -15,11 +15,14 @@ class StationATechnogenetics(StationAP1000):
         beads_vol: float = 9,
         drop_threshold: int = 5000,
         deepwell_headroom_bottom: float = 2,
-        lysis_first: bool = False,
+        lysis_first: bool = True,
         lys_mix_repeats: int = 2,
-        lys_mix_volume: float = 100,
+        lys_mix_volume: float = 400,
         lysis_volume: float = 400,
         lysis_in_controls: bool = True,
+        lysis_rate_aspirate: float = 600,
+        lysis_rate_dispense: float = 600,
+        lysis_rate_mix: float = 600,
         mix_repeats: int = 0,
         negative_control_well='A1',
         positive_control_well=None,
@@ -58,11 +61,14 @@ class StationATechnogenetics(StationAP1000):
         """
         super(StationATechnogenetics, self).__init__(
             *args,
-            lysis_first=False,
+            lysis_first=lysis_first,
             lys_mix_repeats=lys_mix_repeats,
             lys_mix_volume=lys_mix_volume,
             lysis_volume=lysis_volume,
             lysis_in_controls=lysis_in_controls,
+            lysis_rate_aspirate=lysis_rate_aspirate,
+            lysis_rate_dispense=lysis_rate_dispense,
+            lysis_rate_mix=lysis_rate_mix,
             mix_repeats=mix_repeats,
             negative_control_well=negative_control_well,
             positive_control_well=positive_control_well,
@@ -90,9 +96,7 @@ class StationATechnogenetics(StationAP1000):
         self._prot_k_vertical_speed = prot_k_vertical_speed
         self._prot_k_flow_rate = prot_k_flow_rate
         self._pk_tube_source = MultiTubeSource(vertical_speed=self._prot_k_vertical_speed)
-        if self._lysis_first != lysis_first:
-            self.logger.error("lysis_first=True is not supported for this protocol")
-    
+
     # --- In Station A there is IC in the strips, these allow the renaming for Proteinase K -------
     _strips_content: str = "proteinase K"
     

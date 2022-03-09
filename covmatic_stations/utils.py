@@ -76,15 +76,26 @@ class LocalWebServerLogger:
             else:
                 self.errorlogger.debug("Skipping lws log, max retries encountered for url {}".format(url))
 
-def mix_bottom_top(pip, reps: int, vol: float, pos: Callable[[float], Location], bottom: float, top: float):
+
+def mix_bottom_top(pip,
+                   reps: int,
+                   vol: float,
+                   pos: Callable[[float], Location],
+                   bottom: float,
+                   top: float,
+                   last_dispense_rate: float = None):
     """Custom mixing procedure aspirating at the bottom and dispensing at the top
     :param pip: The pipette
     :param reps: Number of repeats
     :param vol: Volume to mix
     :param pos: Method for getting the position
     :param bottom: Offset for the bottom position
-    :param top: Offset for the top position"""
-    for _ in range(reps):
+    :param top: Offset for the top position
+    :param last_dispense_rate: Dispense rate for the last transfer to keep the tip clean"""
+
+    for i in range(reps):
+        if i+1 == reps and last_dispense_rate is not None:
+            pip.flow_rate.dispense = last_dispense_rate
         pip.aspirate(vol, pos(bottom))
         pip.dispense(vol, pos(top))
 
