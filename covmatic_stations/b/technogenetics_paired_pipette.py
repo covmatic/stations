@@ -1,7 +1,7 @@
 import json
 
 from ..station import instrument_loader, labware_loader
-from ..utils import uniform_divide, WellWithVolume, MoveWithSpeed
+from ..utils import uniform_divide, WellWithVolume, MoveWithSpeed, mix_bottom_top
 from .technogenetics import StationBTechnogenetics
 from ..paired_pipette import PairedPipette
 from opentrons.types import Point
@@ -74,12 +74,23 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         super(StationBTechnogeneticsPairedPipette, self).body()
 
     def mix_samples(self):
-        with PairedPipette(self._magplate, self.mag_samples_m, start_at="mix sample") as tp:
-            tp.set_flow_rate(aspirate=self._mix_samples_rate_aspirate, dispense=self._mix_samples_rate_dispense)
+        well_with_volume = WellWithVolume(self.temp_samples_m[0],
+                                          initial_vol=self._starting_vol - self._sample_mix_vol,
+                                          min_height=self._sample_mix_height,
+                                          headroom_height=0)
+        with PairedPipette(self._tempplate, self.temp_samples_m, start_at="mix sample") as tp:
+            tp.set_flow_rate(aspirate=self._mix_samples_rate, dispense=self._mix_samples_rate)
             tp.pick_up()
-            tp.mix(self._sample_mix_times, self._sample_mix_vol,
-                   locationFrom="target",
-                   well_modifier="bottom({})".format(self._sample_mix_height))
+            # Custom mix_bottom_top
+            for i in range(self._sample_mix_times):
+                if i + 1 == self._sample_mix_times and self._mix_samples_last_rate is not None:
+                    tp.set_flow_rate(dispense=self._mix_samples_last_rate)
+                tp.aspirate(self._sample_mix_vol,
+                            locationFrom="target",
+                            well_modifier="bottom({})".format(self._sample_mix_height))
+                tp.dispense(self._sample_mix_vol,
+                            locationFrom="target",
+                            well_modifier="bottom({})".format(well_with_volume.height))
             tp.move_to(locationFrom="target", well_modifier="top(0)", speed=self._sample_vertical_speed)
             tp.air_gap(self._bind_air_gap)
             tp.drop_tip()

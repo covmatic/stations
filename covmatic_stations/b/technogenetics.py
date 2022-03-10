@@ -1,7 +1,7 @@
 from .b import StationB, labware_loader
 from typing import Tuple
 from opentrons.types import Point
-from ..utils import get_labware_json_from_filename
+from ..utils import get_labware_json_from_filename, mix_bottom_top, WellWithVolume
 
 
 class StationBTechnogenetics(StationB):
@@ -29,11 +29,11 @@ class StationBTechnogenetics(StationB):
                  postspin_incubation_time: float = 3,
                  remove_wash_vol: float = 50,
                  sample_mix_height: float = 0.3,
-                 sample_mix_times: float = 10,
+                 sample_mix_times: int = 10,
                  sample_mix_vol: float = 180,
                  sample_vertical_speed: float = 35,
-                 mix_samples_rate_aspirate = 200,
-                 mix_samples_rate_dispense = 200,
+                 mix_samples_rate = 200,
+                 mix_samples_last_rate = 94,
                  starting_vol: float = 650,
                  supernatant_removal_aspiration_rate_first_phase = 94,
                  tempdeck_slot: str = '10',
@@ -93,8 +93,8 @@ class StationBTechnogenetics(StationB):
         self._final_mix_vol = final_mix_vol
         self._final_transfer_rate_aspirate = final_transfer_rate_aspirate
         self._final_transfer_rate_dispense = final_transfer_rate_dispense
-        self._mix_samples_rate_aspirate = mix_samples_rate_aspirate
-        self._mix_samples_rate_dispense = mix_samples_rate_dispense
+        self._mix_samples_rate = mix_samples_rate
+        self._mix_samples_last_rate = mix_samples_last_rate
         self._final_vol = final_vol
         self._flatplate_slot = flatplate_slot
         self._h_bottom = h_bottom
@@ -155,12 +155,24 @@ class StationBTechnogenetics(StationB):
         return source[sample_col_idx // 2]
     
     def mix_samples(self):
-        self._m300.flow_rate.aspirate = self._mix_samples_rate_aspirate
-        self._m300.flow_rate.dispense = self._mix_samples_rate_dispense
-        for i, m in enumerate(self.mag_samples_m):
+        for i, m in enumerate(self.temp_samples_m):
             if self.run_stage("mix sample {}/{}".format(i + 1, len(self.mag_samples_m))):
+                self._m300.flow_rate.aspirate = self._mix_samples_rate
+                self._m300.flow_rate.dispense = self._mix_samples_rate
+
+                well_with_volume = WellWithVolume(m,
+                                                  initial_vol=self._starting_vol - self._sample_mix_vol,
+                                                  min_height=self._sample_mix_height,
+                                                  headroom_height=0)
                 self.pick_up(self._m300)
-                self._m300.mix(self._sample_mix_times, self._sample_mix_vol, m.bottom(self._sample_mix_height))
+                mix_bottom_top(pip=self._m300,
+                               reps=self._sample_mix_times,
+                               vol=self._sample_mix_vol,
+                               pos=m.bottom,
+                               bottom=self._sample_mix_height,
+                               top=well_with_volume.height,
+                               last_dispense_rate=self._mix_samples_last_rate)
+
                 self._m300.move_to(m.top(0), speed=self._sample_vertical_speed)
                 self._m300.air_gap(self._bind_air_gap)
                 self.drop(self._m300)
