@@ -254,9 +254,7 @@ class StationATechnogenetics(StationAP1000):
         self.transfer_samples()
 
         if self.run_stage("incubation"):
-            self.dual_pause("incubate")
-
-        self.logger.info(self.msg_format("move to B"))
+            self.dual_pause("thermomixer")
 
 
 class StationATechnogeneticsReload(StationAReloadMixin, StationATechnogenetics):
