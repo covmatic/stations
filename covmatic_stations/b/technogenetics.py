@@ -22,6 +22,8 @@ class StationBTechnogenetics(StationB):
                  final_transfer_dw_bottom_height: float = 0.6,
                  final_vol: float = 20,
                  flatplate_slot: str = '3',
+                 incubation_temperature: float = 55,
+                 incubation_time: float = 20,
                  h_bottom: float = 1,
                  n_bottom: float = 3,
                  mix_incubate_on_time: float = 20,
@@ -57,7 +59,9 @@ class StationBTechnogenetics(StationB):
         :param final_transfer_rate_aspirate: Aspiration rate during final transfer in uL/s
         :param final_transfer_rate_dispense: Dispensation rate during final transfer in uL/s
         :param final_vol: Volume to transfer to the PCR plate in uL
-        :param mix_incubate_on_time: Time for incubation on magnet after mix in minutes 
+        :param incubation_temperature: Temperature set on temperature module to incubate samples in °C
+        :param incubation_time: minutes to wait on temperature module to incubate samples
+        :param mix_incubate_on_time: Time for incubation on magnet after mix in minutes
         :param mix_incubate_off_time: Time for incubation off magnet after mix in minutes
         :param postspin_incubation_time: Post-spin incubation time in minutes
         :param remove_wash_vol: Volume to remove during wash removal in uL
@@ -97,6 +101,8 @@ class StationBTechnogenetics(StationB):
         self._mix_samples_last_rate = mix_samples_last_rate
         self._final_vol = final_vol
         self._flatplate_slot = flatplate_slot
+        self._incubation_temperature = incubation_temperature
+        self._incubation_time = incubation_time
         self._h_bottom = h_bottom
         self._n_bottom = n_bottom
         self._mix_incubate_on_time = mix_incubate_on_time
@@ -208,19 +214,29 @@ class StationBTechnogenetics(StationB):
                 self._m300.air_gap(self._elute_air_gap)
                 self.drop(self._m300)
 
+    def incubate_samples(self):
+        if self.run_stage("incubation"):
+            self.tempdeck_set_temperature(self._incubation_temperature)
+            self.delay(self._incubation_time)
+            self.tempdeck_deactivate()
+
     def body(self):
         self.logger.info(self.get_msg_format("volume", "wash 1", self._wash_headroom * self._wash_1_vol * self._num_samples / 1000))
         self.logger.info(self.get_msg_format("volume", "wash 2", self._wash_headroom * self._wash_2_vol * self._num_samples / 1000))
         self.logger.info(self.get_msg_format("volume", "elution buffer", self._wash_headroom * self._elution_vol * self._num_samples / 1000))
+
+        self.incubate_samples()
         self.mix_samples()
-        
+
+        self.pause("move plate to magdeck")
+
         # if self.run_stage("mix incubate on"):
         #     self.delay(self._mix_incubate_on_time, self.get_msg_format("incubate on magdeck", self.get_msg("off")))
         self._magdeck.engage(height=self._magheight)
         self.check()
         if self.run_stage("mix incubate off"):
             self.delay(self._mix_incubate_off_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
-        
+
         self.remove_supernatant(self._starting_vol)
         self.wash(self._wash_1_vol, self.wash1, self._wash_1_times, "wash A")
 
@@ -265,23 +281,23 @@ class StationBTechnogenetics(StationB):
 
         if self.run_stage("beads drying"):
             self.delay(self._beads_drying_time, msg="beads drying")
-        
+
         self.elute(self.mag_samples_m)
-        
+
         if self.run_stage("thermomixer"):
             self.dual_pause("seal the deepwell", between=self.set_external)
             self.set_internal()
-        
+
         self._magdeck.engage(height=self._magheight)
         self.check()
         if self.run_stage("post thermomixer incubation"):
             self.delay(self._thermomixer_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
-        
+
         if self.run_stage("input PCR"):
             self.dual_pause("input PCR")
-        
+
         self.final_transfer()
-        
+
         self._magdeck.disengage()
         self.logger.info(self.msg_format("move to PCR"))
 

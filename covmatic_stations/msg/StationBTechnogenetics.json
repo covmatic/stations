@@ -42,5 +42,9 @@
   "beads drying": {
     "ENG": "beads drying",
     "ITA": "asciugatura delle beads"
+  },
+  "move plate to magdeck": {
+    "ENG": "move the deepwell plate on magnetic module",
+    "ITA": "sposta la deepwell plate sul modulo magnetico"
   }
 }
