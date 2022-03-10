@@ -161,7 +161,10 @@ class WellWithVolume:
         :param headroom_height: optional, the height in mm of liquid above the tip expected after the aspirate
         """
         self._well = well
+
+        assert initial_vol >= 0, "WellWithVolume initial volume negative for well {}".format(well)
         self._volume = initial_vol
+
         self._min_height = min_height
         self._headroom_height = headroom_height
 
