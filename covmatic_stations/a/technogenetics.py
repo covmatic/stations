@@ -253,8 +253,8 @@ class StationATechnogenetics(StationAP1000):
         self.transfer_proteinase()
         self.transfer_samples()
 
-        if self.run_stage("incubation"):
-            self.dual_pause("thermomixer")
+        # if self.run_stage("incubation"):
+        #     self.dual_pause("thermomixer")
 
 
 class StationATechnogeneticsReload(StationAReloadMixin, StationATechnogenetics):
