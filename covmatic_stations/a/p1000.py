@@ -96,7 +96,8 @@ class StationAP1000(StationA):
             vol=self._lys_mix_volume,
             pos=dest.bottom,
             bottom=self._dest_headroom_height,
-            top=dest_with_volume.height
+            top=dest_with_volume.height,
+            last_dispense_rate=self._sample_dispense
         )
 
         self._p_main.move_to(dispense_top_point, speed=self._deepwell_vertical_speed)
