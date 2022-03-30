@@ -225,8 +225,8 @@ class StationBTechnogenetics(StationB):
         self.logger.info(self.get_msg_format("volume", "wash 2", self._wash_headroom * self._wash_2_vol * self._num_samples / 1000))
         self.logger.info(self.get_msg_format("volume", "elution buffer", self._wash_headroom * self._elution_vol * self._num_samples / 1000))
 
-        self.incubate_samples()
         self.mix_samples()
+        self.incubate_samples()
 
         self.pause("move plate to magdeck")
 

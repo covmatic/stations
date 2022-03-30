@@ -15,7 +15,7 @@ class StationATechnogenetics(StationAP1000):
         beads_vol: float = 9,
         drop_threshold: int = 5000,
         deepwell_headroom_bottom: float = 2,
-        lys_mix_repeats: int = 2,
+        lys_mix_repeats: int = 0,
         lys_mix_volume: float = 400,
         lysis_volume: float = 400,
         lysis_in_controls: bool = True,
