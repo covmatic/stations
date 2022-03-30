@@ -1,6 +1,33 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.16.0
+
+### Note
+
+This version modify the analysis workflow **deleting the need for external incubation and thermomixer between station A and B**.
+The workflow now is:
+
+>     Station A (Lysis, beads, PK, samples) 
+>       |   
+>       --> Add Positive Control
+>       | 
+>     Station B – incubation on Temperature Deck with thermal adapter for deepwell. 
+>       |         Place deepwell on Temperature Deck
+>       |
+
+### Added
+- [Station A] Lysis is dispensed first;
+- [Station A] Beads are dispensed first with same tip;
+- [Station A] Samples and lysis/beads/PK are mixed with P1000.
+- [Station B] Incubation 20 min on TempDeck at 55 °C.
+
+### Fixed
+
+- [Station A] Increased flow rates for lysis and mixing.
+- WellWithVolume class now check for negative volume passed.
+- mix_top_bottom now supports *last_dispense_rate* to clean tip better.
+
 ## v2.15.0
 ### Note
 - Needs **localwebserver >= v2.9.0**
