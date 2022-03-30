@@ -29,5 +29,9 @@
  "thermomixer": {
     "ENG": "Seal the deepwell plate with a sticker.\nPut the deepwell plate in the thermomixer: 700 rpm for 3 minutes.",
     "ITA": "Sigillare la deepwell plate con un adesivo.\nMettere la deepwell plate nel thermomixer: 700 rpm RT per 3 min."
-  }
+  },
+ "add positive control": {
+   "ENG": "Add the positive control",
+   "ITA": "Aggiungi il controllo positivo."
+ }
 }
