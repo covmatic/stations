@@ -10,6 +10,7 @@ class StationAP1000(StationA):
     def __init__(
         self,
         air_gap_sample: float = 25,
+        air_gap_sample_before: float = 25,
         dest_above_liquid_height: float = 15,
         main_pipette: str = 'p1000_single_gen2',
         main_tiprack: str = 'opentrons_96_filtertiprack_1000ul',
@@ -32,6 +33,7 @@ class StationAP1000(StationA):
             source_racks_definition_filepath=source_racks_definition_filepath,
             **kwargs
         )
+        self._air_gap_sample_before = air_gap_sample_before
         self._dest_above_liquid_height = dest_above_liquid_height
         self._sample_vertical_speed = sample_vertical_speed
         self._deepwell_vertical_speed = deepwell_vertical_speed
@@ -66,7 +68,10 @@ class StationAP1000(StationA):
             self._p_main.aspirate(self._air_gap_sample, source.top())
             self._p_main.dispense(self._air_gap_sample, source.top())
 
+
         # Aspirating sample
+        if self._air_gap_sample_before:
+            self._p_main.aspirate(self._air_gap_sample_before, source.top())
         with MoveWithSpeed(self._p_main,
                            from_point=source.bottom(self._source_height_start_slow),
                            to_point=source.bottom(self._source_headroom_height),
@@ -100,10 +105,12 @@ class StationAP1000(StationA):
             last_dispense_rate=self._sample_dispense
         )
 
-        self._p_main.move_to(dispense_top_point, speed=self._deepwell_vertical_speed)
+        if self._air_gap_sample_before:
+            self._p_main.dispense(self._air_gap_sample_before, dest.bottom(dest_with_volume.height))
+        else:
+            self._p_main.blow_out(location=dispense_top_point)
 
-        self._ctx.delay(seconds=1)
-        self._p_main.blow_out(location=dispense_top_point)
+        self._p_main.move_to(dispense_top_point, speed=self._deepwell_vertical_speed)
         self._p_main.air_gap(self._air_gap_sample, height=0)
 
         self.drop(self._p_main)
