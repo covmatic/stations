@@ -1,7 +1,7 @@
 Covmatic Stations changelog
 ===========================
 
-## v2.16.0
+## v2.16.1
 
 ### Note
 
@@ -27,6 +27,7 @@ The workflow now is:
 - [Station A] Increased flow rates for lysis and mixing.
 - WellWithVolume class now check for negative volume passed.
 - mix_top_bottom now supports *last_dispense_rate* to clean tip better.
+- fixed github workflow.
 
 ## v2.15.0
 ### Note
