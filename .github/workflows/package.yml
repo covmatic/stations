@@ -18,10 +18,6 @@ jobs:
     container: python:3.7
     steps:
     - uses: actions/checkout@v2
-    - name: System package install
-      run: |
-        apt-get update
-        apt-get install libsystemd-dev
     - name: Install
       run: python setup.py install
     - name: Test execution
@@ -44,10 +40,6 @@ jobs:
                  station_c_technogenetics_m300]
     steps:
     - uses: actions/checkout@v2
-    - name: System package install
-      run: |
-        apt-get update
-        apt-get install libsystemd-dev
     - name: Install
       run: python setup.py install
     - name: Simulate the protocol
@@ -60,10 +52,6 @@ jobs:
     needs: simulate
     steps:
     - uses: actions/checkout@v2
-    - name: System package install
-      run: |
-        apt-get update
-        apt-get install libsystemd-dev
     - name: Build
       run: python setup.py sdist
     - name: Install Twine
