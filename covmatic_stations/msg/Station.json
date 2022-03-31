@@ -48,7 +48,7 @@
 	"ITA": "ATTENZIONE: Debug mode abilitato! Fermare la run se non si sta testando con l'acqua"
   },
    "waiting delay to elapse": {
-	"ENG": "{:.1f} minutes delay started at {}; waiting for ",
-	"ITA": "delay di {:.1f} minuti iniziato alle {}; attesa di "
+	"ENG": "{:.1f} minutes delay started at {}; waiting",
+	"ITA": "delay di {:.1f} minuti iniziato alle {}; attesa"
   }
 }

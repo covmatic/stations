@@ -259,16 +259,16 @@ class DelayManager:
     def start(self):
         self._start_time = time.time()
         self._duration = 0
-        self._logger.info("Entering; now is {}".format(self._start_time))
+        self._logger.info("Entering; now is {}".format(time.strftime("%H:%M", time.localtime(self._start_time))))
 
     def stop(self):
         self._duration = (time.time() - self._start_time) / 60
-        self._logger.info("Exiting; actual duration is {} minutes".format(self._duration))
+        self._logger.info("Exiting; actual duration is {:.2f} minutes".format(self._duration))
 
     def get_remaining_delay(self, seconds: float = 0, minutes: float = 0) -> float:
         total_time_minutes = seconds/60 + minutes
-        delay = total_time_minutes - self._duration if total_time_minutes > self._duration else 0
-        self._logger.info("Returning delay of {} minutes".format(delay))
+        delay = (total_time_minutes - self._duration) if total_time_minutes > self._duration else 0
+        self._logger.info("Returning delay of {:.2f} minutes".format(delay))
         return delay
 
     @property
