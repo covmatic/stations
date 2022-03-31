@@ -214,24 +214,22 @@ class StationBTechnogenetics(StationB):
                 self._m300.air_gap(self._elute_air_gap)
                 self.drop(self._m300)
 
-    def incubate_samples(self):
-        if self.run_stage("incubation"):
-            self.tempdeck_set_temperature(self._incubation_temperature)
-            self.delay(self._incubation_time)
-            self.tempdeck_deactivate()
-
     def body(self):
         self.logger.info(self.get_msg_format("volume", "wash 1", self._wash_headroom * self._wash_1_vol * self._num_samples / 1000))
         self.logger.info(self.get_msg_format("volume", "wash 2", self._wash_headroom * self._wash_2_vol * self._num_samples / 1000))
         self.logger.info(self.get_msg_format("volume", "elution buffer", self._wash_headroom * self._elution_vol * self._num_samples / 1000))
 
+        self.tempdeck_set_temperature(self._incubation_temperature)
+
+        self.delay_start_count()
         self.mix_samples()
-        self.incubate_samples()
+        if self.run_stage("incubation"):
+            self.delay_wait_to_elapse(minutes=self._incubation_time)
+
+        self.tempdeck_deactivate()
 
         self.pause("move plate to magdeck")
 
-        # if self.run_stage("mix incubate on"):
-        #     self.delay(self._mix_incubate_on_time, self.get_msg_format("incubate on magdeck", self.get_msg("off")))
         self._magdeck.engage(height=self._magheight)
         self.check()
         if self.run_stage("mix incubate off"):
