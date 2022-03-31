@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 from opentrons.protocol_api import ProtocolContext, InstrumentContext, PairedInstrumentContext
 from opentrons.protocol_api.labware import Well
@@ -247,6 +248,32 @@ def get_labware_json_from_filename(filename: str = ""):
     with open(os.path.join(os.path.dirname(__file__), 'labware', filename)) as f:
         return json.load(f)
 
+
+class DelayManager:
+    def __init__(self,
+                 logger: logging.Logger = logging.getLogger("DelayManager")):
+        self._logger = logger
+        self._start_time = 0
+        self._duration = 0
+
+    def start(self):
+        self._start_time = time.time()
+        self._duration = 0
+        self._logger.info("Entering; now is {}".format(self._start_time))
+
+    def stop(self):
+        self._duration = (time.time() - self._start_time) / 60
+        self._logger.info("Exiting; actual duration is {} minutes".format(self._duration))
+
+    def get_remaining_delay(self, seconds: float = 0, minutes: float = 0) -> float:
+        total_time_minutes = seconds/60 + minutes
+        delay = total_time_minutes - self._duration if total_time_minutes > self._duration else 0
+        self._logger.info("Returning delay of {} minutes".format(delay))
+        return delay
+
+    @property
+    def start_time(self):
+        return self._start_time
 
 # Copyright (c) 2020 Covmatic.
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:

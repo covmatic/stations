@@ -6,7 +6,7 @@ from . import __version__, __file__ as module_path
 from .movement_manager import MovementManager
 from .request import StationRESTServerThread, DEFAULT_REST_KWARGS
 from .sound_manager import SoundManager
-from .utils import ProtocolContextLoggingHandler, LocalWebServerLogger
+from .utils import ProtocolContextLoggingHandler, LocalWebServerLogger, DelayManager
 from .lights import Button, BlinkingLightHTTP, BlinkingLight
 from opentrons.protocol_api import ProtocolContext
 from opentrons.protocol_api.paired_instrument_context import PairedInstrumentContext
@@ -112,6 +112,7 @@ class Station(metaclass=StationMeta):
         **kwargs,
     ):
         self._debug_mode = debug_mode
+        self._delay_manager = DelayManager()
         self._drop_height = drop_height
         self._drop_loc_l = drop_loc_l
         self._drop_loc_r = drop_loc_r
@@ -470,7 +471,20 @@ class Station(metaclass=StationMeta):
             level=level,
             pause=self._skip_delay,
         )
-        
+
+    ''' Managed delay
+        we start counting, doing something (eg. mixing samples) than we wait for timer to elapse'''
+    ''' Start counting function '''
+    def delay_start_count(self):
+        self._delay_manager.start()
+
+    ''' Delay function '''
+    def delay_wait_to_elapse(self, seconds: float = 0, minutes: float = 0):
+        self._delay_manager.stop()
+        minutes_to_wait = minutes + seconds / 60
+        self.delay(self._delay_manager.get_remaining_delay(minutes=minutes_to_wait),
+                   self.get_msg_format("waiting delay to elapse", minutes_to_wait, time.strftime("%H:%M", time.localtime(self._delay_manager.start_time))))
+
     def body(self):
         pass
 

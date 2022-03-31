@@ -12,8 +12,8 @@
 	"ITA": "prima di riprendere, rifornire questi rack:\n{}"
   },
   "delay minutes": {
-	"ENG": "{} for {} minutes{}",
-	"ITA": "{} per {} minuti{}"
+	"ENG": "{} for {:.1f} minutes{}",
+	"ITA": "{} per {:.1f} minuti{}"
   },
   "skip delay": {
 	"ENG": ". Pausing for skipping delay. Please resume",
@@ -46,5 +46,9 @@
   "debug mode": {
 	"ENG": "WARNING: Debug mode enabled! Please stop the run if you are not water testing",
 	"ITA": "ATTENZIONE: Debug mode abilitato! Fermare la run se non si sta testando con l'acqua"
+  },
+   "waiting delay to elapse": {
+	"ENG": "{:.1f} minutes delay started at {}; waiting for ",
+	"ITA": "delay di {:.1f} minuti iniziato alle {}; attesa di "
   }
 }
