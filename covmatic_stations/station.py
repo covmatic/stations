@@ -483,7 +483,7 @@ class Station(metaclass=StationMeta):
         self._delay_manager.stop()
         minutes_to_wait = minutes + seconds / 60
         self.delay(self._delay_manager.get_remaining_delay(minutes=minutes_to_wait),
-                   self.get_msg_format("waiting delay to elapse", minutes_to_wait, time.strftime("%H:%M", time.localtime(self._delay_manager.start_time))))
+                   self.get_msg_format("waiting delay to elapse", minutes_to_wait))
 
     def body(self):
         pass
