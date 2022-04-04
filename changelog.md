@@ -1,6 +1,17 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.16.3
+### Fixed
+
+- [Station A Technogenetics] Better and cleaner sample transfer;
+- [Station A Technogenetics] Samples are not mixed in deepwell plate;
+- [Station B Technogenetics] Samples are mixed during incubation time.
+
+## v2.16.2
+
+- [Station A Technogenetics] Added message for positive control.
+
 ## v2.16.1
 
 ### Note
