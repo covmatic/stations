@@ -30,7 +30,7 @@ class StationBTechnogenetics(StationB):
                  mix_incubate_off_time: float = 5,
                  postspin_incubation_time: float = 3,
                  remove_wash_vol: float = 50,
-                 sample_mix_height: float = 0.3,
+                 sample_mix_height: float = 1,
                  sample_mix_times: int = 10,
                  sample_mix_vol: float = 180,
                  sample_vertical_speed: float = 35,
