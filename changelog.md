@@ -1,7 +1,15 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.16.4
+
+### Fixed
+- [Station B Technogenetics] Raised sample mix bottom height to avoid tips clogging.
+- [Station B Technogenetics] Diminished after spin wait time on MagDeck;
+- [Station B Technogenetics] Diminished after thermomixer time on MagDeck;
+
 ## v2.16.3
+
 ### Fixed
 
 - [Station A Technogenetics] Better and cleaner sample transfer;
