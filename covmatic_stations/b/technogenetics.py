@@ -286,13 +286,13 @@ class StationBTechnogenetics(StationB):
             self.dual_pause("seal the deepwell", between=self.set_external)
             self.set_internal()
 
+        if self.run_stage("input PCR"):
+            self.dual_pause("input PCR")
+
         self._magdeck.engage(height=self._magheight)
         self.check()
         if self.run_stage("post thermomixer incubation"):
             self.delay(self._thermomixer_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
-
-        if self.run_stage("input PCR"):
-            self.dual_pause("input PCR")
 
         self.final_transfer()
 
