@@ -245,9 +245,6 @@ class StationATechnogenetics(StationAP1000):
         self.setup_lys_tube()
         self.msg = ""
 
-        if self.run_stage("add beads"):
-            self.pause("add beads", home=False)
-
         self.transfer_lys()
         self.transfer_beads(new_tip=False)
         self.transfer_proteinase()
