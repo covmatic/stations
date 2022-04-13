@@ -1,6 +1,14 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.17.0
+
+### Note: the workflow in **Station B** is changed.
+
+- [Station A Technogenetics] Removed *Add Beads* message
+- [Station B Technogenetics] Removed wash A second removal since it is not part of protocol
+
+
 ## v2.16.4
 
 ### Fixed
