@@ -39,6 +39,7 @@ class StationA(Station):
             lysis_volume: float = 160,
             lys_mix_repeats: int = 10,
             lys_mix_volume: float = 100,
+            lys_mix_last_rate: float = 100,
             main_pipette: str = 'p300_single_gen2',
             main_tiprack: str = 'opentrons_96_tiprack_300ul',
             main_tiprack_label: str = '200ul filter tiprack',
@@ -92,6 +93,7 @@ class StationA(Station):
         :param lysis_volume: The volume of lysis buffer to use per sample in uL
         :param lys_mix_repeats: number of repetitions during mixing the lysis buffer
         :param lys_mix_volume: volume aspirated for mixing the lysis buffer in uL
+        :param lys_mix_last_rate: dispense rate of last dispensing in mixing sample and lysis buffer
         :param main_pipette: type of the main pipette
         :param main_tiprack: type of the main tiprack
         :param main_tiprack_label: label of the main tiprack
@@ -153,6 +155,7 @@ class StationA(Station):
         self._lysis_volume = lysis_volume
         self._lys_mix_repeats = lys_mix_repeats
         self._lys_mix_volume = lys_mix_volume
+        self._lys_mix_last_rate = lys_mix_last_rate
         self._main_pipette = main_pipette
         self._main_tiprack = main_tiprack
         self._main_tiprack_label = main_tiprack_label

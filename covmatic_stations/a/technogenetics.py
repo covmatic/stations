@@ -17,6 +17,7 @@ class StationATechnogenetics(StationAP1000):
         deepwell_headroom_bottom: float = 2,
         lys_mix_repeats: int = 0,
         lys_mix_volume: float = 400,
+        lys_mix_last_rate: float = 100,
         lysis_volume: float = 400,
         lysis_in_controls: bool = True,
         lysis_rate_aspirate: float = 600,
@@ -63,6 +64,7 @@ class StationATechnogenetics(StationAP1000):
             lysis_first=True,       # This not an option for this protocol
             lys_mix_repeats=lys_mix_repeats,
             lys_mix_volume=lys_mix_volume,
+            lys_mix_last_rate=lys_mix_last_rate,
             lysis_volume=lysis_volume,
             lysis_in_controls=lysis_in_controls,
             lysis_rate_aspirate=lysis_rate_aspirate,
@@ -295,8 +297,35 @@ class StationATechnogenetics48(StationATechnogeneticsReload):
             ) for i, slot in enumerate(self._source_racks_slots)
         ]
 
+
+class StationATechnogenetics48Saliva(StationATechnogenetics48):
+    def __init__(
+            self,
+            lys_mix_repeats: int = 3,
+            lys_mix_last_rate=300,
+            lysis_mix_volume=600,
+            *args,
+            **kwargs
+    ):
+        super(StationATechnogenetics48, self).__init__(
+            lys_mix_repeats=lys_mix_repeats,
+            lys_mix_last_rate=lys_mix_last_rate,
+            lysis_mix_volume=lysis_mix_volume,
+            *args,
+            **kwargs
+        )
+
+    def _load_source_racks(self):
+        labware_def = copan_48_saliva_corrected_specs.labware_definition()
+        self._source_racks = [
+            self._ctx.load_labware_from_definition(
+                labware_def, slot,
+                'source tuberack ' + str(i + 1)
+            ) for i, slot in enumerate(self._source_racks_slots)
+        ]
+
 if __name__ == "__main__":
-    StationATechnogenetics48(num_samples=96, metadata={'apiLevel': '2.7'}).simulate()
+    StationATechnogenetics48Saliva(num_samples=96, metadata={'apiLevel': '2.7'}).simulate()
 
 
 # Copyright (c) 2020 Covmatic.
