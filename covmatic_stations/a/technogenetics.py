@@ -4,6 +4,7 @@ from .p1000 import StationAP1000
 from .reload import StationAReloadMixin
 from .copan_24 import Copan24Specs
 from .copan_48 import copan_48_corrected_specs
+from .copan_48_saliva import copan_48_saliva_corrected_specs
 from typing import Tuple, Optional
 
 

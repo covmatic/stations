@@ -14,60 +14,50 @@ import copy
 import os
 import json
 
-
-_a1_offset = (27.5, 12)
-_global_dimensions = (260, 177, 118)
-_nrows = 8
-_ncols = 6
+from .copan_48 import StaggeredCopan48Specs
 
 
-class StaggeredCopan48Specs(Copan24Specs):
+class StaggeredCopan48SpecsSaliva(StaggeredCopan48Specs):
     def __init__(
         self,
-        stagger: float = 0.33,
-        nrows: int = _nrows,
-        ncols: int = _ncols,
-        global_dimensions=_global_dimensions,
-        distance_horz: float = (_global_dimensions[0] - 2 * _a1_offset[0])/(_ncols - 1),
-        distance_vert: float = (_global_dimensions[1] - 2 * _a1_offset[1])/(_nrows - 1),
-        a1_offset=_a1_offset,
+        tube_diameter: float = 12,
+        tube_volume: float = 5000,
+        tube_depth: float = 79,
+        tube_height: float = 10,
         **kwargs
     ):
-        super(StaggeredCopan48Specs, self).__init__(
-            nrows=nrows,
-            ncols=ncols,
-            global_dimensions=global_dimensions,
-            distance_horz=distance_horz,
-            distance_vert=distance_vert,
-            a1_offset=a1_offset,
+        super(StaggeredCopan48SpecsSaliva, self).__init__(
+            tube_diameter=tube_diameter,
+            tube_volume=tube_volume,
+            tube_depth=tube_depth,
+            tube_height=tube_height,
             **kwargs
         )
-        self._stagger = stagger
     
     @json_property
     def metadata(self) -> dict:
-        d = super(StaggeredCopan48Specs, self).metadata
-        d["displayName"] = "COPAN {} Staggered Tube Rack 14000 uL".format(self.n)
+        d = super(StaggeredCopan48SpecsSaliva, self).metadata
+        d["displayName"] = "Comedical SCS1380S {} Staggered Tube Rack 5000 uL".format(self.n)
         return d
         
     def well(self, r: int, c: int) -> Tuple[str, dict]:
-        w = super(StaggeredCopan48Specs, self).well(r, c)
+        w = super(StaggeredCopan48SpecsSaliva, self).well(r, c)
         w[1]["x"] += (+1 if r % 2 else -1) * self._tw * self._stagger
         return w
 
 
-class StaggeredCopan48SpecsCorrected(StaggeredCopan48Specs):
+class StaggeredCopan48SpecsSalivaCorrected(StaggeredCopan48SpecsSaliva):
     def __init__(self, **kwargs):
         remaining_kwargs = copy.deepcopy(kwargs)
         corrected_args = {}
-        for k, v in inspect.signature(super(StaggeredCopan48SpecsCorrected, self).__init__).parameters.items():
+        for k, v in inspect.signature(super(StaggeredCopan48SpecsSalivaCorrected, self).__init__).parameters.items():
             if k in remaining_kwargs:
                 remaining_kwargs.pop(k)
                 if hasattr(kwargs[k], "__iter__"):
                     corrected_args[k] = tuple(a * d for a, d in zip(kwargs[k], v.default))
                 else:
                     corrected_args[k] = kwargs[k] * v.default
-        super(StaggeredCopan48SpecsCorrected, self).__init__(**corrected_args, **remaining_kwargs)
+        super(StaggeredCopan48SpecsSalivaCorrected, self).__init__(**corrected_args, **remaining_kwargs)
 
 
 copan_48_correction_env_key = "OT_COPAN_48_CORRECT"
@@ -77,7 +67,7 @@ with open(copan_48_correction_file, "r") as f:
     copan_48_correction = json.load(f)
 
 
-copan_48_corrected_specs = StaggeredCopan48SpecsCorrected(**copan_48_correction)
+copan_48_saliva_corrected_specs = StaggeredCopan48SpecsSalivaCorrected(**copan_48_correction)
 
 
 def run(ctx: ProtocolContext):
