@@ -304,14 +304,24 @@ class StationATechnogenetics48Saliva(StationATechnogenetics48):
             self,
             lys_mix_repeats: int = 3,
             lys_mix_last_rate=300,
-            lysis_mix_volume=600,
+            lys_mix_volume=600,
+            sample_lateral_air_gap=25,
+            sample_lateral_top_height=3,
+            sample_lateral_x_move=-10,
+            sample_lateral_y_move=0,
+            source_headroom_height=1,
             *args,
             **kwargs
     ):
         super(StationATechnogenetics48, self).__init__(
             lys_mix_repeats=lys_mix_repeats,
             lys_mix_last_rate=lys_mix_last_rate,
-            lysis_mix_volume=lysis_mix_volume,
+            lys_mix_volume=lys_mix_volume,
+            sample_lateral_air_gap=sample_lateral_air_gap,
+            sample_lateral_top_height=sample_lateral_top_height,
+            sample_lateral_x_move=sample_lateral_x_move,
+            sample_lateral_y_move=sample_lateral_y_move,
+            source_headroom_height=source_headroom_height,
             *args,
             **kwargs
         )
