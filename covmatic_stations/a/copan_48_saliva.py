@@ -16,48 +16,73 @@ import json
 
 from .copan_48 import StaggeredCopan48Specs
 
+_a1_offset = (27.5, 12)
+_global_dimensions = (260, 177, 118)
+_nrows = 8
+_ncols = 6
 
-class StaggeredCopan48SpecsSaliva(StaggeredCopan48Specs):
+
+class StaggeredCopan48SalivaSpecs(StaggeredCopan48Specs):
     def __init__(
         self,
         tube_diameter: float = 12,
         tube_volume: float = 5000,
         tube_depth: float = 79,
         tube_height: float = 10,
+        stagger: float = 0.33,          # Needed for correction in StaggeredCopan48SalivaSpecsCorrected
+        nrows: int = _nrows,            # Needed for correction in StaggeredCopan48SalivaSpecsCorrected
+        ncols: int = _ncols,            # Needed for correction in StaggeredCopan48SalivaSpecsCorrected
+        global_dimensions=_global_dimensions,           # Needed for correction in StaggeredCopan48SalivaSpecsCorrected
+        distance_horz: float = (_global_dimensions[0] - 2 * _a1_offset[0]) / (_ncols - 1),      # Needed for correction
+        distance_vert: float = (_global_dimensions[1] - 2 * _a1_offset[1]) / (_nrows - 1),      # Needed for correction
+        displacement_horz: float = 6.07,
         **kwargs
     ):
-        super(StaggeredCopan48SpecsSaliva, self).__init__(
+        super(StaggeredCopan48SalivaSpecs, self).__init__(
             tube_diameter=tube_diameter,
             tube_volume=tube_volume,
             tube_depth=tube_depth,
             tube_height=tube_height,
+            stagger=stagger,
+            ncols=ncols,
+            nrows=nrows,
+            global_dimensions=global_dimensions,
+            distance_horz=distance_horz,
+            distance_vert=distance_vert,
             **kwargs
         )
+        self._displacement_horz = displacement_horz
     
     @json_property
     def metadata(self) -> dict:
-        d = super(StaggeredCopan48SpecsSaliva, self).metadata
+        d = super(StaggeredCopan48SalivaSpecs, self).metadata
         d["displayName"] = "Comedical SCS1380S {} Staggered Tube Rack 5000 uL".format(self.n)
         return d
-        
+
+    @json_property
+    def parameters(self) -> dict:
+        p = super(StaggeredCopan48SalivaSpecs, self).parameters
+        p["loadName"] = "saliva_{}_tuberack_5000ul".format(self.n)
+        return p
+
     def well(self, r: int, c: int) -> Tuple[str, dict]:
-        w = super(StaggeredCopan48SpecsSaliva, self).well(r, c)
-        w[1]["x"] += (+1 if r % 2 else -1) * self._tw * self._stagger
+        w = super(StaggeredCopan48Specs, self).well(r, c)
+        w[1]["x"] += (+1 if r % 2 else -1) * self._displacement_horz
         return w
 
 
-class StaggeredCopan48SpecsSalivaCorrected(StaggeredCopan48SpecsSaliva):
+class StaggeredCopan48SalivaSpecsCorrected(StaggeredCopan48SalivaSpecs):
     def __init__(self, **kwargs):
         remaining_kwargs = copy.deepcopy(kwargs)
         corrected_args = {}
-        for k, v in inspect.signature(super(StaggeredCopan48SpecsSalivaCorrected, self).__init__).parameters.items():
+        for k, v in inspect.signature(super(StaggeredCopan48SalivaSpecsCorrected, self).__init__).parameters.items():
             if k in remaining_kwargs:
                 remaining_kwargs.pop(k)
                 if hasattr(kwargs[k], "__iter__"):
                     corrected_args[k] = tuple(a * d for a, d in zip(kwargs[k], v.default))
                 else:
                     corrected_args[k] = kwargs[k] * v.default
-        super(StaggeredCopan48SpecsSalivaCorrected, self).__init__(**corrected_args, **remaining_kwargs)
+        super(StaggeredCopan48SalivaSpecsCorrected, self).__init__(**corrected_args, **remaining_kwargs)
 
 
 copan_48_correction_env_key = "OT_COPAN_48_CORRECT"
@@ -67,11 +92,11 @@ with open(copan_48_correction_file, "r") as f:
     copan_48_correction = json.load(f)
 
 
-copan_48_saliva_corrected_specs = StaggeredCopan48SpecsSalivaCorrected(**copan_48_correction)
+copan_48_saliva_corrected_specs = StaggeredCopan48SalivaSpecsCorrected(**copan_48_correction)
 
 
 def run(ctx: ProtocolContext):
-    StaggeredCopan48Specs().run_test(ctx)
+    StaggeredCopan48SalivaSpecsCorrected().run_test(ctx)
 
 
 metadata = {"apiLevel": "2.3"}
@@ -83,7 +108,7 @@ if __name__ == "__main__":
     parser.add_argument('file', metavar='F', type=str, help='The file path where to save the custom labware JSON')
     args = parser.parse_args()
     with open(args.file, "w") as f:
-        f.write(str(StaggeredCopan48Specs()))
+        f.write(str(copan_48_saliva_corrected_specs))
 
 
 # Copyright (c) 2020 Covmatic.
