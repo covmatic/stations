@@ -1,3 +1,5 @@
+from opentrons.types import Point
+
 from ..utils import MoveWithSpeed, WellWithVolume, mix_bottom_top
 from .a import StationA
 import json
@@ -17,12 +19,22 @@ class StationAP1000(StationA):
         main_tiprack_label: str = '1000µl filter tiprack',
         sample_vertical_speed: float = 50,
         deepwell_vertical_speed: float = 50,
+        sample_lateral_air_gap: float = 0,      # Use 0 to disable function
+        sample_lateral_top_height: float = 3,
+        sample_lateral_x_move: float = 0,
+        sample_lateral_y_move: float = 0,
         source_headroom_height: float = 6,
         source_height_start_slow: float = 40,
         source_racks: str = 'copan_15_tuberack_14000ul',
         source_racks_definition_filepath: str = os.path.join(os.path.split(__file__)[0], "COPAN 15 Tube Rack 14000 µL.json"),
         **kwargs
     ):
+        """
+        @param sample_lateral_air_gap: Lateral air gap for viscuos samples to avoid contamination. Use 0 to disable function
+        @param sample_lateral_top_height: height to raise above the top of the source for lateral air gap
+        @param sample_lateral_x_move: lateral x movement respect to sample_lateral_top_height for lateral air gap; use None for auto calculation
+        @param sample_lateral_y_move: lateral y movement respect to sample_lateral_top_height for lateral air gap; use None for auto calculation
+        """
         super(StationAP1000, self).__init__(
             air_gap_sample=air_gap_sample,
             main_pipette=main_pipette,
@@ -37,6 +49,10 @@ class StationAP1000(StationA):
         self._dest_above_liquid_height = dest_above_liquid_height
         self._sample_vertical_speed = sample_vertical_speed
         self._deepwell_vertical_speed = deepwell_vertical_speed
+        self._sample_lateral_air_gap= sample_lateral_air_gap
+        self._sample_lateral_top_height= sample_lateral_top_height
+        self._sample_lateral_x_move= sample_lateral_x_move
+        self._sample_lateral_y_move= sample_lateral_y_move
         self._source_height_start_slow = source_height_start_slow
         self._p_main_fake_aspirate = True
     
@@ -81,6 +97,15 @@ class StationAP1000(StationA):
             self._p_main.aspirate(self._sample_volume)
         self._p_main.air_gap(self._air_gap_sample)
 
+        if self._sample_lateral_air_gap:
+            default_side_move = source.diameter or source.length
+
+            self._p_main.move_to(source.top(self._sample_lateral_top_height))
+            self._p_main.move_to(source.top(self._sample_lateral_top_height).move(
+                Point(x=self._sample_lateral_x_move if self._sample_lateral_x_move is not None else default_side_move,
+                      y=self._sample_lateral_y_move if self._sample_lateral_y_move is not None else default_side_move)))
+            self._p_main.aspirate(self._sample_lateral_air_gap)
+
         # Dispensing sample
         dest_with_volume = WellWithVolume(dest,
                                           initial_vol=self._sample_volume + self._lysis_volume if self._lysis_first else 0,
@@ -90,7 +115,8 @@ class StationAP1000(StationA):
         if self._lys_mix_repeats:   # if we will mix, just dispense sample as fast as mixing.
             self._p_main.flow_rate.dispense = self._lysis_rate_mix
 
-        self._p_main.dispense(self._sample_volume + self._air_gap_sample, dest.bottom(dest_with_volume.height))
+        self._p_main.dispense(self._sample_volume + self._air_gap_sample + self._sample_lateral_air_gap,
+                              dest.bottom(dest_with_volume.height))
 
         self._p_main.flow_rate.aspirate = self._lysis_rate_mix
         self._p_main.flow_rate.dispense = self._lysis_rate_mix
