@@ -24,7 +24,7 @@ class StationBTechnogenetics(StationB):
                  flatplate_slot: str = '3',
                  incubation_temperature: float = 55,
                  incubation_time: float = 20,
-                 incubation_heatup_time: float = 10,
+                 incubation_heatup_time: float = 15,
                  h_bottom: float = 1,
                  n_bottom: float = 3,
                  mix_incubate_on_time: float = 20,

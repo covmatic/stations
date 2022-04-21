@@ -32,8 +32,8 @@
 	"ITA": "Sigillare la deepwell con un adesivo.\nMettere la deepwell nel thermomixer: 700 rpm 55°C per almeno 5 min.\nA biglie risospese, posizionare la deepwell sul modulo MAGNETICO"
   },
   "seal the deepwell initial": {
-	"ENG": "Seal the deepwell plate with a sticker.\nPut the deepwell plate in the thermomixer at 700 rpm, 55°C for 10 minutes, at least.\nThan place the deepwell plate onto the magnetic module",
-	"ITA": "Sigillare la deepwell con un adesivo.\nMettere la deepwell nel thermomixer: 700 rpm 55°C per almeno 10 min.\nQuindi, posizionare la deepwell sul modulo MAGNETICO"
+	"ENG": "Seal the deepwell plate with a sticker.\nPut the deepwell plate in the thermomixer at 700 rpm, 55°C for 5 minutes, at least.\nThan place the deepwell plate onto the magnetic module",
+	"ITA": "Sigillare la deepwell con un adesivo.\nMettere la deepwell nel thermomixer: 700 rpm 55°C per almeno 5 min.\nQuindi, posizionare la deepwell sul modulo MAGNETICO"
   },
   "input PCR": {
 	"ENG": "put the PCR plate in slot 1, onto the aluminum block",
