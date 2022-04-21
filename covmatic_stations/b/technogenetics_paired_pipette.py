@@ -1,4 +1,5 @@
 import json
+import math
 from typing import List
 
 from opentrons.protocol_api.labware import Well
@@ -77,7 +78,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         super(StationBTechnogeneticsPairedPipette, self).body()
 
     def mix_samples(self, wells: List[Well], stage_name: str = "mix sample"):
-        well_with_volume = WellWithVolume(self.wells[0],
+        well_with_volume = WellWithVolume(wells[0],
                                           initial_vol=self._starting_vol - self._sample_mix_vol,
                                           min_height=self._sample_mix_height,
                                           headroom_height=0)
@@ -232,20 +233,33 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         num_trans, vol_per_trans = uniform_divide(vol, self._wash_max_transfer_vol)
 
         src = []
-        mix_locs = []
         wash_locs = []
         wash_locs_index = [0, 0, 1, 1, 4, 4, 5, 5, 2, 2, 3, 3]
+        mix_locs_nowalk = []
+        mix_locs_aspirate = []
+        mix_locs_dispense_1 = []
+        mix_locs_dispense_2 = []
 
         for i, m in enumerate(self.mag_samples_m):
             wash_locs.append(source[wash_locs_index[i]])
             src.append(self.wash_getcol(i, len(self.mag_samples_m), source))
-            mix_locs.append(m.bottom(self._bottom_headroom_height).move(Point(x=2 * (-1 if i % 2 else +1))))
+            # For beads resuspension
+            mix_locs_nowalk.append(m.bottom(self._bottom_headroom_height).move(Point(x=2 * (-1 if i % 2 else +1))))
+            mix_locs_aspirate.append(m.bottom(self._resuspend_bottom_height))
+            mix_locs_dispense_1.append(m.bottom(self._resuspend_bottom_height).move(Point(x=2 * (-1 if i % 2 else +1),
+                                                                                          y=self._resuspend_y_movement)))
+            mix_locs_dispense_2.append(m.bottom(self._resuspend_bottom_height).move(Point(x=2 * (-1 if i % 2 else +1),
+                                                                                          y=-self._resuspend_y_movement)))
 
         with PairedPipette(self._magplate, self.mag_samples_m,
                            wash_locs=wash_locs,
-                           mix_locs=mix_locs,
+                           mix_locs_nowalk=mix_locs_nowalk,
+                           mix_locs_aspirate=mix_locs_aspirate,
+                           mix_locs_dispense_1=mix_locs_dispense_1,
+                           mix_locs_dispense_2=mix_locs_dispense_2,
                            start_at=wash_name) as tp:
             tp.pick_up()
+            # Add wash buffer
             for n in range(num_trans):
                 if n > 0:
                     tp.dispense(self._wash_air_gap, locationFrom="wash_locs", well_modifier="top(0)")
@@ -256,8 +270,22 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
                 if n < num_trans-1:
                     tp.air_gap(self._wash_air_gap)
 
-            # Mix
-            tp.mix(mix_reps, self._wash_mix_vol, locationFrom="mix_locs")
+            # Beads resuspension
+
+            if self._wash_mix_walk:
+                double_cycles = math.ceil(mix_reps / 2)
+                for i in range(double_cycles):
+                    tp.aspirate(self._sample_mix_vol,
+                                locationFrom="mix_locs_aspirate")
+                    tp.dispense(self._sample_mix_vol,
+                                locationFrom="mix_locs_dispense_1")
+                    tp.aspirate(self._sample_mix_vol,
+                                locationFrom="mix_locs_aspirate")
+                    tp.dispense(self._sample_mix_vol,
+                                locationFrom="mix_locs_dispense_2")
+            else:
+                tp.mix(mix_reps, self._wash_mix_vol, locationFrom="mix_locs_nowalk")
+
             tp.move_to(locationFrom="target", well_modifier="top(0)", speed=vertical_speed)
             tp.air_gap(self._wash_air_gap)
             tp.drop_tip()
