@@ -1,5 +1,7 @@
+from opentrons.protocol_api.labware import Well
+
 from .b import StationB, labware_loader
-from typing import Tuple
+from typing import Tuple, List
 from opentrons.types import Point
 from ..utils import get_labware_json_from_filename, mix_bottom_top, WellWithVolume
 
@@ -159,10 +161,10 @@ class StationBTechnogenetics(StationB):
     @staticmethod
     def wash_getcol(sample_col_idx: int, wash_cols: int, source):
         return source[sample_col_idx // 2]
-    
-    def mix_samples(self):
-        for i, m in enumerate(self.temp_samples_m):
-            if self.run_stage("mix sample {}/{}".format(i + 1, len(self.mag_samples_m))):
+
+    def mix_samples(self,  wells: List[Well], stage_name: str = "mix sample"):
+        for i, m in enumerate(wells):
+            if self.run_stage("{} {}/{}".format(stage_name, i + 1, len(wells))):
                 self._m300.flow_rate.aspirate = self._mix_samples_rate
                 self._m300.flow_rate.dispense = self._mix_samples_rate
 
@@ -222,7 +224,7 @@ class StationBTechnogenetics(StationB):
         self.tempdeck_set_temperature(self._incubation_temperature)
 
         self.delay_start_count()
-        self.mix_samples()
+        self.mix_samples(self.temp_samples_m)
         if self.run_stage("incubation"):
             self.delay_wait_to_elapse(minutes=self._incubation_time)
 

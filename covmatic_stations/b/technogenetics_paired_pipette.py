@@ -1,4 +1,7 @@
 import json
+from typing import List
+
+from opentrons.protocol_api.labware import Well
 
 from ..station import instrument_loader, labware_loader
 from ..utils import uniform_divide, WellWithVolume, MoveWithSpeed, mix_bottom_top
@@ -73,12 +76,13 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         PairedPipette.setup(self._m300, self._m300r, self, pick_up_single=self._pick_up_single)
         super(StationBTechnogeneticsPairedPipette, self).body()
 
-    def mix_samples(self):
+    def mix_samples(self, wells: List[Well], stage_name: str = "mix sample"):
         well_with_volume = WellWithVolume(self.temp_samples_m[0],
                                           initial_vol=self._starting_vol - self._sample_mix_vol,
                                           min_height=self._sample_mix_height,
                                           headroom_height=0)
-        with PairedPipette(self._tempplate, self.temp_samples_m, start_at="mix sample") as tp:
+
+        with PairedPipette(wells[0].parent, wells, start_at=stage_name) as tp:
             tp.set_flow_rate(aspirate=self._mix_samples_rate, dispense=self._mix_samples_rate)
             tp.pick_up()
             # Custom mix_bottom_top
