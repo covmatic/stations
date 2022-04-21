@@ -77,7 +77,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         super(StationBTechnogeneticsPairedPipette, self).body()
 
     def mix_samples(self, wells: List[Well], stage_name: str = "mix sample"):
-        well_with_volume = WellWithVolume(self.temp_samples_m[0],
+        well_with_volume = WellWithVolume(self.wells[0],
                                           initial_vol=self._starting_vol - self._sample_mix_vol,
                                           min_height=self._sample_mix_height,
                                           headroom_height=0)
