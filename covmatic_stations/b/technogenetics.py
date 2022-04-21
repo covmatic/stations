@@ -184,7 +184,19 @@ class StationBTechnogenetics(StationB):
                 self._m300.move_to(m.top(0), speed=self._sample_vertical_speed)
                 self._m300.air_gap(self._bind_air_gap)
                 self.drop(self._m300)
-    
+
+    def incubate_and_mix(self):
+        self.tempdeck_set_temperature(self._incubation_temperature)
+
+        self.delay_start_count()
+        self.mix_samples(self.temp_samples_m)
+
+        if self.run_stage("incubation"):
+            self.delay_wait_to_elapse(minutes=self._incubation_time)
+
+        self.tempdeck_deactivate()
+        self.pause("move plate to magdeck")
+
     def elute(self, positions=None, transfer: bool = False, stage: str = "elute"):
         if positions is None:
             positions = self.temp_samples_m
@@ -221,16 +233,7 @@ class StationBTechnogenetics(StationB):
         self.logger.info(self.get_msg_format("volume", "wash 2", self._wash_headroom * self._wash_2_vol * self._num_samples / 1000))
         self.logger.info(self.get_msg_format("volume", "elution buffer", self._wash_headroom * self._elution_vol * self._num_samples / 1000))
 
-        self.tempdeck_set_temperature(self._incubation_temperature)
-
-        self.delay_start_count()
-        self.mix_samples(self.temp_samples_m)
-        if self.run_stage("incubation"):
-            self.delay_wait_to_elapse(minutes=self._incubation_time)
-
-        self.tempdeck_deactivate()
-
-        self.pause("move plate to magdeck")
+        self.incubate_and_mix()
 
         self._magdeck.engage(height=self._magheight)
         self.check()
