@@ -78,7 +78,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
                                           initial_vol=self._starting_vol - self._sample_mix_vol,
                                           min_height=self._sample_mix_height,
                                           headroom_height=0)
-        with PairedPipette(self._tempplate, self.temp_samples_m, start_at=stage_name) as tp:
+        with PairedPipette(self._magplate, self.mag_samples_m, start_at=stage_name) as tp:
             tp.set_flow_rate(aspirate=self._mix_samples_rate, dispense=self._mix_samples_rate)
             tp.pick_up()
             # Custom mix_bottom_top

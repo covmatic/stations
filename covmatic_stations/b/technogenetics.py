@@ -164,7 +164,7 @@ class StationBTechnogenetics(StationB):
         return source[sample_col_idx // 2]
     
     def mix_samples(self, stage_name: str = "mix sample"):
-        for i, m in enumerate(self.temp_samples_m):
+        for i, m in enumerate(self.mag_samples_m):
             if self.run_stage("{} {}/{}".format(stage_name, i + 1, len(self.mag_samples_m))):
                 self._m300.flow_rate.aspirate = self._mix_samples_rate
                 self._m300.flow_rate.dispense = self._mix_samples_rate
