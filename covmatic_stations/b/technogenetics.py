@@ -49,6 +49,8 @@ class StationBTechnogenetics(StationB):
                  wash_1_vol: float = 650,
                  wash_2_vol: float = 650,
                  wash_headroom: float = 1.05,
+                 wash_mix_vol: float = 180,
+                 wash_mix_walk: bool = True,
                  watchdog_serial_timeout_seconds: int = 30,
                  **kwargs
                  ):
@@ -88,6 +90,8 @@ class StationBTechnogenetics(StationB):
             wash_1_vol=wash_1_vol,
             wash_2_vol=wash_2_vol,
             wash_headroom=wash_headroom,
+            wash_mix_vol=wash_mix_vol,
+            wash_mix_walk=wash_mix_walk,
             **kwargs
         )
         self._beads_drying_time = beads_drying_time
