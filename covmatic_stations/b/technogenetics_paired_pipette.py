@@ -5,7 +5,7 @@ from opentrons.protocol_api.labware import Well
 
 from ..station import instrument_loader, labware_loader
 from ..utils import uniform_divide, WellWithVolume, MoveWithSpeed, mix_bottom_top
-from .technogenetics import StationBTechnogenetics
+from .technogenetics import StationBTechnogenetics, StationBTechnogeneticsSaliva
 from ..paired_pipette import PairedPipette
 from opentrons.types import Point
 from itertools import repeat
@@ -267,6 +267,13 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         if self.run_stage("{} incubate".format(wash_name)):
             self.delay(self._wait_time_wash_on, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         self.remove_supernatant(vol, stage="remove {}".format(wash_name))
+
+
+class StationBTechnogeneticsSalivaPairedPipette(StationBTechnogeneticsPairedPipette, StationBTechnogeneticsSaliva):
+    """ Build a :py:class:`.StationBTechnogeneticsSalivaPairedPipette`.
+        Everything needed should be imported from class inheritance.
+    """
+    pass
 
 if __name__ == "__main__":
     station = StationBTechnogeneticsPairedPipette(metadata={'apiLevel': '2.7'},

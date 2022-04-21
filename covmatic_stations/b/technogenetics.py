@@ -26,7 +26,6 @@ class StationBTechnogenetics(StationB):
                  flatplate_slot: str = '3',
                  incubation_temperature: float = 55,
                  incubation_time: float = 20,
-                 incubation_heatup_time: float = 15,
                  h_bottom: float = 1,
                  n_bottom: float = 3,
                  mix_incubate_on_time: float = 20,
@@ -64,7 +63,6 @@ class StationBTechnogenetics(StationB):
         :param final_vol: Volume to transfer to the PCR plate in uL
         :param incubation_temperature: Temperature set on temperature module to incubate samples in °C
         :param incubation_time: minutes to wait on temperature module to incubate samples
-        :param incubation_heatup_time: minutest needed to warm up the deepwell plate to the incubation temperature (experimentally found)
         :param mix_incubate_on_time: Time for incubation on magnet after mix in minutes
         :param mix_incubate_off_time: Time for incubation off magnet after mix in minutes
         :param postspin_incubation_time: Post-spin incubation time in minutes
@@ -107,7 +105,6 @@ class StationBTechnogenetics(StationB):
         self._flatplate_slot = flatplate_slot
         self._incubation_temperature = incubation_temperature
         self._incubation_time = incubation_time
-        self._incubation_heatup_time = incubation_heatup_time
         self._h_bottom = h_bottom
         self._n_bottom = n_bottom
         self._mix_incubate_on_time = mix_incubate_on_time
@@ -188,28 +185,16 @@ class StationBTechnogenetics(StationB):
                 self.drop(self._m300)
 
     def incubate_and_mix(self):
-        # self.tempdeck_set_temperature(self._incubation_temperature)
-        #
-        # self.delay_start_count()
-        # self.mix_samples(self.temp_samples_m)
-        #
-        # if self.run_stage("incubation"):
-        #     self.delay_wait_to_elapse(minutes=self._incubation_time)
-        #
-        # self.tempdeck_deactivate()
-        # self.pause("move plate to magdeck")
         self.tempdeck_set_temperature(self._incubation_temperature)
 
+        self.delay_start_count()
+        self.mix_samples(self.temp_samples_m)
+
         if self.run_stage("incubation"):
-            self.delay(self._incubation_heatup_time)
+            self.delay_wait_to_elapse(minutes=self._incubation_time)
 
-        if self.run_stage("thermomixer initial"):
-            self.dual_pause("seal the deepwell initial", between=self.set_external)
-            self.set_internal()
-
-        self.mix_samples(self.mag_samples_m, "mix sample after incubation")
         self.tempdeck_deactivate()
-        # self.pause("move plate to magdeck")
+        self.pause("move plate to magdeck")
 
     def elute(self, positions=None, transfer: bool = False, stage: str = "elute"):
         if positions is None:
@@ -312,6 +297,39 @@ class StationBTechnogenetics(StationB):
         self.watchdog_reset(self._watchdog_serial_timeout_seconds)
         self._tempdeck.deactivate()
         self.watchdog_stop()
+
+
+class StationBTechnogeneticsSaliva(StationBTechnogenetics):
+    def __init__(self,
+                 incubation_heatup_time: float = 15,
+                 incubation_mixing_time: float = 10,
+                 incubation_mix_times: int = 2,
+                 *args,
+                 **kwargs):
+        """ Build a :py:class:`.StationBTechnogeneticsSaliva`.
+            :param incubation_heatup_time: minutes needed to warm up the deepwell plate to the incubation temperature (experimentally found)
+            :param incubation_mixing_time: minutes of incubation during mix
+            :param incubation_mix_times: number of mix during incubation
+        """
+        super(StationBTechnogeneticsSaliva, self).__init__(*args, **kwargs)
+        self._incubation_heatup_time = incubation_heatup_time
+        self._incubation_mixing_time = incubation_mixing_time
+        self._incubation_mix_times = incubation_mix_times
+
+    def incubate_and_mix(self):
+        self.tempdeck_set_temperature(self._incubation_temperature)
+
+        if self.run_stage("initial incubation"):
+            self.delay(self._incubation_heatup_time)
+
+        for i in range(self._incubation_mix_times):
+            self.delay_start_count()
+            self.mix_samples(self.temp_samples_m, "mix samples {}".format(i+1))
+            self.delay_wait_to_elapse(minutes=self._incubation_mixing_time)
+
+        self.tempdeck_deactivate()
+        self.pause("move plate to magdeck")
+
 
 if __name__ == "__main__":
     StationBTechnogenetics(metadata={'apiLevel': '2.3'}).simulate()
