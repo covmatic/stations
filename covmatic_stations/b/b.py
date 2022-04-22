@@ -347,6 +347,21 @@ class StationB(Station):
     def _tipracks(self) -> dict:
         return {"_tips300": "_m300",}
 
+    def set_magdeck(self, engaged: bool):
+        required_status = "engaged" if engaged else "disengaged"
+        self._ctx.comment("Check module status")
+        for j in range(3):
+            if self._magdeck.status == required_status:
+                self._ctx.comment("Status is {}".format(required_status))
+                break
+            self._ctx.comment("Try {} to set module to state {}".format(j+1, required_status))
+            if required_status == "engaged":
+                self._magdeck.engage(height=self._magheight)
+            else:
+                self._magdeck.disengage()
+        else:
+            raise Exception("Magdeck not able to be set to {}".format(required_status))
+
     def check(self):
         self._ctx.comment("Check module status")
         for j in range(3):
@@ -358,6 +373,7 @@ class StationB(Station):
             self.dual_pause("check module")
 
     def remove_supernatant(self, vol: float, stage: str = "remove supernatant"):
+        self.set_magdeck(True)
         num_trans, vol_per_trans = uniform_divide(vol-self._vol_last_trans,
                                                   self._pipette_max_volume - self._supernatant_removal_air_gap)
 
@@ -469,7 +485,9 @@ class StationB(Station):
             self._m300.flow_rate.dispense = self._wash_2_mix_dispense_rate
             self._m300.flow_rate.aspirate = self._wash_2_mix_aspiration_rate
             vertical_speed = self._wash_2_vertical_speed
-        self._magdeck.disengage()
+
+        self.set_magdeck(False)
+
         num_trans, vol_per_trans = uniform_divide(vol, self._wash_max_transfer_vol)
         
         for i, m in enumerate(self.mag_samples_m):
@@ -516,8 +534,8 @@ class StationB(Station):
                 self._m300.air_gap(self._wash_air_gap)
                 self.drop(self._m300)
 
-        self._magdeck.engage(height=self._magheight)
-        self.check()
+        self.set_magdeck(True)
+
         if self.run_stage("{} incubate".format(wash_name)):
             self.delay(self._wait_time_wash_on, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         self.remove_supernatant(vol, stage="remove {}".format(wash_name))

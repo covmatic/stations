@@ -198,19 +198,18 @@ class StationBTechnogenetics(StationB):
             self.delay_wait_to_elapse(minutes=self._incubation_time)
 
         self.tempdeck_deactivate()
-        self.pause("move plate to magdeck")
 
     def elute(self, positions=None, transfer: bool = False, stage: str = "elute"):
         if positions is None:
             positions = self.temp_samples_m
-        self._magdeck.disengage()
+        self.set_magdeck(False)
         super(StationBTechnogenetics, self).elute(positions=positions, transfer=transfer, stage=stage)
-        self._magdeck.disengage()
     
     def remove_wash(self, vol, stage: str = "remove wash"):
         self.remove_supernatant(vol, stage)
     
     def final_transfer(self):
+        self.set_magdeck(True)
         self._m300.flow_rate.aspirate = self._final_transfer_rate_aspirate
         self._m300.flow_rate.dispense = self._final_transfer_rate_dispense
         n = len(list(zip(self.mag_samples_m, self.pcr_samples_m)))
@@ -231,6 +230,22 @@ class StationBTechnogenetics(StationB):
                 self._m300.air_gap(self._elute_air_gap)
                 self.drop(self._m300)
 
+    def spin(self, stage_name: str):
+        if self.run_stage("spin deepwell {}".format(stage_name)):
+            self.set_magdeck(False)
+            self.dual_pause("spin the deepwell", between=self.set_external)
+            self.set_internal()
+
+    def second_removal(self, stage_name: str):
+        if self.run_stage("post spin incubation {}".format(stage_name)):
+            self.set_magdeck(True)
+            self.delay(self._postspin_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
+        self.remove_wash(self._remove_wash_vol, "remove {} after spin".format(stage_name))
+
+    def spin_and_remove(self, stage_name: str):
+        self.spin(stage_name)
+        self.second_removal(stage_name)
+
     def body(self):
         self.logger.info(self.get_msg_format("volume", "wash 1", self._wash_headroom * self._wash_1_vol * self._num_samples / 1000))
         self.logger.info(self.get_msg_format("volume", "wash 2", self._wash_headroom * self._wash_2_vol * self._num_samples / 1000))
@@ -238,39 +253,32 @@ class StationBTechnogenetics(StationB):
 
         self.incubate_and_mix()
 
-        self._magdeck.engage(height=self._magheight)
-        self.check()
+        self.pause("move plate to magdeck")
+
         if self.run_stage("mix incubate off"):
+            self.set_magdeck(True)
             self.delay(self._mix_incubate_off_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
 
         self.remove_supernatant(self._starting_vol)
+
         self.wash(self._wash_1_vol, self.wash1, self._wash_1_times, "wash A")
 
         self.dual_pause("Add wash B and elute buffer in slot {}{}".format(
-            self.wash2[0].parent, " and {}".format(self.water.parent) if self.wash2[0].parent != self.water.parent else ""))
-
-        self.wash(self._wash_2_vol, self.wash2, self._wash_2_times, "wash B")
-
-        self._magdeck.disengage()
-        if self.run_stage("spin deepwell wash B"):
-            self.dual_pause("spin the deepwell", between=self.set_external)
-            self.set_internal()
+            self.wash2[0].parent,
+            " and {}".format(self.water.parent) if self.wash2[0].parent != self.water.parent else ""))
 
         self._magdeck.engage(height=self._magheight)
         self.check()
 
-        if self.run_stage("post spin incubation wash B"):
-            self.delay(self._postspin_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
+        self.wash(self._wash_2_vol, self.wash2, self._wash_2_times, "wash B")
+        self.spin_and_remove("wash B")
 
         if self._tempdeck_temp is not None and not self._tempdeck_auto_turnon:
             # self._tempdeck.start_set_temperature(self._tempdeck_temp)
             self.tempdeck_set_temperature(self._tempdeck_temp)
 
-        self.remove_wash(self._remove_wash_vol, "remove wash B after spin")
-
-        self._magdeck.disengage()
-
         if self.run_stage("beads drying"):
+            self.set_magdeck(False)
             self.delay(self._beads_drying_time, msg="beads drying")
 
         self.elute(self.mag_samples_m)
@@ -282,14 +290,13 @@ class StationBTechnogenetics(StationB):
         if self.run_stage("input PCR"):
             self.dual_pause("input PCR")
 
-        self._magdeck.engage(height=self._magheight)
-        self.check()
         if self.run_stage("post thermomixer incubation"):
+            self.set_magdeck(True)
             self.delay(self._thermomixer_incubation_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
 
         self.final_transfer()
 
-        self._magdeck.disengage()
+        self.set_magdeck(False)
         self.logger.info(self.msg_format("move to PCR"))
 
     def tempdeck_set_temperature(self, temperature):
