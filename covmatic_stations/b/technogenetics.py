@@ -289,7 +289,7 @@ class StationBTechnogenetics(StationB):
             self.set_internal()
 
         if self.run_stage("input PCR"):
-            self.dual_pause("input PCR")
+            self.pause("input PCR")
 
         if self.run_stage("post thermomixer incubation"):
             self.set_magdeck(True)
