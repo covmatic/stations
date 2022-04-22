@@ -263,12 +263,13 @@ class StationBTechnogenetics(StationB):
 
         self.wash(self._wash_1_vol, self.wash1, self._wash_1_times, "wash A")
 
-        self.dual_pause("Add wash B and elute buffer in slot {}{}".format(
+        self.spin("wash A")
+
+        self.pause("Add wash B and elute buffer in slot {}{}".format(
             self.wash2[0].parent,
             " and {}".format(self.water.parent) if self.wash2[0].parent != self.water.parent else ""))
 
-        self._magdeck.engage(height=self._magheight)
-        self.check()
+        self.second_removal("wash A")
 
         self.wash(self._wash_2_vol, self.wash2, self._wash_2_times, "wash B")
         self.spin_and_remove("wash B")
