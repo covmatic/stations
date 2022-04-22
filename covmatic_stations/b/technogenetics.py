@@ -340,7 +340,6 @@ class StationBTechnogeneticsSaliva(StationBTechnogenetics):
             self.delay_wait_to_elapse(minutes=self._incubation_mixing_time)
 
         self.tempdeck_deactivate()
-        self.pause("move plate to magdeck")
 
 
 if __name__ == "__main__":
