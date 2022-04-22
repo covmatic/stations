@@ -304,7 +304,7 @@ class StationATechnogenetics48Saliva(StationATechnogenetics48):
             self,
             lys_mix_repeats: int = 3,
             lys_mix_last_rate=300,
-            lys_mix_volume=600,
+            lys_mix_volume=500,
             sample_lateral_air_gap=25,
             sample_lateral_top_height=3,
             sample_lateral_x_move=-10,
@@ -336,7 +336,7 @@ class StationATechnogenetics48Saliva(StationATechnogenetics48):
         ]
 
 if __name__ == "__main__":
-    StationATechnogenetics48Saliva(num_samples=96, metadata={'apiLevel': '2.7'}).simulate()
+    StationATechnogenetics48(num_samples=96, metadata={'apiLevel': '2.7'}).simulate()
 
 
 # Copyright (c) 2020 Covmatic.
