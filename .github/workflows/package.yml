@@ -31,11 +31,14 @@ jobs:
       matrix:
         target: [station_a_technogenetics_24,
                  station_a_technogenetics_48,
+                 station_a_technogenetics_48_saliva,
                  station_b_technogenetics,
                  station_b_technogenetics_elution_removal,
                  station_b_technogenetics_wash_b_removal,
                  station_b_technogenetics_paired_pipette,
                  station_b_technogenetics_paired_pipette_test_start_at,
+                 station_b_technogenetics_saliva,
+                 station_b_technogenetics_saliva_paired_pipette,
                  station_c_technogenetics_m20,
                  station_c_technogenetics_m300]
     steps:
