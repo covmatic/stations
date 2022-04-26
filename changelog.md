@@ -1,6 +1,18 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.18.0
+
+### Note: the workflow in **Station B** is changed.
+
+### Added
+
+- [Station A, Station B] New protocol for saliva samples with KHB extraction kit;
+- [Station B] Reintroduced *second wash A removal*
+
+### Fixed
+- [Station B] Better beads resuspension with *mix_walk*
+
 ## v2.17.0
 
 ### Note: the workflow in **Station B** is changed.
