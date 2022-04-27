@@ -313,7 +313,7 @@ class StationATechnogenetics48Saliva(StationATechnogenetics48):
             *args,
             **kwargs
     ):
-        super(StationATechnogenetics48, self).__init__(
+        super(StationATechnogenetics48Saliva, self).__init__(
             lys_mix_repeats=lys_mix_repeats,
             lys_mix_last_rate=lys_mix_last_rate,
             lys_mix_volume=lys_mix_volume,
