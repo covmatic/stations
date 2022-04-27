@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.18.1
+
+- [Station A Technogenetics Saliva] Fixed bug in rack 2 positions.
+
 ## v2.18.0
 
 ### Note: the workflow in **Station B** is changed.
