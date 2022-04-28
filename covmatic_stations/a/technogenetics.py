@@ -309,7 +309,7 @@ class StationATechnogenetics48Saliva(StationATechnogenetics48):
             sample_lateral_top_height=3,
             sample_lateral_x_move=-10,
             sample_lateral_y_move=0,
-            source_headroom_height=3,
+            source_headroom_height=2,
             *args,
             **kwargs
     ):
