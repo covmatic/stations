@@ -253,9 +253,8 @@ class StationBTechnogenetics(StationB):
 
         self.incubate_and_mix()
 
-        self.pause("move plate to magdeck")
-
         if self.run_stage("mix incubate off"):
+            self.pause("move plate to magdeck")
             self.set_magdeck(True)
             self.delay(self._mix_incubate_off_time, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
 
@@ -265,9 +264,10 @@ class StationBTechnogenetics(StationB):
 
         self.spin("wash A")
 
-        self.pause("Add wash B and elute buffer in slot {}{}".format(
-            self.wash2[0].parent,
-            " and {}".format(self.water.parent) if self.wash2[0].parent != self.water.parent else ""))
+        if self.run_stage("add wash B and elute"):
+            self.pause("Add wash B and elute buffer in slot {}{}".format(
+                self.wash2[0].parent,
+                " and {}".format(self.water.parent) if self.wash2[0].parent != self.water.parent else ""))
 
         self.second_removal("wash A")
 
