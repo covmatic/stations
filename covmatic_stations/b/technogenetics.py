@@ -337,7 +337,8 @@ class StationBTechnogeneticsSaliva(StationBTechnogenetics):
         for i in range(self._incubation_mix_times):
             self.delay_start_count()
             self.mix_samples(self.temp_samples_m, "mix samples {}".format(i+1))
-            self.delay_wait_to_elapse(minutes=self._incubation_mixing_time)
+            if self.run_stage("incubation after mix {}".format(i+1)):
+                self.delay_wait_to_elapse(minutes=self._incubation_mixing_time)
 
         self.tempdeck_deactivate()
 
