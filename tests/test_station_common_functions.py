@@ -1,5 +1,5 @@
 import unittest
-from .common_stations import STATIONS
+from common_stations import STATIONS
 
 
 class FakeDelayPauseStation:
