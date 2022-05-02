@@ -1,6 +1,11 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.18.2
+
+- [Station B Technogenetics] Fixed *Pause* and *Delay* commands outside *start_at* 
+
+
 ## v2.18.1
 
 - [Station A Technogenetics Saliva] Fixed bug in rack 2 positions.
