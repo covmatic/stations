@@ -192,7 +192,7 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
             tp.air_gap(self._elute_air_gap)
             tp.drop_tip()
 
-    def final_transfer(self):
+    def final_transfer_movements(self):
         locs = []
         for i, (m, e) in enumerate(zip(self.mag_samples_m, self.pcr_samples_m)):
             side = -1 if i % 2 == 0 else 1
@@ -295,6 +295,15 @@ class StationBTechnogeneticsPairedPipette(StationBTechnogenetics):
         if self.run_stage("{} incubate".format(wash_name)):
             self.delay(self._wait_time_wash_on, self.get_msg_format("incubate on magdeck", self.get_msg("on")))
         self.remove_supernatant(vol, stage="remove {}".format(wash_name))
+
+    def set_flow_rate(self, aspirate: float = None, dispense: float = None):
+        if aspirate is not None:
+            self._m300.flow_rate.aspirate = aspirate
+            self._m300r.flow_rate.aspirate = aspirate
+        if dispense is not None:
+            self._m300.flow_rate.dispense = dispense
+            self._m300r.flow_rate.dispense = dispense
+
 
 
 class StationBTechnogeneticsSalivaPairedPipette(StationBTechnogeneticsPairedPipette, StationBTechnogeneticsSaliva):

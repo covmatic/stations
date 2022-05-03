@@ -207,13 +207,14 @@ class StationBTechnogenetics(StationB):
     
     def remove_wash(self, vol, stage: str = "remove wash"):
         self.remove_supernatant(vol, stage)
-    
+
     def final_transfer(self):
         self.set_magdeck(True)
-        self._m300.flow_rate.aspirate = self._final_transfer_rate_aspirate
-        self._m300.flow_rate.dispense = self._final_transfer_rate_dispense
-        n = len(list(zip(self.mag_samples_m, self.pcr_samples_m)))
+        self.set_flow_rate(aspirate=self._final_transfer_rate_aspirate, dispense=self._final_transfer_rate_dispense)
+        self.final_transfer_movements()
 
+    def final_transfer_movements(self):
+        n = len(list(zip(self.mag_samples_m, self.pcr_samples_m)))
         for i, (m, e) in enumerate(zip(self.mag_samples_m, self.pcr_samples_m)):
             if self.run_stage("final transfer {}/{}".format(i + 1, n)):
                 self.pick_up(self._m300)
@@ -245,6 +246,12 @@ class StationBTechnogenetics(StationB):
     def spin_and_remove(self, stage_name: str):
         self.spin(stage_name)
         self.second_removal(stage_name)
+
+    def set_flow_rate(self, aspirate: float = None, dispense: float = None):
+        if aspirate is not None:
+            self._m300.flow_rate.aspirate = aspirate
+        if dispense is not None:
+            self._m300.flow_rate.dispense = dispense
 
     def body(self):
         self.logger.info(self.get_msg_format("volume", "wash 1", self._wash_headroom * self._wash_1_vol * self._num_samples / 1000))
