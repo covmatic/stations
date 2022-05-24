@@ -84,7 +84,8 @@ def mix_bottom_top(pip,
                    pos: Callable[[float], Location],
                    bottom: float,
                    top: float,
-                   last_dispense_rate: float = None):
+                   last_dispense_rate: float = None,
+                   last_mix_volume: float = None):
     """Custom mixing procedure aspirating at the bottom and dispensing at the top
     :param pip: The pipette
     :param reps: Number of repeats
@@ -92,13 +93,18 @@ def mix_bottom_top(pip,
     :param pos: Method for getting the position
     :param bottom: Offset for the bottom position
     :param top: Offset for the top position
-    :param last_dispense_rate: Dispense rate for the last transfer to keep the tip clean"""
+    :param last_dispense_rate: Dispense rate for the last transfer to keep the tip clean
+    :param last_mix_volume: volume to mix the last time."""
 
     for i in range(reps):
-        if i+1 == reps and last_dispense_rate is not None:
-            pip.flow_rate.dispense = last_dispense_rate
-        pip.aspirate(vol, pos(bottom))
-        pip.dispense(vol, pos(top))
+        mix_vol = vol
+        if i+1 == reps:
+            if last_dispense_rate is not None:
+                pip.flow_rate.dispense = last_dispense_rate
+            if last_mix_volume is not None:
+                mix_vol = last_mix_volume
+        pip.aspirate(mix_vol, pos(bottom))
+        pip.dispense(mix_vol, pos(top))
 
 
 def mix_walk(

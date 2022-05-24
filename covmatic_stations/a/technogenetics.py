@@ -303,7 +303,8 @@ class StationATechnogenetics48Saliva(StationATechnogenetics48):
     def __init__(
             self,
             lys_mix_repeats: int = 3,
-            lys_mix_last_rate=300,
+            lys_mix_last_rate=100,
+            lys_mix_last_volume=250,
             lys_mix_volume=500,
             sample_lateral_air_gap=25,
             sample_lateral_top_height=3,
@@ -316,6 +317,7 @@ class StationATechnogenetics48Saliva(StationATechnogenetics48):
         super(StationATechnogenetics48Saliva, self).__init__(
             lys_mix_repeats=lys_mix_repeats,
             lys_mix_last_rate=lys_mix_last_rate,
+            lys_mix_last_volume=lys_mix_last_volume,
             lys_mix_volume=lys_mix_volume,
             sample_lateral_air_gap=sample_lateral_air_gap,
             sample_lateral_top_height=sample_lateral_top_height,

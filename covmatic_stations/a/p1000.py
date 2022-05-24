@@ -128,7 +128,8 @@ class StationAP1000(StationA):
             pos=dest.bottom,
             bottom=self._dest_headroom_height,
             top=dest_with_volume.height,
-            last_dispense_rate=self._lys_mix_last_rate
+            last_dispense_rate=self._lys_mix_last_rate,
+            last_mix_volume=self._lys_mix_last_volume
         )
 
         if self._air_gap_sample_before:
