@@ -1,5 +1,5 @@
 from ..multi_tube_source import MultiTubeSource
-from ..utils import MoveWithSpeed
+from ..utils import MoveWithSpeed, mix_bottom_top
 from .p1000 import StationAP1000
 from .reload import StationAReloadMixin
 from .copan_24 import Copan24Specs
@@ -302,14 +302,14 @@ class StationATechnogenetics48(StationATechnogeneticsReload):
 class StationATechnogenetics48Saliva(StationATechnogenetics48):
     def __init__(
             self,
-            air_gap_sample_before=300,
+            air_gap_sample_before=200,
             deepwell_vertical_speed=25,
             deepwell_after_dispense_touch_border=True,
-            lys_mix_repeats: int = 3,
+            lys_mix_repeats: int = 4,
             lys_mix_volume=500,
             lysis_mix_rate=800,
             lys_mix_last_rate=100,
-            lys_mix_last_volume=150,
+            lys_mix_last_volume=200,
             sample_lateral_air_gap=25,
             sample_lateral_top_height=3,
             sample_lateral_x_move=-10,
@@ -344,6 +344,27 @@ class StationATechnogenetics48Saliva(StationATechnogenetics48):
                 'source tuberack ' + str(i + 1)
             ) for i, slot in enumerate(self._source_racks_slots)
         ]
+
+    def transfer_sample_mix(self, well, height1: float, height2: float):
+        """ Just another mixing function to have a clean tip before ejecting """
+        if self._lys_mix_repeats:
+            for i in range(self._lys_mix_repeats):
+                if self._lys_mix_repeats > 1:
+                    vol_to_mix = round((self._lys_mix_volume - self._lys_mix_last_volume) * (1 - (i/(self._lys_mix_repeats-1)))
+                                       + self._lys_mix_last_volume)
+                else:
+                    vol_to_mix = self._lys_mix_volume
+
+                self.logger.info("Decremental mix with volume: {}".format(vol_to_mix))
+                mix_bottom_top(
+                    pip=self._p_main,
+                    reps=1,
+                    vol=vol_to_mix,
+                    pos=well.bottom,
+                    bottom=height1,
+                    top=height2,
+                    last_dispense_rate=self._lys_mix_last_rate if i == (self._lys_mix_repeats-1) else None
+                )
 
 if __name__ == "__main__":
     StationATechnogenetics48(num_samples=96, metadata={'apiLevel': '2.7'}).simulate()

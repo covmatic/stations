@@ -134,16 +134,7 @@ class StationAP1000(StationA):
         self._p_main.flow_rate.aspirate = self._lysis_rate_mix
         self._p_main.flow_rate.dispense = self._lysis_rate_mix
 
-        mix_bottom_top(
-            pip=self._p_main,
-            reps=self._lys_mix_repeats,
-            vol=self._lys_mix_volume,
-            pos=dest.bottom,
-            bottom=self._dest_headroom_height,
-            top=dest_with_volume.height,
-            last_dispense_rate=self._lys_mix_last_rate,
-            last_mix_volume=self._lys_mix_last_volume
-        )
+        self.transfer_sample_mix(dest, height1=self._dest_headroom_height, height2=dest_with_volume.height)
 
         self._p_main.flow_rate.aspirate = self._air_gap_rate
         self._p_main.flow_rate.dispense = self._air_gap_rate
@@ -155,16 +146,28 @@ class StationAP1000(StationA):
                 # Moving towards the side
                 side_movement = ((dest.length or dest.diameter)/2) - 1.5    # subtracting the tip radius at that height
                 self._p_main.move_to(dispense_top_point.move(Point(x=-side_movement)))
-                self._p_main.dispense(self._air_gap_sample_before/2)
+                self._p_main.dispense(self._air_gap_sample_before / 2)
             else:
                 self._p_main.dispense(self._air_gap_sample_before, dest.bottom(dest_with_volume.height))
         else:
             self._p_main.blow_out(location=dispense_top_point)
-        # self._p_main.move_to(dispense_top_point, speed=self._deepwell_vertical_speed)
 
+        self._p_main.move_to(dest.top(), speed=self._deepwell_vertical_speed)
         self._p_main.air_gap(self._air_gap_sample, height=0)
 
         self.drop(self._p_main)
+
+    def transfer_sample_mix(self, well, height1: float, height2: float):
+        mix_bottom_top(
+            pip=self._p_main,
+            reps=self._lys_mix_repeats,
+            vol=self._lys_mix_volume,
+            pos=well.bottom,
+            bottom=height1,
+            top=height2,
+            last_dispense_rate=self._lys_mix_last_rate,
+            last_mix_volume=self._lys_mix_last_volume
+        )
 
 
 if __name__ == "__main__":
