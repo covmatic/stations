@@ -11,8 +11,10 @@ class StationAP1000(StationA):
     
     def __init__(
         self,
+        deepwell_after_dispense_touch_border: bool = False,
         air_gap_sample: float = 25,
         air_gap_sample_before: float = 25,
+        air_gap_rate: float = 800,
         dest_above_liquid_height: float = 15,
         main_pipette: str = 'p1000_single_gen2',
         main_tiprack: str = 'opentrons_96_filtertiprack_1000ul',
@@ -45,6 +47,8 @@ class StationAP1000(StationA):
             source_racks_definition_filepath=source_racks_definition_filepath,
             **kwargs
         )
+        self._deepwell_after_dispense_touch_border = deepwell_after_dispense_touch_border
+        self._air_gap_rate = air_gap_rate
         self._air_gap_sample_before = air_gap_sample_before
         self._dest_above_liquid_height = dest_above_liquid_height
         self._sample_vertical_speed = sample_vertical_speed
@@ -72,8 +76,8 @@ class StationAP1000(StationA):
             super(StationAP1000, self)._load_source_racks()
 
     def transfer_sample(self, source, dest):
-        self._p_main.flow_rate.aspirate = self._sample_aspirate
-        self._p_main.flow_rate.dispense = self._sample_dispense
+        self._p_main.flow_rate.aspirate = self._air_gap_rate
+        self._p_main.flow_rate.dispense = self._air_gap_rate
 
         self.logger.debug("transferring from {} to {}".format(source, dest))
         self.pick_up(self._p_main)
@@ -88,6 +92,10 @@ class StationAP1000(StationA):
         # Aspirating sample
         if self._air_gap_sample_before:
             self._p_main.aspirate(self._air_gap_sample_before, source.top())
+
+        self._p_main.flow_rate.aspirate = self._sample_aspirate
+        self._p_main.flow_rate.dispense = self._sample_dispense
+
         with MoveWithSpeed(self._p_main,
                            from_point=source.bottom(self._source_height_start_slow),
                            to_point=source.bottom(self._source_headroom_height),
@@ -95,6 +103,9 @@ class StationAP1000(StationA):
             if self._mix_repeats:
                 self._p_main.mix(self._mix_repeats, self._mix_volume)
             self._p_main.aspirate(self._sample_volume)
+
+        self._p_main.flow_rate.aspirate = self._air_gap_rate
+        self._p_main.flow_rate.dispense = self._air_gap_rate
         self._p_main.air_gap(self._air_gap_sample)
 
         if self._sample_lateral_air_gap:
@@ -110,10 +121,12 @@ class StationAP1000(StationA):
         dest_with_volume = WellWithVolume(dest,
                                           initial_vol=self._sample_volume + self._lysis_volume if self._lysis_first else 0,
                                           headroom_height=0)
-        dispense_top_point = dest.bottom(dest_with_volume.height + self._dest_above_liquid_height)    # we must not go too high not to contaminate the well
+        # dispense_top_point = dest.bottom(dest_with_volume.height + self._dest_above_liquid_height)    # we must not go too high not to contaminate the well
+        dispense_top_point = dest.bottom(dest_with_volume.height + self._dest_above_liquid_height)
 
-        if self._lys_mix_repeats:   # if we will mix, just dispense sample as fast as mixing.
-            self._p_main.flow_rate.dispense = self._lysis_rate_mix
+
+        # if we will mix, just dispense sample as fast as mixing.
+        self._p_main.flow_rate.dispense = self._lysis_rate_mix if self._lys_mix_repeats else self._sample_dispense
 
         self._p_main.dispense(self._sample_volume + self._air_gap_sample + self._sample_lateral_air_gap,
                               dest.bottom(dest_with_volume.height))
@@ -132,12 +145,23 @@ class StationAP1000(StationA):
             last_mix_volume=self._lys_mix_last_volume
         )
 
+        self._p_main.flow_rate.aspirate = self._air_gap_rate
+        self._p_main.flow_rate.dispense = self._air_gap_rate
+
         if self._air_gap_sample_before:
-            self._p_main.dispense(self._air_gap_sample_before, dest.bottom(dest_with_volume.height))
+            if self._deepwell_after_dispense_touch_border:
+                self._p_main.dispense(self._air_gap_sample_before / 2, dest.bottom(dest_with_volume.height))
+                self._p_main.move_to(dispense_top_point, speed=self._deepwell_vertical_speed)
+                # Moving towards the side
+                side_movement = ((dest.length or dest.diameter)/2) - 1.5    # subtracting the tip radius at that height
+                self._p_main.move_to(dispense_top_point.move(Point(x=-side_movement)))
+                self._p_main.dispense(self._air_gap_sample_before/2)
+            else:
+                self._p_main.dispense(self._air_gap_sample_before, dest.bottom(dest_with_volume.height))
         else:
             self._p_main.blow_out(location=dispense_top_point)
+        # self._p_main.move_to(dispense_top_point, speed=self._deepwell_vertical_speed)
 
-        self._p_main.move_to(dispense_top_point, speed=self._deepwell_vertical_speed)
         self._p_main.air_gap(self._air_gap_sample, height=0)
 
         self.drop(self._p_main)
