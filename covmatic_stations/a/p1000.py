@@ -152,7 +152,7 @@ class StationAP1000(StationA):
         else:
             self._p_main.blow_out(location=dispense_top_point)
 
-        self._p_main.move_to(dest.top(), speed=self._deepwell_vertical_speed)
+        self._p_main.move_to(dispense_top_point, speed=self._deepwell_vertical_speed)
         self._p_main.air_gap(self._air_gap_sample, height=0)
 
         self.drop(self._p_main)
