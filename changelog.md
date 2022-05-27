@@ -1,6 +1,14 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.18.3
+
+- [Station B Technogenetics] Fixed bug caused by duplicated code
+- [Station A Saliva] Lower sample aspirate height
+- [Station A saliva] Better sample mix and lower contamination
+- [Station A] Sample transfer: greater air gap speed
+
+
 ## v2.18.2
 
 - [Station B Technogenetics] Fixed *Pause* and *Delay* commands outside *start_at* 
