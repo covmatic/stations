@@ -312,7 +312,7 @@ class StationATechnogenetics48Saliva(StationATechnogenetics48):
             lys_mix_last_rate=100,
             lys_mix_last_volume=200,
             sample_lateral_air_gap=25,
-            sample_lateral_top_height=3,
+            sample_lateral_top_height=11,
             sample_lateral_x_move=-10,
             sample_lateral_y_move=0,
             source_headroom_height=1,
@@ -357,7 +357,6 @@ class StationATechnogenetics48Saliva(StationATechnogenetics48):
                 else:
                     vol_to_mix = self._lys_mix_volume
 
-                self.logger.info("Decremental mix with volume: {}".format(vol_to_mix))
                 mix_bottom_top(
                     pip=self._p_main,
                     reps=1,
