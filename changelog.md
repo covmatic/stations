@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.18.4
+
+- [Station A Saliva] Raised lateral point after sample aspiration to avoid touching COPAN collection tube when mixed with saliva ones.
+
 ## v2.18.3
 
 - [Station B Technogenetics] Fixed bug caused by duplicated code
