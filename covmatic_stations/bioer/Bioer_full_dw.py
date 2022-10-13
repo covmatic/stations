@@ -1,6 +1,6 @@
 from ..station import Station, labware_loader, instrument_loader
 from ..multi_tube_source import MultiTubeSource
-from ..utils import uniform_divide, MoveWithSpeed
+from ..utils import uniform_divide, MoveWithSpeed, get_labware_json_from_filename
 import math
 import logging
 
@@ -12,11 +12,11 @@ class BioerProtocol(Station):
             pk_tube_bottom_height = 2,
             mm_tube_bottom_height = 2,
             pcr_bottom_headroom_height = 4.5,
-            dw_bottom_height = 13.5,
+            dw_bottom_height = 17.5,
             mix_bottom_height = 0.5,
-            mix_bottom_height_dw = -1.8,
+            mix_bottom_height_dw = 2.2,
             mm_plate_bottom_height = 1.2,
-            dw_elutes_bottom_height = -3,
+            dw_elutes_bottom_height = 1,
             pk_volume_tube = 320,
             vol_pk_offset = 5,
             vol_mm_offset = 10,
@@ -109,9 +109,11 @@ class BioerProtocol(Station):
     def load_tube_block(self):
         self._tube_block = self._ctx.load_labware(self._tube_block_model, '4', 'screw tube aluminum block for proteinase and mastermix')
 
-    @labware_loader(5, "_dests_plate")
+    @labware_loader(5, "_dests_plates")
     def load_dests_plate(self):
-        self._dests_plates = [self._ctx.load_labware('nest_96_wellplate_2ml_deep', slot, '96-deepwell sample plate' + str(e + 1))
+        self._dests_plates = [self._ctx.load_labware_from_definition(
+                                    get_labware_json_from_filename("bioer_96_wellplate_2000ul.json"),
+                                    slot, 'Bioer 96-deepwell sample plate 1' + str(e + 1))
                                 for e, slot in enumerate(self._dws)]
 
     @instrument_loader(0, "_p300")
