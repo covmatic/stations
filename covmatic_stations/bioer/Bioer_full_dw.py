@@ -273,7 +273,7 @@ class BioerProtocol(Station):
         dests_sample_elute = self._dest_plate_elute.columns()[:self.num_cols]
 
         if self._pause_between_mastermix_and_elutes:
-            self.dual_pause(self.get_msg_format("insert deepwell", ", ".join([str(d) for d in self._dests_plates])))
+            self.dual_pause(self.get_msg_format("insert deepwell", ", ".join([str(d) for d in self._dests_plates])), home=(False, False))
 
         self.logger.info("Trasferring elutes from deepwells to pcr plate")
 
