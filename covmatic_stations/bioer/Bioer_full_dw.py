@@ -35,6 +35,7 @@ class BioerProtocol(Station):
             mastermix_phase: bool = False,
             vertical_offset = -16,
             slow_vertical_speed: float = 25,
+            very_slow_vertical_speed: float = 5,
             elution_air_gap = 10,
             final_mix_blow_out_height = -2,
             ** kwargs):
@@ -75,9 +76,11 @@ class BioerProtocol(Station):
         self._vol_pk_offset = vol_pk_offset
         self._vol_mm_offset = vol_mm_offset
         self._slow_vertical_speed = slow_vertical_speed
+        self._very_slow_vertical_speed = very_slow_vertical_speed
         self._elution_air_gap = elution_air_gap
         self._final_mix_blow_out_height = final_mix_blow_out_height
         self._s300_fake_aspirate: bool = True
+        self._p300_fake_aspirate: bool = True
 
         if self._num_samples > 80:
             self._dws = ['8', '9', '5', '6', '2', '3']
@@ -296,7 +299,19 @@ class BioerProtocol(Station):
                 for t, o in samples:
                     #self.logger.info("samples:{}".format(samples))
                     self.pick_up(pipette)
-                    pipette.aspirate(self._elution_volume, t.bottom(self._dw_elutes_bottom_height))
+                    if self._p300_fake_aspirate or self._s300_fake_aspirate:
+                        pipette.aspirate(1, t.top())
+                        pipette.dispense(1)
+                        if pipette == self._p300:
+                            self._p300_fake_aspirate = False
+                        elif pipette == self._s300:
+                            self._s300_fake_aspirate = False
+
+                    with MoveWithSpeed(pipette,
+                                       from_point=t.bottom(self._dw_elutes_bottom_height + 3),
+                                       to_point=t.bottom(self._dw_elutes_bottom_height),
+                                       speed=self._very_slow_vertical_speed, move_close=False):
+                        pipette.aspirate(self._elution_volume)
                     pipette.air_gap(self._elution_air_gap)
                     pipette.dispense(self._elution_air_gap, o.top())
                     pipette.dispense(self._elution_volume, o.bottom(self._pcr_bottom_headroom_height))
