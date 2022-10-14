@@ -1,6 +1,12 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.18.5
+
+- [Bioer PCR] Lowered aspiration height from deepwell; changed labware to Bioer deepwell.
+- [covmatic-stations] Fixed *Opentrons* and *typing-extensions* packages version.
+
+
 ## v2.18.4
 
 - [Station A Saliva] Raised lateral point after sample aspiration to avoid touching COPAN collection tube when mixed with saliva ones.
