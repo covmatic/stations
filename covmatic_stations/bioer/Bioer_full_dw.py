@@ -184,37 +184,37 @@ class BioerProtocol(Station):
     def beads_destinations(self):
         return [row for plate in self._dests_plates for row in plate.rows()[0]][5::6]
 
-
-    def transfer_proteinase(self):
+    def transfer_proteinase(self, stage="transfer proteinase"):
         done_samples = 0
         num_cycle = 1
         num_samples_per_fill = 16
 
-        self.logger.info("Trasferring proteinase from tube to deepwells")
+        if self.run_stage(stage):
+            self.logger.info("Trasferring proteinase from tube to deepwells")
 
-        self.pick_up(self._s300)
-        while done_samples < self._num_samples:
-            samples_to_do = self.proteinase_destinations_unique[done_samples:(done_samples + num_samples_per_fill)]
-            # self.logger.info("Cycle {} - samples to do: {}".format(num_cycle, samples_to_do))
-            # self.logger.info(
-            #     "PK:Cycle {} - before filling: samples done: {}, samples to do: {}".format(num_cycle, done_samples,
-            #                                                                                len(samples_to_do)))
-            if num_cycle > 1:
-                self._vol_pk_offset = 0
-            vol_pk = len(samples_to_do) * self._pk_volume
-            if num_cycle == 1:
-                self._s300.aspirate(self._vol_pk_offset, self._tube_block.wells()[0].bottom(self._pk_tube_bottom_height))
-            self._pk_tube_source.prepare_aspiration(vol_pk, self._pk_tube_bottom_height)
-            self._pk_tube_source.aspirate(self._s300)
-            #self.logger.info("Aspirating {} at: {} mm".format(vol_pk, self._pk_tube_bottom_height))
-            for s, ss in enumerate(samples_to_do):
-                self._s300.dispense(self._pk_volume, ss.bottom(self._dw_bottom_height))
-                self._s300.touch_tip(ss, 0.6, self._vertical_offset)
-            done_samples += num_samples_per_fill
-            # self.logger.info("PK:Cycle {} - after distribution: samples done: {}".format(num_cycle, done_samples))
-            num_cycle += 1
-        if self._s300.has_tip:
-            self.drop(self._s300)
+            self.pick_up(self._s300)
+            while done_samples < self._num_samples:
+                samples_to_do = self.proteinase_destinations_unique[done_samples:(done_samples + num_samples_per_fill)]
+                # self.logger.info("Cycle {} - samples to do: {}".format(num_cycle, samples_to_do))
+                # self.logger.info(
+                #     "PK:Cycle {} - before filling: samples done: {}, samples to do: {}".format(num_cycle, done_samples,
+                #                                                                                len(samples_to_do)))
+                if num_cycle > 1:
+                    self._vol_pk_offset = 0
+                vol_pk = len(samples_to_do) * self._pk_volume
+                if num_cycle == 1:
+                    self._s300.aspirate(self._vol_pk_offset, self._tube_block.wells()[0].bottom(self._pk_tube_bottom_height))
+                self._pk_tube_source.prepare_aspiration(vol_pk, self._pk_tube_bottom_height)
+                self._pk_tube_source.aspirate(self._s300)
+                #self.logger.info("Aspirating {} at: {} mm".format(vol_pk, self._pk_tube_bottom_height))
+                for s, ss in enumerate(samples_to_do):
+                    self._s300.dispense(self._pk_volume, ss.bottom(self._dw_bottom_height))
+                    self._s300.touch_tip(ss, 0.6, self._vertical_offset)
+                done_samples += num_samples_per_fill
+                # self.logger.info("PK:Cycle {} - after distribution: samples done: {}".format(num_cycle, done_samples))
+                num_cycle += 1
+            if self._s300.has_tip:
+                self.drop(self._s300)
 
 
     def mix_beads(self):
@@ -272,7 +272,7 @@ class BioerProtocol(Station):
             self._mm_tube_source.prepare_aspiration(vol_mm, min_height=self._mm_tube_bottom_height)
             self._mm_tube_source.aspirate(self._s300)
 
-    def transfer_elutes(self):
+    def transfer_elutes(self, stage="transfer elutes"):
         set_of_source = math.ceil(self._num_samples / self._max_sample_per_dw)
         source_plate = [row for plate in self._dests_plates for row in plate.columns()[4::6]]
         dests_sample_elute = self._dest_plate_elute.columns()[:self.num_cols]
@@ -283,23 +283,23 @@ class BioerProtocol(Station):
         self.logger.info("Trasferring elutes from deepwells to pcr plate")
 
         done_col = 0
-        for e in range(set_of_source):
-            source_el = source_plate[done_col:(done_col + len(source_plate))]
-            for s, d in zip(source_el, dests_sample_elute):
-                samples = []
-                #self.logger.info("s,d:{}\n{}".format(s, d))
-                if any([w in d for w in self.control_dests_wells]):
-                    # self.logger.info("Using single pipette")
-                    for i, (w, z) in enumerate(zip(s, d)):
-                        if z not in self.control_dests_wells:
-                            samples.append((w, z))
-                    pipette = self._s300
-                else:
-                    samples.append((s[0], d[0]))
-                    pipette = self._p300
+        source_el = source_plate[done_col:(done_col + len(source_plate))]
+        for i, (s, d) in enumerate(zip(source_el, dests_sample_elute)):
+            samples_and_pipette = []
+            if any([w in d for w in self.control_dests_wells]):
+                # self.logger.info("Using single pipette")
+                for w, z in zip(s, d):
+                    if z not in self.control_dests_wells:
+                        samples_and_pipette.append((w, z, self._s300))
+            else:
+                samples_and_pipette.append((s[0], d[0], self._p300))
 
-                for t, o in samples:
-                    #self.logger.info("samples:{}".format(samples))
+            self.logger.info("Calculated samples list: \n{}")
+            for x in samples_and_pipette:
+                self.logger.info("{}".format(x))
+
+            for j, (t, o, pipette) in enumerate(samples_and_pipette):
+                if self.run_stage("{} {} {}".format(stage, i+1, "{}/{}".format(j+1, len(samples_and_pipette)) if len(samples_and_pipette)>1 else "")):
                     self.pick_up(pipette)
                     if self._p300_fake_aspirate or self._s300_fake_aspirate:
                         pipette.aspirate(1, t.top())
@@ -321,7 +321,7 @@ class BioerProtocol(Station):
                     pipette.blow_out(o.top(self._final_mix_blow_out_height))
                     pipette.air_gap(self._elution_air_gap)
                     self.drop(pipette)
-                done_col = done_col + len(source_plate)
+            done_col = done_col + len(source_plate)
 
     def body(self):
 
@@ -381,7 +381,6 @@ class BioerProtocol(Station):
         #transfer_proteinase
         if self.transfer_proteinase_phase:
             self.pause(pk_requirements, home=False)
-            self.stage = "Transfer proteinase"
             self.transfer_proteinase()
 
         #mix_beads
@@ -397,12 +396,10 @@ class BioerProtocol(Station):
         if self._mastermix_phase:
             self.pause(control_positions, home=False)
             self.pause(mmix_requirements, home=False)
-            self.stage = "Transfer mastermix"
             self.transfer_mastermix()
 
         #transfer elutes
         if self.transfer_elutes_phase:
-            self.stage = "Transfer elutes"
             self.transfer_elutes()
 
     def drop(self, pip):
