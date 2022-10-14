@@ -38,6 +38,7 @@ class BioerProtocol(Station):
             very_slow_vertical_speed: float = 5,
             elution_air_gap = 10,
             final_mix_blow_out_height = -2,
+            p300_tip_max_volume: float = 200,        # ul max volume managed by tips
             ** kwargs):
 
         super(BioerProtocol, self).__init__(
@@ -81,6 +82,7 @@ class BioerProtocol(Station):
         self._final_mix_blow_out_height = final_mix_blow_out_height
         self._s300_fake_aspirate: bool = True
         self._p300_fake_aspirate: bool = True
+        self._p300_tip_max_volume = p300_tip_max_volume
 
         if self._num_samples > 80:
             self._dws = ['8', '9', '5', '6', '2', '3']
@@ -228,47 +230,47 @@ class BioerProtocol(Station):
         if self._p300.has_tip:
             self.drop(self._p300)
 
-
-    def transfer_mastermix(self):
-        done_samples = 0
-        num_cycle = 1
-        num_samples_per_fill = 8
-
-        samples_with_controls = self.sample_dests_wells
-        samples_with_controls += self.control_wells_not_in_samples
+    def transfer_mastermix(self, stage="transfer mastermix"):
+        samples_with_controls = self.sample_dests_wells + self.control_wells_not_in_samples
 
         self.logger.info("Trasferring mastermix from tube to pcr plate")
 
-        self.pick_up(self._s300)
+        for i, sample in enumerate(samples_with_controls):
+            remaining_samples = len(samples_with_controls) - i
 
-        while done_samples < self._num_samples + len(self.control_wells_not_in_samples):
-            samples_to_do = samples_with_controls[done_samples:(done_samples + num_samples_per_fill)]
-            # self.logger.info("Cycle {} - samples to do: {}".format(num_cycle, samples_to_do))
-            # self.logger.info("MM:Cycle {} - before filling: samples done: {}, samples to do: {}".format(num_cycle,
-            #                                                                     done_samples, len(samples_to_do)))
+            if self.run_stage("{} {}/{}".format(stage,  i + 1, len(samples_with_controls))):
+                if not self._s300.has_tip:
+                    self.pick_up(self._s300)
 
-            if self._s300_fake_aspirate:
-                self._s300_fake_aspirate = False
-                self._s300.aspirate(10, self._tube_block.wells()[0].top())
-                self._s300.dispense(10)
-            if num_cycle > 1:
-                self._vol_mm_offset = 0
-            vol_mm = (len(samples_to_do) * self._mm_volume) + self._vol_mm_offset
-            self._mm_tube_source.prepare_aspiration(vol_mm, min_height=self._mm_tube_bottom_height)
-            self._mm_tube_source.aspirate(self._s300)
-            # self.logger.info("Aspirating at: {} mm".format(self._mm_tube_bottom_height))
-            for s, ss in enumerate(samples_to_do):
+                if self._s300_fake_aspirate:
+                    self._s300_fake_aspirate = False
+                    self._s300.aspirate(10, self._tube_block.wells()[0].top())
+                    self._s300.dispense(10)
+
+                self.check_and_aspirate_mmix(remaining_samples)
+
                 with MoveWithSpeed(self._s300,
-                                   from_point=ss.bottom(self._mm_plate_bottom_height + 5),
-                                   to_point=ss.bottom(self._mm_plate_bottom_height),
+                                   from_point=sample.bottom(self._mm_plate_bottom_height + 5),
+                                   to_point=sample.bottom(self._mm_plate_bottom_height),
                                    speed=self._slow_vertical_speed, move_close=False):
                     self._s300.dispense(self._mm_volume)
-            done_samples += num_samples_per_fill
-            # self.logger.info("MM:Cycle {} - after distribution: samples done: {}".format(num_cycle, done_samples))
-            num_cycle += 1
         if self._s300.has_tip:
             self.drop(self._s300)
 
+    def check_and_aspirate_mmix(self, num_samples):
+        '''This function will check if the tip has mastermix to dispense to one sample.
+            if the tip is empty it aspirates the maximum needed volume '''
+
+        if self._s300.current_volume < self._mm_volume:
+            max_num_samples = (self._p300_tip_max_volume - self._vol_mm_offset) // self._mm_volume
+            num_samples = min(max_num_samples, num_samples)
+
+            vol_mm = self._vol_mm_offset if self._s300.current_volume < self._vol_mm_offset else 0
+            vol_mm += (num_samples * self._mm_volume)
+            self.logger.info("Calculating mastermix: {}ul; num samples: {}".format(vol_mm, num_samples))
+
+            self._mm_tube_source.prepare_aspiration(vol_mm, min_height=self._mm_tube_bottom_height)
+            self._mm_tube_source.aspirate(self._s300)
 
     def transfer_elutes(self):
         set_of_source = math.ceil(self._num_samples / self._max_sample_per_dw)
