@@ -44,7 +44,7 @@ setuptools.setup(
         'cherrypy',
         'requests',
         'ipaddress',
-        'typing-extensions',
+        'typing-extensions==3.10.0.0',
         'parse'
     ],
     classifiers=[
