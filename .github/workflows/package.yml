@@ -40,7 +40,8 @@ jobs:
                  station_b_technogenetics_saliva,
                  station_b_technogenetics_saliva_paired_pipette,
                  station_c_technogenetics_m20,
-                 station_c_technogenetics_m300]
+                 station_c_technogenetics_m300,
+                 station_bioer_preparation_to_pcr]
     steps:
     - uses: actions/checkout@v2
     - name: Install
