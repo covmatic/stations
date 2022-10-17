@@ -242,11 +242,7 @@ class BioerProtocol(Station):
                 if not self._s300.has_tip:
                     self.pick_up(self._s300)
 
-                if self._s300_fake_aspirate:
-                    self._s300_fake_aspirate = False
-                    self._s300.aspirate(10, self._tube_block.wells()[0].top())
-                    self._s300.dispense(10)
-
+                self.fake_aspirate_mmix()
                 self.check_and_aspirate_mmix(remaining_samples)
 
                 with MoveWithSpeed(self._s300,
@@ -271,6 +267,12 @@ class BioerProtocol(Station):
 
             self._mm_tube_source.prepare_aspiration(vol_mm, min_height=self._mm_tube_bottom_height)
             self._mm_tube_source.aspirate(self._s300)
+
+    def fake_aspirate_mmix(self):
+        if self._s300_fake_aspirate:
+            self._s300_fake_aspirate = False
+            self._s300.aspirate(10, self._mm_tube_source.get_current_well().top())
+            self._s300.dispense(10)
 
     def transfer_elutes(self, stage="transfer elutes"):
         set_of_source = math.ceil(self._num_samples / self._max_sample_per_dw)

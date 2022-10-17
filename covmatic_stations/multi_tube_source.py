@@ -1,5 +1,7 @@
 import logging
 
+from opentrons.protocol_api.labware import Well
+
 from .utils import WellWithVolume, MoveWithSpeed
 
 
@@ -26,12 +28,35 @@ class MultiTubeSource(object):
         self.logger.debug("{}: appended {} with {}ul".format(self._name, source, available_volume))
         self.logger.debug("Now sources is: {}".format(self._source_tubes_and_vol))
 
-    def prepare_aspiration(self, volume, fixed_height: float = None, min_height: float = 0.5):
+    def get_current_well(self) -> Well:
+        """ Get the current tube that will be chosen to aspirate from"""
+        for source_and_vol in self._source_tubes_and_vol:
+            if source_and_vol["available_volume"] > 0:
+                return source_and_vol["source"]
+        else:
+            self.logger.debug("No tube with left volume found")
+            return None
+
+    def use_volume_only(self, volume):
+        """ This function simulates the aspiration of a volume;
+            it will mark the passed volume as *used* in the multi tube source but does not execute any aspiration """
+        self.logger.info("Marking volume as used: {}".format(volume))
+        self.prepare_aspiration(volume, fill_aspiration_list=False)
+
+    def prepare_aspiration(self,
+                           volume,
+                           fixed_height: float = None,
+                           min_height: float = 0.5,
+                           fill_aspiration_list: bool = True):
         """ Prepare the aspiration list for the requested volume
         @parameter volume: the volume in ul to aspirate;
         @parameter fixed_height: if set force the aspiration at this height from bottom;
-        @parameter min_height: the minimum height to reach from bottom with automatic height calculation"""
-        self._aspirate_list = []
+        @parameter min_height: the minimum height to reach from bottom with automatic height calculation
+        @parameter fill_aspiration_list: it causes the function to effectively prepare the aspiration list.
+        """
+        if self._aspirate_list:
+            raise Exception("{}: Aspirate list not empty - two prepare_aspiration called without calling aspirate.")
+
         left_volume = volume
         for source_and_vol in self._source_tubes_and_vol:
             if source_and_vol["available_volume"] >= left_volume:
@@ -49,13 +74,13 @@ class MultiTubeSource(object):
                         min_height=min_height).height
                 else:
                     height = fixed_height
-                self._aspirate_list.append(dict(source=source_and_vol["source"], vol=aspirate_vol, height=height))
+                if fill_aspiration_list:
+                    self._aspirate_list.append(dict(source=source_and_vol["source"], vol=aspirate_vol, height=height))
 
             if left_volume == 0:
                 break
         else:
             raise Exception("{}: no volume left in source tubes.".format(self._name))
-
         self.logger.debug("{} sources: {}".format(self._name, self._source_tubes_and_vol))
 
     def aspirate(self, pip):
@@ -69,6 +94,7 @@ class MultiTubeSource(object):
                     pip.aspirate(a["vol"])
             else:
                 pip.aspirate(a["vol"], a["source"].bottom(a["height"]))
+        self._aspirate_list = []
 
     @property
     def locations_str(self):
