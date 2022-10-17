@@ -294,10 +294,6 @@ class BioerProtocol(Station):
             else:
                 samples_and_pipette.append((s[0], d[0], self._p300))
 
-            self.logger.info("Calculated samples list: \n{}")
-            for x in samples_and_pipette:
-                self.logger.info("{}".format(x))
-
             for j, (t, o, pipette) in enumerate(samples_and_pipette):
                 if self.run_stage("{} {} {}".format(stage, i+1, "{}/{}".format(j+1, len(samples_and_pipette)) if len(samples_and_pipette)>1 else "")):
                     self.pick_up(pipette)
