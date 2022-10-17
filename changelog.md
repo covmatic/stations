@@ -1,6 +1,11 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.18.6
+
+- [Bioer PCR] Introduced *start at* to restart the run where needed;
+- [MultiTubeSource] Added function to retrieve current aspirate tube and fake aspiration (*use_volume_only*) ease *start_at* management
+
 ## v2.18.5
 
 - [Bioer PCR] Lowered aspiration height from deepwell; changed labware to Bioer deepwell.
