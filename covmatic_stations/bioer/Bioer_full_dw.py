@@ -418,19 +418,36 @@ class BioerProtocol(Station):
 #             ** kwargs)
 
 class BioerPreparationToPcr(BioerProtocol):
-    def __init__(self, ** kwargs):
+    def __init__(self,
+                 transfer_elutes_phase: bool = True,
+                 ** kwargs):
         super(BioerPreparationToPcr, self).__init__(
             mastermix_phase = True,
-            transfer_elutes_phase = True,
+            transfer_elutes_phase = transfer_elutes_phase,
             ** kwargs)
 
 
 class BioerPreparationToPcrTechogenetics(BioerPreparationToPcr):
-    def __init__(self, ** kwargs):
+    _protocol_description = "Technogenetics mastermix and elutes distribution"
+    def __init__(self,
+                 mm_volume=20,
+                 elution_volume=20,
+                 mm_volume_tube=1300,
+                 transfer_elutes_phase: bool = True,
+                 ** kwargs):
         super(BioerPreparationToPcrTechogenetics, self).__init__(
-            mm_volume = 20,
-            elution_volume = 20,
-            mm_volume_tube = 1300,
+            mm_volume = mm_volume,
+            elution_volume = elution_volume,
+            mm_volume_tube = mm_volume_tube,
+            transfer_elutes_phase = transfer_elutes_phase,
+            **kwargs)
+
+
+class DistributeMastermixTechnogenetics(BioerPreparationToPcrTechogenetics):
+    _protocol_description = "Technogenetics mastermix distribution"
+    def __init__(self, **kwargs):
+        super(DistributeMastermixTechnogenetics, self).__init__(
+            transfer_elutes_phase=False,
             **kwargs)
 
 # protocol for loading in Opentrons App or opentrons_simulate
