@@ -521,11 +521,11 @@ class Station(metaclass=StationMeta):
                 self.dual_pause("debug mode", home=(False, False))
 
             self.body()
-
+            self.logger.info("Body terminated")
             self.assert_run_stage_has_been_executed()
-
+            self.logger.info("Run stage asserted")
             self.cleanup()
-
+            self.logger.info("Cleanup executed")
             if not self._ctx.is_simulating():
                 self._sound_manager.play("finish")
 

@@ -401,6 +401,7 @@ class BioerProtocol(Station):
         #transfer elutes
         if self.transfer_elutes_phase:
             self.transfer_elutes()
+        self.logger.info("Bioer protocl terminated")
 
     def drop(self, pip):
         if self._debug_mode:
