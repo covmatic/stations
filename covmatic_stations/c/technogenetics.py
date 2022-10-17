@@ -127,22 +127,5 @@ class StationCTechnogenetics(StationC):
                 self.logger.info(r)
 
 
-class StationCTechnogeneticsM300(StationCTechnogenetics):
-    # variable names are kept as before for easy inheritance
-    # although pipette is now a m300 
-    @labware_loader(1, "_tips20")
-    def load_tips20(self):
-        self._tips20 = [
-            self._ctx.load_labware('opentrons_96_filtertiprack_200ul', slot)
-            for slot in self._tipracks_slots
-        ]
-    
-    @instrument_loader(0, "_m20")
-    def load_m20(self):
-        self._m20 = self._ctx.load_instrument('p300_multi_gen2', 'right', tip_racks=self._tips20)
-        self._m20.flow_rate.aspirate = self._aspirate_rate
-        self._m20.flow_rate.dispense = self._dispense_rate
-
-
 if __name__ == "__main__":
     StationCTechnogenetics(num_samples=96, metadata={'apiLevel': '2.7'}).simulate()
