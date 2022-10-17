@@ -39,6 +39,7 @@ class BioerProtocol(Station):
             elution_air_gap = 10,
             final_mix_blow_out_height = -2,
             p300_tip_max_volume: float = 200,        # ul max volume managed by tips
+            mastermix_type: str = "",
             ** kwargs):
 
         super(BioerProtocol, self).__init__(
@@ -83,6 +84,7 @@ class BioerProtocol(Station):
         self._s300_fake_aspirate: bool = True
         self._p300_fake_aspirate: bool = True
         self._p300_tip_max_volume = p300_tip_max_volume
+        self._mastermix_type: str = mastermix_type
 
         if self._num_samples > 80:
             self._dws = ['8', '9', '5', '6', '2', '3']
@@ -369,8 +371,9 @@ class BioerProtocol(Station):
 
         [self._mm_tube_source.append_tube_with_vol(t, available_volume) for t in self._tube_block.wells()[len(self._tube_block.wells())-num_tubes::]]
 
-        self.logger.info("We need {} tubes with {}ul of mastermix each in {}".format(num_tubes,
+        self.logger.info("We need {} tubes with {}ul of {} mastermix each in {}".format(num_tubes,
                                                                                       vol_per_tube,
+                                                                                      self._mastermix_type,
                                                                                       self._mm_tube_source.locations_str))
         mmix_requirements = self.get_msg_format("load mm tubes",
                                            num_tubes,
@@ -429,6 +432,7 @@ class BioerPreparationToPcr(BioerProtocol):
 
 class BioerPreparationToPcrTechogenetics(BioerPreparationToPcr):
     _protocol_description = "Technogenetics mastermix and elutes distribution"
+    
     def __init__(self,
                  mm_volume=20,
                  elution_volume=20,
@@ -440,11 +444,13 @@ class BioerPreparationToPcrTechogenetics(BioerPreparationToPcr):
             elution_volume = elution_volume,
             mm_volume_tube = mm_volume_tube,
             transfer_elutes_phase = transfer_elutes_phase,
+            mastermix_type = "KHB",
             **kwargs)
 
 
 class DistributeMastermixTechnogenetics(BioerPreparationToPcrTechogenetics):
     _protocol_description = "Technogenetics mastermix distribution"
+
     def __init__(self, **kwargs):
         super(DistributeMastermixTechnogenetics, self).__init__(
             transfer_elutes_phase=False,
