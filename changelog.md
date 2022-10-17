@@ -1,6 +1,14 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.19.0
+
+### Note
+Labware of Station C is expected to change ==> Now it is the same as **Bioer PCR** station
+
+- [Station C Technogenetics] Created class *DistributeMastermixTechnogenetics* to distribute mastermix with Bioer station
+
+
 ## v2.18.6
 
 - [Bioer PCR] Introduced *start at* to restart the run where needed;
