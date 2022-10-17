@@ -250,13 +250,17 @@ class BioerProtocol(Station):
                                    to_point=sample.bottom(self._mm_plate_bottom_height),
                                    speed=self._slow_vertical_speed, move_close=False):
                     self._s300.dispense(self._mm_volume)
+            else:
+                # Stage not executed
+                self._mm_tube_source.use_volume_only(self._mm_volume)
         if self._s300.has_tip:
             self.drop(self._s300)
 
     def check_and_aspirate_mmix(self, num_samples):
         '''This function will check if the tip has mastermix to dispense to one sample.
-            if the tip is empty it aspirates the maximum needed volume '''
-
+            If the tip is empty it will aspirate the needed quantity to serve the num_samples passed
+            @param num_samples: num samples that needed to be served
+            @return: If the aspiration is needed '''
         if self._s300.current_volume < self._mm_volume:
             max_num_samples = (self._p300_tip_max_volume - self._vol_mm_offset) // self._mm_volume
             num_samples = min(max_num_samples, num_samples)
