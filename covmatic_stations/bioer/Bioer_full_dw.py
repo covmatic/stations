@@ -367,9 +367,7 @@ class BioerProtocol(Station):
             volume_to_distribute_to_pcr_plate * self._headroom_factor_mm + self._headroom_vol_from_tubes_to_pcr, self._mm_volume_tube)
         mm_tubes = self._tube_block.wells()[:num_tubes]
         available_volume = volume_to_distribute_to_pcr_plate / len(mm_tubes)
-        if self._headroom_vol_from_tubes_to_pcr > 0:
-            if self._vol_mm_offset < (self._headroom_vol_from_tubes_to_pcr / len(mm_tubes)):
-                available_volume += self._vol_mm_offset
+        available_volume += self._vol_mm_offset     # Adding volume for initial aspiration
         assert vol_per_tube > available_volume, \
             "Error in volume calculations: requested {}ul while total in tubes {}ul".format(available_volume, vol_per_tube)
 
