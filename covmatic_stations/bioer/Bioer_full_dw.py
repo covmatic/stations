@@ -26,6 +26,7 @@ class BioerProtocol(Station):
             mm_tube_vertical_speed = 25,
             headroom_vol_from_tubes_to_pcr = 60,
             headroom_vol_from_tubes_to_dw = 10,
+            headroom_factor_mm: float = 1,
             control_well_positions = ['G12', 'H12'],
             pause_between_mastermix_and_elutes: bool = True,
             tube_block_model: str = 'opentrons_24_aluminumblock_nest_2ml_screwcap',
@@ -67,6 +68,7 @@ class BioerProtocol(Station):
         self._control_well_positions = control_well_positions
         self._pk_tube_bottom_height = pk_tube_bottom_height
         self._headroom_vol_from_tubes_to_pcr = headroom_vol_from_tubes_to_pcr
+        self._headroom_factor_mm = headroom_factor_mm
         self._headroom_vol_from_tubes_to_dw = headroom_vol_from_tubes_to_dw
         self._pause_between_mastermix_and_elutes = pause_between_mastermix_and_elutes
         self._tube_block_model = tube_block_model
@@ -357,10 +359,12 @@ class BioerProtocol(Station):
 
         #tube_block_mm
         volume_for_controls = len(self.control_wells_not_in_samples) * self._mm_volume
+        self.logger.info("Calculated {} ul for controls: {}".format(volume_for_controls, self.control_wells_not_in_samples))
         volume_for_samples = self._mm_volume * self._num_samples
+        self.logger.info("Calcuated {} ul for samples".format(volume_for_samples))
         volume_to_distribute_to_pcr_plate = volume_for_samples + volume_for_controls
         num_tubes, vol_per_tube = uniform_divide(
-            volume_to_distribute_to_pcr_plate + self._headroom_vol_from_tubes_to_pcr, self._mm_volume_tube)
+            volume_to_distribute_to_pcr_plate * self._headroom_factor_mm + self._headroom_vol_from_tubes_to_pcr, self._mm_volume_tube)
         mm_tubes = self._tube_block.wells()[:num_tubes]
         available_volume = volume_to_distribute_to_pcr_plate / len(mm_tubes)
         if self._headroom_vol_from_tubes_to_pcr > 0:
@@ -375,6 +379,7 @@ class BioerProtocol(Station):
                                                                                       vol_per_tube,
                                                                                       self._mastermix_type,
                                                                                       self._mm_tube_source.locations_str))
+
         mmix_requirements = self.get_msg_format("load mm tubes",
                                            num_tubes,
                                            vol_per_tube,
@@ -438,7 +443,7 @@ class BioerPreparationToPcrTechogenetics(BioerPreparationToPcr):
                  elution_volume=20,
                  mm_volume_tube=1300,
                  transfer_elutes_phase: bool = True,
-                 ** kwargs):
+                 **kwargs):
         super(BioerPreparationToPcrTechogenetics, self).__init__(
             mm_volume = mm_volume,
             elution_volume = elution_volume,
@@ -454,6 +459,9 @@ class DistributeMastermixTechnogenetics(BioerPreparationToPcrTechogenetics):
     def __init__(self, **kwargs):
         super(DistributeMastermixTechnogenetics, self).__init__(
             transfer_elutes_phase=False,
+            headroom_factor_mm = 1.2,               # set 20% overhead for mmix transfer
+            headroom_vol_from_tubes_to_pcr = 0,     # set 0ul additive overhead for mmix transfer
+            control_well_positions = [],
             **kwargs)
 
 # protocol for loading in Opentrons App or opentrons_simulate
@@ -466,5 +474,5 @@ def run(ctx):
     return station.run(ctx)
 
 if __name__ == "__main__":
-    BioerProtocol(metadata={'apiLevel':'2.7'}).simulate()
+    DistributeMastermixTechnogenetics(metadata={'apiLevel':'2.7'}, num_samples=8).simulate()
 
