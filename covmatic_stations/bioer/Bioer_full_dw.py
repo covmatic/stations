@@ -116,7 +116,7 @@ class BioerProtocol(Station):
 
     @labware_loader(4, "_tube_block")
     def load_tube_block(self):
-        self._tube_block = self._ctx.load_labware(self._tube_block_model, '4', 'screw tube aluminum block for proteinase and mastermix')
+        self._tube_block = self._ctx.load_labware(self._tube_block_model, '4', 'aluminum block')
 
     @labware_loader(5, "_dests_plates")
     def load_dests_plate(self):
@@ -404,7 +404,8 @@ class BioerProtocol(Station):
 
         #transfer mastermix
         if self._mastermix_phase:
-            self.pause(control_positions, home=False)
+            if self._control_well_positions:
+                self.pause(control_positions, home=False)
             self.pause(mmix_requirements, home=False)
             self.transfer_mastermix()
 
