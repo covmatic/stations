@@ -1,12 +1,13 @@
 Covmatic Stations changelog
 ===========================
 
-## v2.19.1
+## v2.19.2
 
 ### Note: from LocalWebServer v2.11.0 Station C labware is changed ==> Now it is the same as **Bioer PCR** station
 
 - [Station C Technogenetics] Created class *DistributeMastermixTechnogenetics* to distribute KHB mastermix with Bioer station
 - [Bioer PCR] Small fix; fixed volume overhead to match Technogenetics KHB volumes
+- [Bioer PCR] Decreased speed exiting from mastermix tubes to avoid bubbles in tip.
 
 ## v2.18.6
 
