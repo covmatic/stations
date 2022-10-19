@@ -377,7 +377,6 @@ class BioerProtocol(Station):
                                                                                       vol_per_tube,
                                                                                       self._mastermix_type,
                                                                                       self._mm_tube_source.locations_str))
-
         mmix_requirements = self.get_msg_format("load mm tubes",
                                            num_tubes,
                                            vol_per_tube,
@@ -440,7 +439,7 @@ class BioerPreparationToPcrTechogenetics(BioerPreparationToPcr):
     def __init__(self,
                  mm_volume=20,
                  elution_volume=20,
-                 mm_volume_tube=1300,
+                 mm_volume_tube=1400,
                  transfer_elutes_phase: bool = True,
                  **kwargs):
         super(BioerPreparationToPcrTechogenetics, self).__init__(
