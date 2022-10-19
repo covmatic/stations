@@ -64,7 +64,7 @@ class BioerProtocol(Station):
         self._mm_plate_bottom_height = mm_plate_bottom_height
         self._dw_elutes_bottom_height = dw_elutes_bottom_height
         self._pk_tube_source = MultiTubeSource()
-        self._mm_tube_source = MultiTubeSource(vertical_speed=25)
+        self._mm_tube_source = MultiTubeSource(vertical_speed=15)
         self._control_well_positions = control_well_positions
         self._pk_tube_bottom_height = pk_tube_bottom_height
         self._headroom_vol_from_tubes_to_pcr = headroom_vol_from_tubes_to_pcr
