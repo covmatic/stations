@@ -40,7 +40,7 @@ class BioerProtocol(Station):
             elution_air_gap = 10,
             final_mix_blow_out_height = -2,
             p300_tip_max_volume: float = 200,        # ul max volume managed by tips
-            mastermix_type: str = "",
+            mastermix_type: str = "ELITECH",
             ** kwargs):
 
         super(BioerProtocol, self).__init__(
@@ -63,8 +63,9 @@ class BioerProtocol(Station):
         self._mix_bottom_height = mix_bottom_height
         self._mm_plate_bottom_height = mm_plate_bottom_height
         self._dw_elutes_bottom_height = dw_elutes_bottom_height
+        self._mastermix_type: str = mastermix_type
         self._pk_tube_source = MultiTubeSource()
-        self._mm_tube_source = MultiTubeSource(vertical_speed=15)
+        self._mm_tube_source = MultiTubeSource(vertical_speed=15, name=self._mastermix_type)
         self._control_well_positions = control_well_positions
         self._pk_tube_bottom_height = pk_tube_bottom_height
         self._headroom_vol_from_tubes_to_pcr = headroom_vol_from_tubes_to_pcr
@@ -86,7 +87,6 @@ class BioerProtocol(Station):
         self._s300_fake_aspirate: bool = True
         self._p300_fake_aspirate: bool = True
         self._p300_tip_max_volume = p300_tip_max_volume
-        self._mastermix_type: str = mastermix_type
 
         if self._num_samples > 80:
             self._dws = ['8', '9', '5', '6', '2', '3']
@@ -183,6 +183,10 @@ class BioerProtocol(Station):
         for d in self.proteinase_destinations:
             dests_pk_unique += d
         return dests_pk_unique
+
+    @property
+    def mastermix_tube_list(self):
+        return list(reversed(self._tube_block.wells()))
 
     @property
     def beads_destinations(self):
@@ -329,6 +333,31 @@ class BioerProtocol(Station):
                     self.drop(pipette)
             done_col = done_col + len(source_plate)
 
+    @property
+    def mastermix_needed_volume(self):
+        """ Calculates the needed mastermix volume to ditribute to plate"""
+        volume_for_controls = len(self.control_wells_not_in_samples) * self._mm_volume
+        self.logger.info(
+            "Calculated {} ul for controls: {}".format(volume_for_controls, self.control_wells_not_in_samples))
+        volume_for_samples = self._mm_volume * self._num_samples
+        self.logger.info("Calcuated {} ul for samples".format(volume_for_samples))
+        return volume_for_samples + volume_for_controls
+
+    @property
+    def mastermix_total_volume(self):
+        """ Calculates the total volume of the mastermix: needed plus overheads """
+        return self.mastermix_needed_volume * self._headroom_factor_mm + self._headroom_vol_from_tubes_to_pcr
+
+    def calculate_and_load_mastermix_tubes(self):
+        num_tubes, vol_per_tube = uniform_divide(
+            self.mastermix_total_volume, self._mm_volume_tube)
+        available_volume = self.mastermix_needed_volume / num_tubes
+        available_volume += self._vol_mm_offset  # Adding volume for initial aspiration
+        assert vol_per_tube > available_volume, \
+            "Error in volume calculations: requested {}ul while total in tubes {}ul".format(available_volume,
+                                                                                            vol_per_tube)
+        [self._mm_tube_source.append_tube_with_vol(t, available_volume) for t in self.mastermix_tube_list[:num_tubes]]
+
     def body(self):
 
         num_dw = math.ceil(self._num_samples / self._max_sample_per_dw)
@@ -358,30 +387,13 @@ class BioerProtocol(Station):
 
 
         #tube_block_mm
-        volume_for_controls = len(self.control_wells_not_in_samples) * self._mm_volume
-        self.logger.info("Calculated {} ul for controls: {}".format(volume_for_controls, self.control_wells_not_in_samples))
-        volume_for_samples = self._mm_volume * self._num_samples
-        self.logger.info("Calcuated {} ul for samples".format(volume_for_samples))
-        volume_to_distribute_to_pcr_plate = volume_for_samples + volume_for_controls
-        num_tubes, vol_per_tube = uniform_divide(
-            volume_to_distribute_to_pcr_plate * self._headroom_factor_mm + self._headroom_vol_from_tubes_to_pcr, self._mm_volume_tube)
-        mm_tubes = self._tube_block.wells()[:num_tubes]
-        available_volume = volume_to_distribute_to_pcr_plate / len(mm_tubes)
-        available_volume += self._vol_mm_offset     # Adding volume for initial aspiration
-        assert vol_per_tube > available_volume, \
-            "Error in volume calculations: requested {}ul while total in tubes {}ul".format(available_volume, vol_per_tube)
 
-        [self._mm_tube_source.append_tube_with_vol(t, available_volume) for t in self._tube_block.wells()[len(self._tube_block.wells())-num_tubes::]]
+        self.calculate_and_load_mastermix_tubes()
 
-        self.logger.info("We need {} tubes with {}ul of {} mastermix each in {}".format(num_tubes,
-                                                                                      vol_per_tube,
-                                                                                      self._mastermix_type,
-                                                                                      self._mm_tube_source.locations_str))
         mmix_requirements = self.get_msg_format("load mm tubes",
-                                           num_tubes,
-                                           vol_per_tube,
-                                           self._mm_tube_source.locations_str)
-
+                                                self._mm_tube_source.num_tubes,
+                                                self._mm_tube_source)
+        self.logger.info(mmix_requirements)
         control_positions = self.get_msg_format("control positions",
                                                 self._control_well_positions)
 

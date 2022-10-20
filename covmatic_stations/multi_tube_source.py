@@ -1,8 +1,21 @@
 import logging
+from typing import Union, List
 
 from opentrons.protocol_api.labware import Well
 
 from .utils import WellWithVolume, MoveWithSpeed
+
+
+class LocationAndVol:
+    def __init__(self, location, volume):
+        self._location = location
+        self._volume = volume
+
+    def __str__(self):
+        ...
+
+    def __repr__(self):
+        return "{}ul in {}".format(self._volume, self._location)
 
 
 class MultiTubeSource(object):
@@ -101,6 +114,17 @@ class MultiTubeSource(object):
         return "{}: ".format(self._name) + \
                " ".join(["{}; ".format(sv['source'])
                          for sv in self._source_tubes_and_vol])
+
+    @property
+    def locations_and_vol(self) -> List[LocationAndVol]:
+        ret = []
+        for sv in self._source_tubes_and_vol:
+            ret.append(LocationAndVol(sv["source"], sv["available_volume"]))
+        return ret
+
+    @property
+    def num_tubes(self):
+        return len(self._source_tubes_and_vol)
 
     def __str__(self):
         return "{}: ".format(self._name) +\
