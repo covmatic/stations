@@ -474,6 +474,11 @@ class DistributeMastermixTechnogenetics(BioerPreparationToPcrTechogenetics):
             control_well_positions = [],
             **kwargs)
 
+    @property
+    def mastermix_tube_list(self):
+        """ With KHB mastermix we start from the A1 well to differentiate with Elitech mastermix (which start from the end)"""
+        return self._tube_block.wells()
+
 # protocol for loading in Opentrons App or opentrons_simulate
 # =====================================
 logging.getLogger(BioerProtocol.__name__).setLevel(logging.INFO)
