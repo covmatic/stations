@@ -1,3 +1,6 @@
+from typing import List
+
+from covmatic_stations.reagent import Reagent
 from ..station import Station, labware_loader, instrument_loader
 from ..multi_tube_source import MultiTubeSource
 from ..utils import uniform_divide, MoveWithSpeed, get_labware_json_from_filename
@@ -41,6 +44,7 @@ class BioerProtocol(Station):
             final_mix_blow_out_height = -2,
             p300_tip_max_volume: float = 200,        # ul max volume managed by tips
             mastermix_type: str = "ELITECH",
+            prepare_mastermix: bool = True,
             ** kwargs):
 
         super(BioerProtocol, self).__init__(
@@ -64,6 +68,7 @@ class BioerProtocol(Station):
         self._mm_plate_bottom_height = mm_plate_bottom_height
         self._dw_elutes_bottom_height = dw_elutes_bottom_height
         self._mastermix_type: str = mastermix_type
+        self._prepare_mastermix = prepare_mastermix
         self._pk_tube_source = MultiTubeSource()
         self._mm_tube_source = MultiTubeSource(vertical_speed=15, name=self._mastermix_type)
         self._control_well_positions = control_well_positions
@@ -87,6 +92,7 @@ class BioerProtocol(Station):
         self._s300_fake_aspirate: bool = True
         self._p300_fake_aspirate: bool = True
         self._p300_tip_max_volume = p300_tip_max_volume
+        self._reagents: List[Reagent] = []
 
         if self._num_samples > 80:
             self._dws = ['8', '9', '5', '6', '2', '3']
@@ -416,6 +422,8 @@ class BioerProtocol(Station):
             if self._control_well_positions:
                 self.pause(control_positions, home=False)
             self.pause(mmix_requirements, home=False)
+            if self._prepare_mastermix:
+                self.prepare_mastermix()
             self.transfer_mastermix()
 
         #transfer elutes
@@ -427,6 +435,20 @@ class BioerProtocol(Station):
             pip.return_tip()
         else:
             super(BioerProtocol, self).drop(pip)
+
+    def prepare_mastermix(self):
+        self.logger.info("Preparing mastermix work-in-progress")
+        self.load_reagents()
+        raise Exception
+
+    def load_reagents(self):
+        pcr_mix_volume = 100
+        pcr_mix_wells_and_volume = [(self._tube_block.wells_by_name()["A1"], pcr_mix_volume),
+                                    (self._tube_block.wells_by_name()["B1"], pcr_mix_volume)]
+        pcr_mix_params = {"aspirate_rate": 50, "dispense_rate": 50}         # TO be loaded from like a JSON file
+        pcr_mix_reagent = Reagent("Elitech PCR Mastermix", **pcr_mix_params)
+        [pcr_mix_reagent.add_well(w, v) for (w, v) in pcr_mix_wells_and_volume]
+
 
 # class BioerPreparationToBioer(BioerProtocol):
 #     def __init__(self, ** kwargs):
