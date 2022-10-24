@@ -126,6 +126,11 @@ class MultiTubeSource(object):
     def num_tubes(self):
         return len(self._source_tubes_and_vol)
 
+    @property
+    def total_vol(self):
+        return sum(sv["available_volume"] for sv in self._source_tubes_and_vol)
+
+
     def __str__(self):
         return "{}: ".format(self._name) +\
                " ".join(["{} with volume {}ul;".format(sv['source'], sv['available_volume'])
