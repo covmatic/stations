@@ -9,6 +9,11 @@ from covmatic_stations.multi_tube_source import MultiTubeSource
 
 DEFAUT_VOLUME_OVERHEAD: float = 0.05
 
+
+class ReagentException(Exception):
+    pass
+
+
 class Reagent:
 
     # ALLOWED_PIPETTE_PARAMS = ["aspirate_rate", "dispense_rate", "blow_out_rate", "touch_tip"]
@@ -47,8 +52,8 @@ class Reagent:
         self._logger.info("Setting parameters: {}".format(params))
 
 
-class Reagents:
-    """ A class that holds every loaded reagents """
+class ReagentsHelper:
+    """ A helper class that manages saving and restoring used volume for liquid """
     def __init__(self,
                  logger: logging.Logger = logging.getLogger(__name__)
                  ):
@@ -60,14 +65,17 @@ class Reagents:
     def loaded_reagents_names(self) -> [str]:
         return ["{}".format(r.name) for r in self._reagents]
 
-    def add_reagent(self, name: str, wells: [Well]):
+    def register_reagent(self, reagent: Reagent):
         """ Add a reagent
-            @parameter name: name of the reagent
-            @parameter wells: list of wells to assign to reagent
-            @parameter volume_overhead: percentage of volume present but not aspirated
+            @parameter reagent: the Reagent to be registered
         """
-        self._logger.info("Add reagent received: name {} wells {}".format(name, wells))
-        self._logger.info("Now reagents contains: {}".format(self.loaded_reagents_names))
-        if name not in self.loaded_reagents_names:
-            self._reagents.append(Reagent(name=name))
+        self._logger.info("Register reagent received: {}".format(reagent))
+        if not reagent:
+            raise ReagentException("Reagent passed is none")
+
+        if reagent not in self._reagents:
+            self._logger.info("Registering reagent {}".format(reagent))
+            self._reagents.append(reagent)
+        else:
+            self._logger.info("Reagent {} already loaded".format(reagent))
 
