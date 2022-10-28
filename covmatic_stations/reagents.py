@@ -5,6 +5,8 @@
 from opentrons.protocol_api.labware import Well
 import logging
 
+from typing import List
+
 from covmatic_stations.multi_tube_source import MultiTubeSource
 
 DEFAUT_VOLUME_OVERHEAD: float = 0.05
@@ -36,13 +38,17 @@ class Reagent:
         self._pipette_params = pipette_params
         self._logger.info("Received parameters: {}".format(self._pipette_params))
 
+    def __repr__(self):
+        return "{}".format(self._name)
+
     @property
     def name(self):
         return self._name
 
     def add_well(self, well: Well, volume: float):
         self._logger.info("Received well {} volume {}".format(well, volume))
-        assert type(well) != list, "List passed to well argument. You should pass single wells instead"
+        if type(well) != Well or issubclass(Well, well):
+            raise ReagentException("List passed to well argument. You should pass single wells instead")
 
         self._logger.info("Adding well {} with {}ul to reagent {}".format(well, volume, self._name))
         self._tubes.append_tube_with_vol(well, volume)

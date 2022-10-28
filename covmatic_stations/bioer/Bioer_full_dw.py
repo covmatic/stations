@@ -1,6 +1,6 @@
 from typing import List
 
-from covmatic_stations.reagents import Reagent, ReagentsHelpoer
+from covmatic_stations.reagents import Reagent, ReagentsHelper
 from ..station import Station, labware_loader, instrument_loader
 from ..multi_tube_source import MultiTubeSource
 from ..utils import uniform_divide, MoveWithSpeed, get_labware_json_from_filename
@@ -451,9 +451,12 @@ class BioerProtocol(Station):
 
         reagent_configuration = {}
 
-        reagents = Reagents()
+        rh = ReagentsHelper()
         pcr_mastermix = Reagent(name="Elitech PCR Mastermix")
-        reagents.register_reagent(pcr_mastermix)
+
+
+
+        rh.register_reagent(pcr_mastermix)
 
 
 
