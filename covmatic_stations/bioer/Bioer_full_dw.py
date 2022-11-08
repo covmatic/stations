@@ -300,12 +300,23 @@ class BioerProtocol(Station):
         source_el = source_plate[done_col:(done_col + len(source_plate))]
 
         for i, (s, d) in enumerate(zip(source_el, dests_sample_elute)):
+            controls = any([w in d for w in self.control_dests_wells])
+            column_not_full = any([w not in self.sample_dests_wells for w in d])
+
+            if controls:
+                self.logger.info("Found controls in this row")
+            if column_not_full:
+                self.logger.info("Found column not full of samples")
+
             samples_and_pipette = []
-            if any([w in d for w in self.control_dests_wells]):
-                # self.logger.info("Using single pipette")
+            if controls or column_not_full:
+                self.logger.info("We will use single pipetting")
                 for w, z in zip(s, d):
                     if z not in self.control_dests_wells:
-                        samples_and_pipette.append((w, z, self._s300))
+                        if z in self.sample_dests_wells:
+                            samples_and_pipette.append((w, z, self._s300))
+                        else:
+                            self.logger.info("Skipping well {} since it is not in samples list".format(z))
             else:
                 samples_and_pipette.append((s[0], d[0], self._p300))
 
