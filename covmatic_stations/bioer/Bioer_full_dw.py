@@ -298,6 +298,7 @@ class BioerProtocol(Station):
 
         done_col = 0
         source_el = source_plate[done_col:(done_col + len(source_plate))]
+
         for i, (s, d) in enumerate(zip(source_el, dests_sample_elute)):
             samples_and_pipette = []
             if any([w in d for w in self.control_dests_wells]):
@@ -310,28 +311,31 @@ class BioerProtocol(Station):
 
             for j, (t, o, pipette) in enumerate(samples_and_pipette):
                 if self.run_stage("{} {}{}".format(stage, i+1, " {}/{}".format(j+1, len(samples_and_pipette)) if len(samples_and_pipette)>1 else "")):
-                    self.pick_up(pipette)
-                    if self._p300_fake_aspirate or self._s300_fake_aspirate:
-                        pipette.aspirate(1, t.top())
-                        pipette.dispense(1)
-                        if pipette == self._p300:
-                            self._p300_fake_aspirate = False
-                        elif pipette == self._s300:
-                            self._s300_fake_aspirate = False
-
-                    with MoveWithSpeed(pipette,
-                                       from_point=t.bottom(self._dw_elutes_bottom_height + 3),
-                                       to_point=t.bottom(self._dw_elutes_bottom_height),
-                                       speed=self._very_slow_vertical_speed, move_close=False):
-                        pipette.aspirate(self._elution_volume)
-                    pipette.air_gap(self._elution_air_gap)
-                    pipette.dispense(self._elution_air_gap, o.top())
-                    pipette.dispense(self._elution_volume, o.bottom(self._pcr_bottom_headroom_height))
-                    pipette.mix(5, 20, o.bottom(self._mix_bottom_height))
-                    pipette.blow_out(o.top(self._final_mix_blow_out_height))
-                    pipette.air_gap(self._elution_air_gap)
-                    self.drop(pipette)
+                    self.transfer_elute(t, o, pipette)
             done_col = done_col + len(source_plate)
+
+    def transfer_elute(self, source, dest, pipette):
+        self.pick_up(pipette)
+        if self._p300_fake_aspirate or self._s300_fake_aspirate:
+            pipette.aspirate(1, source.top())
+            pipette.dispense(1)
+            if pipette == self._p300:
+                self._p300_fake_aspirate = False
+            elif pipette == self._s300:
+                self._s300_fake_aspirate = False
+
+        with MoveWithSpeed(pipette,
+                           from_point=source.bottom(self._dw_elutes_bottom_height + 3),
+                           to_point=source.bottom(self._dw_elutes_bottom_height),
+                           speed=self._very_slow_vertical_speed, move_close=False):
+            pipette.aspirate(self._elution_volume)
+        pipette.air_gap(self._elution_air_gap)
+        pipette.dispense(self._elution_air_gap, dest.top())
+        pipette.dispense(self._elution_volume, dest.bottom(self._pcr_bottom_headroom_height))
+        pipette.mix(5, 20, dest.bottom(self._mix_bottom_height))
+        pipette.blow_out(dest.top(self._final_mix_blow_out_height))
+        pipette.air_gap(self._elution_air_gap)
+        self.drop(pipette)
 
     @property
     def mastermix_needed_volume(self):
