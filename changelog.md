@@ -1,6 +1,11 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.19.3
+
+- [Bioer PCR] Fixed bug that caused sample transfer for the entire column, even when not needed;
+- [Bioer PCR] Added some tests thanks to code refactoring.
+
 ## v2.19.2
 
 ### Important notes:
