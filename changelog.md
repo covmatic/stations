@@ -1,6 +1,11 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.19.4
+
+- [Bioer PCR] Elutes: only columns with controls use single pipetting otherwise are always transferred with 8-channel pipette
+              (reverts changes in *v.2.19.3*).
+
 ## v2.19.3
 
 - [Bioer PCR] Fixed bug that caused sample transfer for the entire column, even when not needed;
