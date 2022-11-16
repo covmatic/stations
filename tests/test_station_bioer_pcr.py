@@ -26,25 +26,28 @@ class FakeSampleTransfer:
 
 # Extending the class to intercept the transfer_sample call
 class FakeStation(FakeSampleTransfer, BioerPreparationToPcr):
-    def __init__(self, num_samples, *args, **kwargs):
-        super().__init__(expected_total_samples=num_samples, num_samples=num_samples, *args, **kwargs)
+    def __init__(self, num_samples, expected_total_samples, *args, **kwargs):
+        super().__init__(expected_total_samples=expected_total_samples, num_samples=num_samples, *args, **kwargs)
 
 
 class TestSuite(unittest.TestCase):
     def test_transfer_full_plate(self):
-        FakeStation(num_samples=94, metadata={'apiLevel': '2.7'}).execute_test()
+        FakeStation(num_samples=94, expected_total_samples=94, metadata={'apiLevel': '2.7'}).execute_test()
+
+    def test_transfer_full_plate_96(self):
+        FakeStation(num_samples=96, expected_total_samples=94, metadata={'apiLevel': '2.7'}).execute_test()
 
     def test_transfer_half_plate(self):
-        FakeStation(num_samples=48, metadata={'apiLevel': '2.7'}).execute_test()
+        FakeStation(num_samples=48, expected_total_samples=48, metadata={'apiLevel': '2.7'}).execute_test()
 
     def test_transfer_full_column(self):
-        FakeStation(num_samples=80, metadata={'apiLevel': '2.7'}).execute_test()
+        FakeStation(num_samples=80, expected_total_samples=80, metadata={'apiLevel': '2.7'}).execute_test()
 
-    def test_transfer_incomplete_column(self):
-        FakeStation(num_samples=93, metadata={'apiLevel': '2.7'}).execute_test()
+    def test_transfer_incomplete_control_column_use_single_pipette(self):
+        FakeStation(num_samples=93, expected_total_samples=93, metadata={'apiLevel': '2.7'}).execute_test()
 
-    def test_transfer_incomplete_column_2(self):
-        FakeStation(num_samples=81, metadata={'apiLevel': '2.7'}).execute_test()
+    def test_transfer_incomplete_column_use_multi_pipette(self):
+        FakeStation(num_samples=81, expected_total_samples=88, metadata={'apiLevel': '2.7'}).execute_test()
 
     # def test_transfer_sample_order_saliva(self):
     #     # Extending the class to intercept the transfer_sample call
