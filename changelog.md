@@ -1,6 +1,11 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.19.5
+
+- [Stations] Changed message structure: every subfolder should come with its own JSON file for each class.
+This permits a package that inherits *covmatic-stations* to specify its own messages
+
 ## v2.19.4
 
 - [Bioer PCR] Elutes: only columns with controls use single pipetting otherwise are always transferred with 8-channel pipette
