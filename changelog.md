@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.19.7
+
+- [Stations] Fixed exception loading messages from in-protocol defined class
+
 ## v2.19.6
 
 - [Stations] Added *home* command
