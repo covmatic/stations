@@ -2,6 +2,7 @@ include covmatic_stations/a/*.json
 include covmatic_stations/b/*.json
 include covmatic_stations/labware/*.json
 include covmatic_stations/msg/*.json
+include covmatic_stations/*/msg/*.json
 include covmatic_stations/sounds/*.mp3
 
 

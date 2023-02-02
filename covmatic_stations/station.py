@@ -1,3 +1,4 @@
+import sys
 from json import JSONDecodeError
 from threading import Timer
 
@@ -56,11 +57,15 @@ def first_row(rack):
 
 class StationMeta(ABCMeta):
     def __new__(meta, name, bases, classdict):
+        logger = logging.getLogger()
         c = super(StationMeta, meta).__new__(meta, name, bases, classdict)
         try:
-            with open(os.path.join(os.path.dirname(module_path), 'msg', '{}.json'.format(name))) as f:
+            msg_file = os.path.join(os.path.dirname(sys.modules[c.__module__].__file__), 'msg', '{}.json'.format(name))
+            logger.debug("Class {} looking for messages in {}".format(name, msg_file))
+            with open(msg_file) as f:
                 c._messages = json.load(f)
         except FileNotFoundError:
+            logger.warning("No msg file found for class {}".format(name))
             c._messages = {}
         return c
     
