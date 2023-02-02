@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.19.6
+
+- [Stations] Added *home* command
+
 ## v2.19.5
 
 - [Stations] Changed message structure: every subfolder should come with its own JSON file for each class.

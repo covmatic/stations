@@ -424,7 +424,7 @@ class Station(metaclass=StationMeta):
             self.msg = msg
             self.logger.log(level, self.msg)
         if home:
-            self._mov_manager.move_to_home()
+            self.home()
         if blink and not self._ctx.is_simulating():
             self._sound_manager.play("beep")
             lt = (BlinkingLightHTTP if self._dummy_lights else BlinkingLight)(self._ctx, t=blink_period/2)
@@ -489,6 +489,9 @@ class Station(metaclass=StationMeta):
         minutes_to_wait = minutes + seconds / 60
         self.delay(self._delay_manager.get_remaining_delay(minutes=minutes_to_wait),
                    self.get_msg_format("waiting delay to elapse", minutes_to_wait))
+
+    def home(self):
+        self._mov_manager.move_to_home()
 
     def body(self):
         pass
