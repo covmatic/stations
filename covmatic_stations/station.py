@@ -226,12 +226,14 @@ class Station(metaclass=StationMeta):
     def logger(self) -> logging.getLoggerClass():
         if (not hasattr(self, "_logger")) or self._logger is None:
             self._logger = logging.getLogger(self.logger_name)
-            if self._ctx is not None:
-                if self._logger.hasHandlers():
-                    self._logger.handlers = []
-                self._logger.addHandler(ProtocolContextLoggingHandler(self._ctx))
         return self._logger
-    
+
+    def setup_protocolcontext_logger(self):
+        if self._ctx is not None:
+            if self.logger.hasHandlers():
+                self.logger.handlers = []
+            self.logger.addHandler(ProtocolContextLoggingHandler(self._ctx))
+
     def setup_opentrons_logger(self):
         stack_logger = logging.getLogger('opentrons')
         stack_logger.setLevel(self.logger.getEffectiveLevel())
@@ -507,6 +509,7 @@ class Station(metaclass=StationMeta):
     def run(self, ctx: ProtocolContext):
         self.status = "running"
         self._ctx = ctx
+        self.setup_protocolcontext_logger()
         self._mov_manager = MovementManager(self._ctx)
         self._button = (Button.dummy if self._dummy_lights else Button)(self._ctx, 'blue')
         if self._simulation_log_lws or not self._ctx.is_simulating():
