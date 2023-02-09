@@ -175,6 +175,9 @@ class WellWithVolume:
         self._min_height = min_height
         self._headroom_height = headroom_height
 
+    def __str__(self):
+        return "Well {} with volume {}".format(str(self._well), self._volume)
+
     @property
     def height(self) -> float:
         if self._well.diameter:
