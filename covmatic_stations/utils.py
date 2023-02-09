@@ -204,6 +204,10 @@ class WellWithVolume:
         if self._volume < 0:
             self._volume = 0
 
+    @property
+    def well(self):
+        return self._well
+
 
 class MoveWithSpeed:
     """Class to make easy aspirate and dispense approaching with a defined speed.
