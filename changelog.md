@@ -1,6 +1,9 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.19.8
+- [Stations] Changed logger property to always return a logger object
+
 ## v2.19.7
 
 - [Stations] Fixed exception loading messages from in-protocol defined class
