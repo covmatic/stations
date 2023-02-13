@@ -12,6 +12,7 @@ Visit the website https://covmatic.org/ for more documentation and information.
 * [Logging](#logging)
 * [Copan 48 rack](#copan-48-rack-correction)
 * [Magnet settings](#magnet-settings)
+* [Testing](#testing)
 
 ## Installation
 You can [install the Covmatic Stations package via `pip`](https://pypi.org/project/covmatic-stations/):
@@ -199,6 +200,12 @@ from covmatic_stations.b import magnets
 h = magnets.height.by_serial["X"]
 ```
 
+## Testing
+
+The package comes with some unit tests. If you want to run them then checkout the code, move to the code folder, install the package with:
+```py setup.py install```
+and then run the tests with:
+```pytest```
 
 <!---
 Copyright (c) 2020 Covmatic.
