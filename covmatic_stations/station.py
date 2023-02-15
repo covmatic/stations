@@ -299,7 +299,7 @@ class Station(metaclass=StationMeta):
     def num_cols(self) -> int:
         return math.ceil(self._num_samples/self._samples_per_col)
 
-    def get_samples_in_row(self, row_number):
+    def num_samples_in_row(self, row_number):
         if row_number < 0 or row_number > 7:
             raise Exception("Row number valid are 0-7: {}".format(row_number))
 
@@ -307,6 +307,10 @@ class Station(metaclass=StationMeta):
 
         self.logger.debug("Samples in row {} are: {}".format(row_number, samples_in_row))
         return len(samples_in_row)
+
+    @property
+    def num_samples_in_rows(self) -> [int]:
+        return [self.num_samples_in_row(r) for r in range(8)]
 
     @property
     def _tip_log_filepath(self) -> str:
