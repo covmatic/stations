@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.19.9
+- [Stations] Added *num_samples_in_rows* property to retrieve samples in each row
+- [Stations] Minor change in WellWithVolume class
+
 ## v2.19.8
 - [Stations] Changed logger property to always return a logger object
 
