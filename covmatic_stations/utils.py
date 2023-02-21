@@ -161,7 +161,7 @@ def uniform_divide(total: float, mpp: float) -> Tuple[int, float]:
 
 class WellWithVolume:
     """Class to make easy to calcualate and use the height of the liquid in a well"""
-    def __init__(self, well: Well, initial_vol: float, min_height: float = 0.5, headroom_height: float = 2.0):
+    def __init__(self, well: Well, initial_vol: float=0, min_height: float = 0.5, headroom_height: float = 2.0):
         """Class initialization
         :param total_vol: the total volume expected in the well
         :param min_height: optional, the minimum height
