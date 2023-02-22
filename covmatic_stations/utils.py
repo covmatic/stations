@@ -246,15 +246,18 @@ class MoveWithSpeed:
     def __enter__(self):
         self._logger.debug("Moving close. Force direct is: {}".format(self._force_direct))
         if self._move_close:
-            self._pip.move_to(self._from_point)
+            self._pip.move_to(self._from_point, publish=False)
             self._pip.move_to(self._to_point, force_direct=self._force_direct, speed=self._speed)
         else:
             self._pip.move_to(self._to_point)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._logger.debug("Moving close. Force direct is: {}".format(self._force_direct))
-        self._pip.move_to(self._to_point)       # for safety, since we've a force_direct set on next move_to
-        self._pip.move_to(self._from_point, force_direct=self._force_direct, speed=self._speed if self._go_away else None)
+        self._pip.move_to(self._to_point, publish=False)       # for safety, since we've a force_direct set on next move_to
+        self._pip.move_to(self._from_point,
+                          force_direct=self._force_direct,
+                          speed=self._speed if self._go_away else None,
+                          publish=False)
 
 
 def get_labware_json_from_filename(filename: str = ""):
