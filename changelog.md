@@ -1,6 +1,11 @@
 Covmatic Stations changelog
 ===========================
 
+## v2.19.10
+- [Stations] MoveWithSpeed disabled log messages during slow move
+- [Stations] WellWithVolume added default initial volume
+
+
 ## v2.19.9
 - [Stations] Added *num_samples_in_rows* property to retrieve samples in each row
 - [Stations] Minor change in WellWithVolume class
