@@ -183,7 +183,7 @@ class WellWithVolume:
         if self._well.diameter:
             remaining_height = self._volume / (math.pi * (self._well.diameter/2)**2)
         else:
-            remaining_height = self._volume / self._well.length**2
+            remaining_height = self._volume / (self._well.length * self._well.width)
 
         remaining_height -= self._headroom_height
         final_height = max(remaining_height, self._min_height)
