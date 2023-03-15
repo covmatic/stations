@@ -1,11 +1,12 @@
+from opentrons.protocol_api import ProtocolContext
+
 from .hardware import HardwareHelper
 from opentrons.types import Mount, Point
-from opentrons.hardware_control.types import PipettePair
 
 import logging
 
 class MovementManager:
-    def __init__(self, ctx, logger=logging.getLogger(__name__)):
+    def __init__(self, ctx: ProtocolContext, logger=logging.getLogger(__name__)):
         self._ctx = ctx
         self._hw_helper = HardwareHelper(ctx)
         self._home_pos: dict = {}
@@ -67,10 +68,7 @@ class MovementManager:
     def _mount(self):
         ''' Get the actual mount to use for pseudo-homing
             if only one pipette is present that mount is taken, otherwise the left one '''
-        if len(self._ctx.loaded_instruments) == 1:
-            mount = Mount.LEFT if 'left' in self._ctx.loaded_instruments else Mount.RIGHT
-        else:
-            mount = PipettePair.PRIMARY_LEFT
+        mount = Mount.LEFT if 'left' in self._ctx.loaded_instruments else Mount.RIGHT
         self._logger.debug("Returning mount {}".format(mount))
         return mount
 

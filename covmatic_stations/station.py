@@ -10,7 +10,6 @@ from .sound_manager import SoundManager
 from .utils import ProtocolContextLoggingHandler, LocalWebServerLogger, DelayManager
 from .lights import Button, BlinkingLightHTTP, BlinkingLight
 from opentrons.protocol_api import ProtocolContext
-from opentrons.protocol_api.paired_instrument_context import PairedInstrumentContext
 from opentrons.types import Point
 import opentrons.commands.types
 from abc import ABCMeta, abstractmethod
@@ -385,13 +384,7 @@ class Station(metaclass=StationMeta):
                             tiprack = t
                             break
             if tiprack is None:
-                if isinstance(pip, PairedInstrumentContext):
-                    # Paired pipette tiprack doesn't work with the for loop below
-                    # pipettes must be the same, so selecting the first tiprack
-                    tiprack = list(self._tipracks().keys())[0]
-                    self._logger.debug("Selectiong {} tiprack for paired pipette".format(tiprack))
-                else:
-                    raise RuntimeError("no tiprack associated to pipette {}".format(pip))
+                raise RuntimeError("no tiprack associated to pipette {}".format(pip))
             self._update_tip_log_count()
             if self._tip_log['count'][tiprack] == self._tip_log['max'][tiprack]:
                 # If empty, wait for refill
@@ -407,8 +400,7 @@ class Station(metaclass=StationMeta):
 
     @staticmethod
     def _get_pipette_num_channels(pip):
-        pips = pip._instruments.values() if isinstance(pip, PairedInstrumentContext) else [pip]
-        return sum([p.channels for p in pips])
+        return pip.channels
 
     def drop(self, pip):
         # Drop in the Fixed Trash (on 12) at different positions to avoid making a tall heap of tips

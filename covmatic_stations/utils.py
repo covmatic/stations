@@ -2,7 +2,7 @@ import json
 import os
 import time
 
-from opentrons.protocol_api import ProtocolContext, InstrumentContext, PairedInstrumentContext
+from opentrons.protocol_api import ProtocolContext, InstrumentContext
 from opentrons.protocol_api.labware import Well
 from opentrons.types import Location
 import logging
@@ -212,7 +212,7 @@ class WellWithVolume:
 class MoveWithSpeed:
     """Class to make easy aspirate and dispense approaching with a defined speed.
     This should be useful with viscous liquid in order not to break the external meniscus on tip avoiding drops"""
-    def __init__(self, pip: Union[InstrumentContext, PairedInstrumentContext],
+    def __init__(self, pip: Union[InstrumentContext],
                  from_point: Location,
                  to_point: Location,
                  speed,
