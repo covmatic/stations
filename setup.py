@@ -40,14 +40,12 @@ setuptools.setup(
         'wheel',
     ],
     install_requires=[
-        'pydantic==1.8.2',
         'opentrons',
         'cherrypy',
         'requests',
         'ipaddress',
         'typing-extensions',
-        'parse',
-        'inflect'
+        'parse'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
