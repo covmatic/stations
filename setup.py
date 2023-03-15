@@ -40,13 +40,13 @@ setuptools.setup(
         'wheel',
     ],
     install_requires=[
-        'opentrons<5.1.0',
+        'opentrons',
         'cherrypy',
         'requests',
         'ipaddress',
-        'typing-extensions==3.10.0.0',
+        'typing-extensions',
         'parse',
-        'inflect==5.6.2'
+        'inflect'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
