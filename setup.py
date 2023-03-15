@@ -40,7 +40,7 @@ setuptools.setup(
         'wheel',
     ],
     install_requires=[
-        'pydantic==1.8.2'
+        'pydantic==1.8.2',
         'opentrons',
         'cherrypy',
         'requests',
