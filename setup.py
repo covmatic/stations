@@ -45,7 +45,8 @@ setuptools.setup(
         'requests',
         'ipaddress',
         'typing-extensions',
-        'parse'
+        'parse',
+        'inflect<6.0.2'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
