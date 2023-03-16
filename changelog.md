@@ -1,6 +1,17 @@
 Covmatic Stations changelog
 ===========================
 
+## v3.0.0
+
+### Major changes
+- ***Covmatic stations* is now compatible with *opentrons* latest version (6.2.1)** 
+- **Removed support for Paired Pipette**
+- [Station B Technogenetics] Removed Paired Pipette protocol
+- [Station B Technogenetics Saliva] Removed Paired Pipette protocol
+
+### Fixed
+- WellWithVolume fixed error in height calculation for rectangular shaped wells.
+
 ## v2.19.10
 - [Stations] MoveWithSpeed disabled log messages during slow move
 - [Stations] WellWithVolume added default initial volume
