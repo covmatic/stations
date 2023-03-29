@@ -505,6 +505,9 @@ class Station(metaclass=StationMeta):
     def home(self):
         self._mov_manager.move_to_home()
 
+    def pre_loaders_initializations(self):
+        pass
+
     def body(self):
         pass
 
@@ -532,6 +535,7 @@ class Station(metaclass=StationMeta):
         self.logger.info(self.msg_format("version", __version__))
 
         try:
+            self.pre_loaders_initializations()
             self.load_labware()
             self.load_instruments()
             self.setup_tip_log()
