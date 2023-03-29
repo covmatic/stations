@@ -506,6 +506,7 @@ class Station(metaclass=StationMeta):
         self._mov_manager.move_to_home()
 
     def pre_loaders_initializations(self):
+        """ Hook function to execute code before loaders that needs context"""
         pass
 
     def body(self):

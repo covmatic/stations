@@ -1,6 +1,11 @@
 Covmatic Stations changelog
 ===========================
 
+## v3.0.1
+
+### Added
+- [Stations] Added pre-loaders initializations hook function
+
 ## v3.0.0
 
 ### Major changes
