@@ -209,17 +209,17 @@ class Station(metaclass=StationMeta):
         if not self._run_stage:
             raise Exception("Stage '{}' not found.".format(self._start_at))
 
-    def watchdog_reset(self, timeout_seconds):
+    def watchdog_reset(self, timeout_seconds=None):
         if self._watchdog_enable and not self._ctx.is_simulating():
-            self._watchdog.reset(timeout_seconds)
+            self._watchdog.reset(timeout_seconds or self._watchdog_timeout)
 
     def watchdog_stop(self):
         if self._watchdog_enable and not self._ctx.is_simulating():
             self._watchdog.stop()
 
-    def watchdog_start(self, timeout_seconds):
+    def watchdog_start(self, timeout_seconds=None):
         if self._watchdog_enable and not self._ctx.is_simulating():
-            self._watchdog.start(timeout_seconds)
+            self._watchdog.start(timeout_seconds or self._watchdog_timeout)
 
     @property
     def logger(self) -> logging.getLoggerClass():
@@ -506,7 +506,7 @@ class Station(metaclass=StationMeta):
         self._mov_manager.move_to_home()
 
     def pre_loaders_initializations(self):
-        """ Hook function to execute code before loaders that needs context"""
+        """ Hook function to execute code before loaders that needs context """
         pass
 
     def body(self):
