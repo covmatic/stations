@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v3.0.2
+
+- [Stations] Added watchdog default timeout argument.
+
 ## v3.0.1
 
 ### Added
