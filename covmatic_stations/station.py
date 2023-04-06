@@ -425,8 +425,6 @@ class Station(metaclass=StationMeta):
         level: int = logging.INFO,
         pause: bool = True,
     ):
-        # Note: changed default homing method to 'move_to_home' Agos, 2021-09-13
-
         old_color = self._button.color
         self._button.color = color
 
@@ -455,6 +453,7 @@ class Station(metaclass=StationMeta):
         self._button.color = old_color
         self.status = "running"
         self.msg = ""
+        self.watchdog_start()
 
 
 
@@ -593,6 +592,7 @@ class WatchDog(Exception):
         self._logger.debug("Stopping watchdog")
         if self._timer is not None:
             self._timer.cancel()
+            self._timer = None
 
     def reset(self, timeout: int = 180):
         self.stop()
