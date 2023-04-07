@@ -13,11 +13,11 @@ class MovementManager:
         self._logger = logger
 
     def move_to_home(self, safety_margin=10, force: bool = False):
-        ''' Move pipettes near home
+        """ Move pipettes near home
             without really homing to save time since homing is not needed
             :param safety_margin: the distance to keep from home position (not to hit the home switches)
             :param force: force the movement without checking if the gantry is near home
-        '''
+        """
         self._ctx.comment("Moving near home")
         if Mount.LEFT not in self._home_pos or Mount.RIGHT not in self._home_pos:
             self._ctx.home()
@@ -50,27 +50,37 @@ class MovementManager:
         self.save_home_pos_if_needed()
 
     def save_home_pos_if_needed(self):
-        ''' saves the home position for the first time
+        """ saves the home position for the first time
             ==>> WARNING: To be called right AFTER a home command <<==
-        '''
+        """
         for m in [Mount.LEFT, Mount.RIGHT]:
             self._logger.debug("Saving mount {}".format(m))
             if self._home_pos.get(m, None) is None:
                 self._home_pos[m] = self._hw_helper.get_gantry_position(m, True)
 
     def retract(self):
-        ''' We try to retract the pipette attached
-            if we have zero or two pipette retract both two axes.'''
-        self._logger.debug("Retracting mount {}".format(self._mount))
-        self._hw_helper.retract(self._mount)
+        """ We try to retract each pipette attached """
+        for m in self._mounts:
+            self._hw_helper.retract(m)
 
     @property
     def _mount(self):
-        ''' Get the actual mount to use for pseudo-homing
-            if only one pipette is present that mount is taken, otherwise the left one '''
+        """ Get the actual mount to use for pseudo-homing
+            if only one pipette is present that mount is taken, otherwise the left one """
         mount = Mount.LEFT if 'left' in self._ctx.loaded_instruments else Mount.RIGHT
         self._logger.debug("Returning mount {}".format(mount))
         return mount
+
+    @property
+    def _mounts(self):
+        """ Get a list of mounted pipettes mount"""
+        mounts = []
+        if 'left' in self._ctx.loaded_instruments:
+            mounts.append(Mount.LEFT)
+        if 'right' in self._ctx.loaded_instruments:
+            mounts.append(Mount.RIGHT)
+
+        return mounts
 
     def _need_home(self, actual_positions, safety_margin: float) -> bool:
         x_is_near_home = False
