@@ -478,15 +478,18 @@ class Station(metaclass=StationMeta):
         home: bool = True,
         level: int = logging.INFO,
     ):
-        self.pause(
-            msg=self.get_msg_format("delay minutes", self.get_msg(msg), mins, self.get_msg("skip delay") if self._skip_delay else ""),
-            blink=False,
-            color=color,
-            delay_time=0 if self._skip_delay else (60 * mins),
-            home=home,
-            level=level,
-            pause=self._skip_delay,
-        )
+        if self._run_stage:
+            self.pause(
+                msg=self.get_msg_format("delay minutes", self.get_msg(msg), mins, self.get_msg("skip delay") if self._skip_delay else ""),
+                blink=False,
+                color=color,
+                delay_time=0 if self._skip_delay else (60 * mins),
+                home=home,
+                level=level,
+                pause=self._skip_delay,
+            )
+        else:
+            self.logger.info("Skipping delay of {} mins because no stage run before.".format(mins))
 
     ''' Managed delay
         we start counting, doing something (eg. mixing samples) than we wait for timer to elapse'''
