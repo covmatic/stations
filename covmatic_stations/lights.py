@@ -31,10 +31,10 @@ class BlinkingLight(Thread, metaclass=Dummyable):
         self.join()
     
     def initial_state(self) -> bool:
-        return self._ctx._hw_manager.hardware.get_lights()
+        return self._ctx.rail_lights_on
     
     def set_light(self, s: bool):
-        self._ctx._hw_manager.hardware.set_lights(rails=s)
+        self._ctx.set_rail_lights(s)
     
     def run(self):
         self._on = True
