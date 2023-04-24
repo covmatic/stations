@@ -50,7 +50,7 @@ class LocalWebServerLogger:
                 self.level -= 1
         self.last_dollar = record['$']
         if record['$'] == 'before':
-            return ' '.join(['\t' * self.level, record['payload'].get('text', '').format(**record['payload'])])
+            return ' '.join(['\t' * self.level, record['payload'].get('text', '')])
     
     def __call__(self, record: Dict[str, Any]):
         s = self.format(record)
