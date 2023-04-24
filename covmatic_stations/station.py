@@ -442,11 +442,11 @@ class Station(metaclass=StationMeta):
         if delay_time > 0:
             self.status = "delay"
             self.watchdog_start(delay_time * 1.2)
-            self._ctx.delay(delay_time)
+            self._ctx.delay(delay_time, msg=self.msg)
             self.watchdog_stop()
         if pause:
             self.status = "pause"
-            self._ctx.pause()
+            self._ctx.pause(msg=self.msg)
             self._ctx.delay(0.1)  # pad to avoid pause leaking
         if blink and not self._ctx.is_simulating():
             lt.stop()
