@@ -1,6 +1,15 @@
 Covmatic Stations changelog
 ===========================
 
+## v3.0.3
+
+### Fixed
+- [Stations] Blinking light: updated to OT API v2.5
+- [Stations] Delay skipped if no previous stage run.
+- [Stations] Retract both pipette if home is requested
+- [Stations] Watchdog restarted after pause command
+- [Stations] LocalWebServer logger deleted format log (see https://github.com/Opentrons/opentrons/pull/9799)
+
 ## v3.0.2
 
 - [Stations] Added watchdog default timeout argument.
