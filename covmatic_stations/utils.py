@@ -189,6 +189,10 @@ class WellWithVolume:
         final_height = max(remaining_height, self._min_height)
         return final_height
 
+    @property
+    def volume(self) -> float:
+        return self._volume
+
     def extract_vol_and_get_height(self, aspirate_vol: float) -> float:
         """Return the maximum height to aspirate safely a volume from a well
         :param aspirate_vol: The volume to aspirate
