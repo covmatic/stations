@@ -4,7 +4,7 @@ from covmatic_stations.b.technogenetics import StationBTechnogenetics
 
 logging.getLogger(StationBTechnogenetics.__name__).setLevel(logging.INFO)
 metadata = {'apiLevel': '2.7'}
-station = StationBTechnogenetics(num_samples=16)
+station = StationBTechnogenetics(num_samples=96)
 
 
 def run(ctx):
