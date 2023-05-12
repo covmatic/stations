@@ -9,14 +9,14 @@ from .request import StationRESTServerThread, DEFAULT_REST_KWARGS
 from .sound_manager import SoundManager
 from .utils import ProtocolContextLoggingHandler, LocalWebServerLogger, DelayManager
 from .lights import Button, BlinkingLightHTTP, BlinkingLight
-from opentrons.protocol_api import ProtocolContext
+from opentrons.protocol_api import ProtocolContext, Well
 from opentrons.types import Point
 import opentrons.commands.types
 from abc import ABCMeta, abstractmethod
 from functools import wraps, partialmethod
 from itertools import chain, dropwhile
 from opentrons.types import Location
-from typing import Optional, Callable, Tuple
+from typing import Optional, Callable, Tuple, List
 import json
 import math
 import os
@@ -328,7 +328,7 @@ class Station(metaclass=StationMeta):
         for key, tiprack in self._tip_log['tips'].items():
             self._reset_tips_in_tiprack(tiprack)
 
-    def _reset_tips_in_tiprack(self, tiprack):
+    def _reset_tips_in_tiprack(self, tiprack: List[Well]):
         for t in tiprack:
             t.has_tip = True
 
