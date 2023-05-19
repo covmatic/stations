@@ -1,6 +1,9 @@
 Covmatic Stations changelog
 ===========================
 
+## v3.0.4
+- [Stations] WellWithVolume added current volume property
+
 ## v3.0.3
 
 ### Fixed
