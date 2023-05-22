@@ -580,8 +580,8 @@ class Station(metaclass=StationMeta):
 
 
 class WatchDog(Exception):
-    def __init__(self, handler=None, logger=logging.getLogger(__name__)):
-        self._logger = logger
+    def __init__(self, handler=None, logger=None):
+        self._logger = logger or logging.getLogger(self.__class__.__name__)
         self._handler = handler if handler is not None else self.default_handler
         self._timer = None
         self._logger.debug("Initialization finished :-)")
