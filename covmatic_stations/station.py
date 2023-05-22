@@ -584,15 +584,17 @@ class WatchDog(Exception):
         self._logger = logger or logging.getLogger(self.__class__.__name__)
         self._handler = handler if handler is not None else self.default_handler
         self._timer = None
-        self._logger.debug("Initialization finished :-)")
+        self._logger.info("Initialization finished :-)")
+        self._timeout = None
 
     def start(self, timeout: int = 180):
-        self._logger.debug("Starting watchdog with timeout time {}s".format(timeout))
-        self._timer = Timer(timeout, self._handler)
+        self._logger.info("Starting watchdog with timeout time {}s".format(timeout))
+        self._timeout = timeout
+        self._timer = Timer(self._timeout, self._handler)
         self._timer.start()
 
     def stop(self):
-        self._logger.debug("Stopping watchdog")
+        self._logger.info("Stopping watchdog")
         if self._timer is not None:
             self._timer.cancel()
             self._timer = None
@@ -604,7 +606,9 @@ class WatchDog(Exception):
     def default_handler(self):
         self._logger.info("Default timeout handler reached.")
 
-
+    @property
+    def current_timeout(self):
+        return self._timeout if self._timer is not None else None
 
 # Copyright (c) 2020 Covmatic.
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
