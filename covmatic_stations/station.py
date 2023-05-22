@@ -428,6 +428,7 @@ class Station(metaclass=StationMeta):
         old_color = self._button.color
         self._button.color = color
 
+        current_watchdog_timeout = self._watchdog.current_timeout
         self.watchdog_stop()
 
         if msg:
@@ -453,7 +454,9 @@ class Station(metaclass=StationMeta):
         self._button.color = old_color
         self.status = "running"
         self.msg = ""
-        self.watchdog_start()
+
+        if current_watchdog_timeout is not None:
+            self.watchdog_start(current_watchdog_timeout)
 
 
 
