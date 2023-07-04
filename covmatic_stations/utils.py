@@ -190,6 +190,10 @@ class WellWithVolume:
         return final_height
 
     @property
+    def min_height(self) -> float:
+        return self._min_height
+
+    @property
     def volume(self) -> float:
         return self._volume
 

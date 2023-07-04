@@ -50,6 +50,15 @@ class MultiTubeSource(object):
             self.logger.debug("No tube with left volume found")
             return None
 
+    def get_current_well_with_volume(self) -> WellWithVolume:
+        """ Get the current tube that will be chosen to aspirate from and the volume"""
+        for source_and_vol in self._source_tubes_and_vol:
+            if source_and_vol["available_volume"] > 0:
+                return WellWithVolume(source_and_vol["source"], source_and_vol["available_volume"])
+        else:
+            self.logger.debug("No tube with left volume found")
+            return None
+
     def use_volume_only(self, volume):
         """ This function simulates the aspiration of a volume;
             it will mark the passed volume as *used* in the multi tube source but does not execute any aspiration """
