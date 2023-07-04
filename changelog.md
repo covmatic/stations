@@ -1,6 +1,10 @@
 Covmatic Stations changelog
 ===========================
 
+## v3.0.5
+- [Stations] WellWithVolume: added min_height property
+- [Stations] MultiTubeSource: added function to retrieve current well
+
 ## v3.0.4
 - [Stations] WellWithVolume added current volume property
 
