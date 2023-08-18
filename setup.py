@@ -40,7 +40,7 @@ setuptools.setup(
         'wheel',
     ],
     install_requires=[
-        'opentrons',
+        'opentrons>=6.2.0',
         'cherrypy',
         'requests',
         'ipaddress',
