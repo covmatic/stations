@@ -15,7 +15,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: python:3.7
+    container: python:3.8
     steps:
     - uses: actions/checkout@v2
     - name: Install
@@ -25,7 +25,7 @@ jobs:
 
   simulate:
     runs-on: ubuntu-latest
-    container: python:3.7
+    container: python:3.8
     needs: test
     strategy:
       matrix:
@@ -50,7 +50,7 @@ jobs:
   upload:
     if: ${{ startsWith( github.ref , 'refs/tags/' ) }}
     runs-on: ubuntu-latest
-    container: python:3.7
+    container: python:3.8
     needs: simulate
     steps:
     - uses: actions/checkout@v2
